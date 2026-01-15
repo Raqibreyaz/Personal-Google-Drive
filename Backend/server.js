@@ -1,6 +1,7 @@
 import http from "http";
 import fs, { readdir } from "fs/promises";
-import mime from ".pnpm/mime@4.1.0/node_modules/mime/lite";
+import mime from "mime/lite";
+import { createWriteStream } from "fs";
 
 const server = http.createServer();
 
@@ -9,81 +10,103 @@ server.on("request", async (req, res) => {
   let filepath = "storage";
   let file_handle = null;
 
-  if (req.url) {
-    const fname = req.url.startsWith("/")
-      ? decodeURIComponent(req.url.slice(1))
-      : "storage";
-    if (fname) filepath = fname;
-  }
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Headers", "*");
+  res.setHeader("Access-Control-Allow-Methods", "*");
 
-  try {
-    const is_open = filepath.includes("open");
-    filepath = filepath.replaceAll("/open", "").replaceAll("/download", "");
-
-    const st = await fs.lstat(filepath);
-
-    if (st.isDirectory()) {
-      const home_page = await fs.readFile("home-page.html");
-
-      const files = await readdir(filepath, { withFileTypes: true }).then(
-        (dirents) =>
-          dirents.filter((dirent) => dirent.isDirectory() || dirent.isFile())
-      );
-
-      let dynamic_list = files.reduce(
-        (previous_names, dirent) =>
-          previous_names +
-          `<li>${dirent.name}
-              <a href="/${dirent.parentPath}/${dirent.name}/open">Open</a>
-              ${
-                dirent.isDirectory()
-                  ? ""
-                  : `<a href="/${dirent.parentPath}/${dirent.name}/download">Download</a>`
-              }
-          </li>\n`,
-        ""
-      );
-
-      return res.end(
-        home_page.toString().replaceAll("${dynamic_list}", dynamic_list)
-      );
+  if (req.method === "GET") {
+    if (req.url) {
+      const fname = req.url.startsWith("/")
+        ? decodeURIComponent(req.url.slice(1))
+        : "storage";
+      if (fname) filepath = fname;
     }
 
-    // open the file
-    file_handle = await fs.open(filepath);
+    try {
+      const is_open = filepath.includes("open");
+      filepath = filepath.replaceAll("/open", "").replaceAll("/download", "");
 
-    const filename = filepath.slice(filepath.lastIndexOf("/") + 1);
-    const mime_type = mime.getType(filename);
+      const st = await fs.lstat(filepath);
 
-    // create a readable stream for the file
-    const read_stream = file_handle.createReadStream();
+      // return files list when directory
+      if (st.isDirectory()) {
+        const files = await readdir(filepath, { withFileTypes: true }).then(
+          (dirents) =>
+            dirents
+              .filter((dirent) => dirent.isDirectory() || dirent.isFile())
+              .map((dirent) => ({
+                is_directory: dirent.isDirectory(),
+                name: dirent.name,
+                parent_path: dirent.parentPath,
+              }))
+        );
+        res.setHeader("Content-Type", "application/json");
+        return res.end(JSON.stringify(files));
+      }
 
-    // get the size of the file
-    const { size } = await file_handle.stat();
+      // open the file
+      file_handle = await fs.open(filepath);
 
-    // add size of file as content-length
-    res.setHeader("Content-Length", size);
+      const filename = filepath.slice(filepath.lastIndexOf("/") + 1);
+      const mime_type = mime.getType(filename);
 
-    // add content type of file
-    res.setHeader("Content-Type", mime_type);
+      // create a readable stream for the file
+      const read_stream = file_handle.createReadStream();
 
-    if (!is_open)
-      res.setHeader("Content-Disposition", `attachment; filename=${filename}`);
+      // get the size of the file
+      const { size } = await file_handle.stat();
 
-    read_stream.pipe(res);
+      // add size of file as content-length
+      res.setHeader("Content-Length", size);
 
-    // close file and socket now
-    read_stream.on("end", () => {
-      res.end();
+      // add content type of file
+      res.setHeader("Content-Type", mime_type);
+
+      if (!is_open)
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename=${filename}`
+        );
+
+      read_stream.pipe(res);
+
+      // close file and socket now
+      read_stream.on("end", () => {
+        res.end();
+        file_handle?.close();
+        file_handle = null;
+      });
+    } catch (err) {
+      // when file not found
+      console.error(err.message);
+      res.statusCode = 404;
+      res.end("File not Found!");
       file_handle?.close();
-      file_handle = null;
-    });
-  } catch (err) {
-    // when file not found
-    console.error(err.message);
-    res.statusCode = 404;
-    res.end("File not Found!");
-    file_handle?.close();
+    }
+  } else if (req.method === "POST") {
+    const filename = req.headers.filename ?? "new-file";
+    const write_stream = createWriteStream(`storage/${filename}`);
+
+    req.pipe(write_stream);
+
+    res.end("Got the file!");
+  } else if (req.method === "OPTIONS") {
+    res.end("OK");
+  } else if (req.method === "DELETE") {
+    const filename = req.headers.filename;
+    if (!filename) return res.end("Invalid filename!");
+
+    await fs.rm(`storage/${filename}`);
+    res.end("File Deleted!");
+  } else if (req.method === "PUT") {
+    if (!req.headers.old_filename || !req.headers.new_filename)
+      return res.end("invalid filename!");
+
+    const old_filename = `storage/${req.headers.old_filename}`;
+    const new_filename = `storage/${req.headers.new_filename}`;
+
+    await fs.rename(old_filename, new_filename);
+    res.end("File Renamed!");
   }
 });
 
