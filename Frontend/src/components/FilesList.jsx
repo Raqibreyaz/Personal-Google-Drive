@@ -1,37 +1,36 @@
 import { memo, useState } from "react";
 
 const FilesList = memo(({ files, update_files }) => {
-  const BACKEND_URL = "http://[2409:40e3:319a:291b:4c32:5064:8e0f:f468]:8080";
+  const BACKEND_URL = "http://localhost:8080";
 
   const [renaming, set_renaming] = useState(null);
 
   const handleRename = async (event) => {
     event.preventDefault();
 
-    console.log(event.target[0].value);
+    if (!event.target.length || !event.target[0].value) return;
 
-    const res = await fetch(BACKEND_URL, {
-      method: "PUT",
-      headers: {
+    const res = await fetch(`${BACKEND_URL}/${renaming.filename}`, {
+      method: "PATCH",
+      body: JSON.stringify({
         new_filename: event.target[0].value,
-        old_filename: renaming.filename,
-      },
+      }),
+      headers: { "Content-Type": "application/json" },
     });
 
-    const text = await res.text();
-    alert(text);
+    const text = await res.json();
+    alert(text.message);
     set_renaming(null);
     update_files();
   };
 
   const handleDelete = async (filename) => {
-    const res = await fetch(BACKEND_URL, {
+    const res = await fetch(`${BACKEND_URL}/${filename}`, {
       method: "DELETE",
-      headers: { filename },
     });
 
-    const text = await res.text();
-    alert(text);
+    const text = await res.json();
+    alert(text.message);
     update_files();
   };
 
@@ -43,7 +42,7 @@ const FilesList = memo(({ files, update_files }) => {
             <span>{file.name}</span>
             <a
               className="text-blue-600"
-              href={`${BACKEND_URL}/${file.parent_path}/${file.name}/open`}
+              href={`${BACKEND_URL}/${file.name}?action=open`}
             >
               Open
             </a>
@@ -62,7 +61,7 @@ const FilesList = memo(({ files, update_files }) => {
             {file.is_directory ? null : (
               <a
                 className="text-green-500"
-                href={`${BACKEND_URL}/${file.parent_path}/${file.name}/download`}
+                href={`${BACKEND_URL}/${file.name}?action=download`}
               >
                 Download
               </a>

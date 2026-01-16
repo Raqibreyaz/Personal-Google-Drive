@@ -6,7 +6,7 @@ function App() {
   const [uploadProgress, setUploadProgress] = useState(null);
 
   const update_files = () => {
-    fetch("http://[2409:40e3:319a:291b:4c32:5064:8e0f:f468]:8080", {
+    fetch("http://localhost:8080", {
       method: "GET",
     })
       .then((res) => res.json())
@@ -19,15 +19,12 @@ function App() {
 
   const handle_change = (event) => {
     const file = event.target.files[0];
+
     const xhr = new XMLHttpRequest();
-    xhr.open(
-      "POST",
-      "http://[2409:40e3:319a:291b:4c32:5064:8e0f:f468]:8080",
-      true
-    );
-    xhr.setRequestHeader("filename", file.name);
+    xhr.open("POST", `http://localhost:8080?filename=${file.name}`, true);
     xhr.addEventListener("load", () => {
-      alert(xhr.response);
+      const res = JSON.parse(xhr.response);
+      alert(res.message);
       setUploadProgress(100);
       update_files();
     });
