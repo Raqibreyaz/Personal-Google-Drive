@@ -1,22 +1,27 @@
 import { memo, useState } from "react";
+import { useParams, Link } from "react-router-dom";
 
 const FilesList = memo(({ files, update_files }) => {
   const BACKEND_URL = "http://localhost:8080";
 
   const [renaming, set_renaming] = useState(null);
+  const { "*": params } = useParams();
 
   const handleRename = async (event) => {
     event.preventDefault();
 
     if (!event.target.length || !event.target[0].value) return;
 
-    const res = await fetch(`${BACKEND_URL}/${renaming.filename}`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        new_filename: event.target[0].value,
-      }),
-      headers: { "Content-Type": "application/json" },
-    });
+    const res = await fetch(
+      `${BACKEND_URL}/files/${!params || params.endsWith("/") ? params : params + "/"}${renaming.filename}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          new_filename: event.target[0].value,
+        }),
+        headers: { "Content-Type": "application/json" },
+      },
+    );
 
     const text = await res.json();
     alert(text.message);
@@ -25,9 +30,12 @@ const FilesList = memo(({ files, update_files }) => {
   };
 
   const handleDelete = async (filename) => {
-    const res = await fetch(`${BACKEND_URL}/${filename}`, {
-      method: "DELETE",
-    });
+    const res = await fetch(
+      `${BACKEND_URL}/files/${!params || params.endsWith("/") ? params : params + "/"}${filename}`,
+      {
+        method: "DELETE",
+      },
+    );
 
     const text = await res.json();
     alert(text.message);
@@ -40,12 +48,16 @@ const FilesList = memo(({ files, update_files }) => {
         <div key={file.name}>
           <div className="flex gap-1.5">
             <span>{file.name}</span>
-            <a
+            <Link
               className="text-blue-600"
-              href={`${BACKEND_URL}/${file.name}?action=open`}
+              to={
+                file.is_directory
+                  ? `${file.name}`
+                  : `${BACKEND_URL}/files/${!params || params.endsWith("/") ? params : params + "/"}${file.name}?action=open`
+              }
             >
               Open
-            </a>
+            </Link>
             <button
               className="text-blue-600"
               onClick={() => set_renaming({ filename: file.name })}
@@ -59,12 +71,12 @@ const FilesList = memo(({ files, update_files }) => {
               Delete
             </button>
             {file.is_directory ? null : (
-              <a
+              <Link
                 className="text-green-500"
-                href={`${BACKEND_URL}/${file.name}?action=download`}
+                to={`${BACKEND_URL}/files/${!params || params.endsWith("/") ? params : params + "/"}${file.name}?action=download`}
               >
                 Download
-              </a>
+              </Link>
             )}
           </div>
           {renaming && renaming.filename === file.name && (
