@@ -19,21 +19,26 @@ router.get("/:file_id", (req, res) => {
 
   const fullpath = path.join(process.cwd(), "storage/", file_id + file.extname);
 
-  if (req.query.action === "download")
-    res.header("Content-Disposition", `attachment;`);
+  console.log(fullpath);
+  console.log(req.query);
 
-  res.sendFile(fullpath);
+  if (req.query.action === "download")
+    res.header("Content-Disposition", `attachment; filename=${file.name}`);
+
+  res.sendFile(fullpath, (err) => {
+    if (err && !res.headersSent) res.json({ message: err.message });
+  });
 });
 
 // file upload
 router.post("/:filename", async (req, res) => {
   const filepath = req.params.filename;
-  const parent_dir_id = req.headers.parent_dir_id ?? dirsDB[0].id;
+  const parent_dir_id = req.headers.parent_dir_id || dirsDB[0].id;
   const file_id = crypto.randomUUID();
   const file_ext = path.extname(filepath);
 
   // create a file in the storage directory
-  // assign name as the unique id
+  // assign unique id as the name
   const fullpath = path.join(process.cwd(), "storage/", file_id + file_ext);
 
   // store the contents of the file
@@ -62,15 +67,15 @@ router.post("/:filename", async (req, res) => {
       path.join(process.cwd(), "filesDB.json"),
       JSON.stringify(filesDB),
     );
-    
+
     // update the dirsDB file
     await writeFile(
       path.join(process.cwd(), "dirsDB.json"),
       JSON.stringify(dirsDB),
     );
-    
+
     res.status(201).json({ message: "Got the File!" });
-  });
+  })
 
   req.on("error", (err) => res.status(400).json({ message: err.message }));
 });
@@ -81,11 +86,21 @@ router.patch("/:file_id", async (req, res) => {
     return res.status(400).json({ message: "new filename required!" });
 
   const file_id = req.params.file_id;
-
+  const parentPath = path.join(process.cwd(), "storage");
   const file = filesDB.find((file) => file.id === file_id);
+  const old_ext = file.extname;
   if (!file) return res.status(404).json({ message: "file not found" });
 
+  // updating name and extension
   file.name = req.body.new_filename;
+  file.extname = path.extname(file.name);
+
+  // renaming when extension differs
+  if (old_ext != file.extname)
+    await fs.rename(
+      path.join(parentPath, file.id + old_ext),
+      path.join(parentPath, file.id + file.extname),
+    );
 
   await writeFile(
     path.join(process.cwd(), "filesDB.json"),

@@ -4,35 +4,29 @@ import { useParams } from "react-router-dom";
 
 function DirectoryView() {
   const BACKEND_URL = "http://localhost:8080";
-  const [files, setFiles] = useState([]);
+  const [files, setFiles] = useState({});
   const [uploadProgress, setUploadProgress] = useState(null);
-  const { "*": params } = useParams();
+
+  let { dirId } = useParams();
 
   const update_files = () => {
-    fetch(
-      `${BACKEND_URL}/directory/${!params || params.endsWith("/") ? params : params + "/"}`,
-      {
-        method: "GET",
-      },
-    )
+    fetch(`${BACKEND_URL}/directory/${dirId || ""}`, {
+      method: "GET",
+    })
       .then((res) => res.json())
       .then(setFiles);
   };
 
   useEffect(() => {
     update_files();
-  }, [setFiles, params]);
+  }, [dirId]);
 
   const handle_change = (event) => {
     const file = event.target.files[0];
-    console.log(params.slice(0, -1));
 
     const xhr = new XMLHttpRequest();
-    xhr.open(
-      "POST",
-      `${BACKEND_URL}/files/${!params || params.endsWith("/") ? params : params + "/"}${file.name}`,
-      true,
-    );
+    xhr.open("POST", `${BACKEND_URL}/file/${file.name}`, true);
+    xhr.setRequestHeader("parent_dir_id", dirId || "");
     xhr.addEventListener("load", () => {
       const res = JSON.parse(xhr.response);
       alert(res.message);
@@ -56,12 +50,13 @@ function DirectoryView() {
     const dirname = event.target[0].value;
     if (!dirname) return;
 
-    const res = await fetch(
-      `${BACKEND_URL}/directory/${!params || params.endsWith("/") ? params : params + "/"}${dirname}`,
-      { method: "POST" },
-    ).then((res) => res.json());
+    const res = await fetch(`${BACKEND_URL}/directory/${dirname}`, {
+      method: "POST",
+      headers: { parent_dir_id: dirId || "" },
+    }).then((res) => res.json());
 
     alert(res.message);
+    event.target[0].value = ""
     update_files();
   };
 
