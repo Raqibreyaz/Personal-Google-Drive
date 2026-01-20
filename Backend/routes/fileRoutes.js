@@ -6,16 +6,17 @@ import crypto from "crypto";
 import { stat, writeFile } from "node:fs/promises";
 import filesDB from "../filesDB.json" with { type: "json" };
 import dirsDB from "../dirsDB.json" with { type: "json" };
+import ApiError from "../utils/apiError.js";
 
 const router = express.Router();
 
 // serving file contents
-router.get("/:file_id", (req, res) => {
+router.get("/:file_id", (req, res, next) => {
   const file_id = req.params.file_id;
 
   const file = filesDB.find((file) => file.id === file_id);
 
-  if (!file) return res.status(404).json({ message: "file not found!" });
+  if (!file) return next(new ApiError(404, "File not found!"));
 
   const fullpath = path.join(process.cwd(), "storage/", file_id + file.extname);
 
@@ -26,12 +27,13 @@ router.get("/:file_id", (req, res) => {
     res.header("Content-Disposition", `attachment; filename=${file.name}`);
 
   res.sendFile(fullpath, (err) => {
-    if (err && !res.headersSent) res.json({ message: err.message });
+    if (err && !res.headersSent)
+      return next(new ApiError(500, `File Sending failed: ${err.message}`));
   });
 });
 
 // file upload
-router.post("/:filename", async (req, res) => {
+router.post("/:filename", async (req, res, next) => {
   const filepath = req.params.filename;
   const parent_dir_id = req.headers.parent_dir_id || dirsDB[0].id;
   const file_id = crypto.randomUUID();
@@ -46,7 +48,9 @@ router.post("/:filename", async (req, res) => {
   req.pipe(write_stream);
 
   req.on("end", async () => {
-    const { size } = await stat(fullpath);
+    const { size } = await stat(fullpath).catch((err) => {
+      throw new ApiError(500, err.message);
+    });
 
     // add entry in filesDB
     filesDB.push({
@@ -57,39 +61,45 @@ router.post("/:filename", async (req, res) => {
       extname: file_ext,
     });
 
+    const parentDir = dirsDB.find((dir) => dir.id === parent_dir_id);
+    if (!parentDir)
+      throw new ApiError(404, "Given parent directory doesn't exist!");
+
     // add entry in dirsDB
-    dirsDB.forEach((dir) => {
-      if (dir.id === parent_dir_id) dir.files.push(file_id);
-    });
+    parentDir.files.push(file_id);
 
     // update the filesDB file
     await writeFile(
       path.join(process.cwd(), "filesDB.json"),
       JSON.stringify(filesDB),
-    );
+    ).catch((err) => {
+      throw new ApiError(500, err.message);
+    });
 
     // update the dirsDB file
     await writeFile(
       path.join(process.cwd(), "dirsDB.json"),
       JSON.stringify(dirsDB),
-    );
+    ).catch((err) => {
+      throw new ApiError(500, err.message);
+    });
 
     res.status(201).json({ message: "Got the File!" });
-  })
+  });
 
-  req.on("error", (err) => res.status(400).json({ message: err.message }));
+  req.on("error", (err) => next(new ApiError(400, err.message)));
 });
 
 // file renaming
-router.patch("/:file_id", async (req, res) => {
+router.patch("/:file_id", async (req, res, next) => {
   if (!req.body.new_filename)
-    return res.status(400).json({ message: "new filename required!" });
+    return next(new ApiError(400, "new filename required!"));
 
   const file_id = req.params.file_id;
   const parentPath = path.join(process.cwd(), "storage");
   const file = filesDB.find((file) => file.id === file_id);
   const old_ext = file.extname;
-  if (!file) return res.status(404).json({ message: "file not found" });
+  if (!file) return next(new ApiError(404, "File not found!"));
 
   // updating name and extension
   file.name = req.body.new_filename;
@@ -97,29 +107,37 @@ router.patch("/:file_id", async (req, res) => {
 
   // renaming when extension differs
   if (old_ext != file.extname)
-    await fs.rename(
-      path.join(parentPath, file.id + old_ext),
-      path.join(parentPath, file.id + file.extname),
-    );
+    await fs
+      .rename(
+        path.join(parentPath, file.id + old_ext),
+        path.join(parentPath, file.id + file.extname),
+      )
+      .catch((err) => {
+        throw new ApiError(500, err.message);
+      });
 
   await writeFile(
     path.join(process.cwd(), "filesDB.json"),
     JSON.stringify(filesDB),
-  );
+  ).catch((err) => {
+    throw new ApiError(500, err.message);
+  });
 
   res.status(200).json({ message: "File Renamed!" });
 });
 
 // file deletion
-router.delete("/:file_id", async (req, res) => {
+router.delete("/:file_id", async (req, res, next) => {
   const file_id = req.params.file_id;
 
   // find the file
   const file = filesDB.find((file) => file.id === file_id);
-  if (!file) return res.status(404).json({ message: "file not found" });
+  if (!file) return next(new ApiError(404, "file not found"));
 
   const fullpath = path.join(process.cwd(), "storage/", file.id + file.extname);
-  await fs.rm(fullpath, { recursive: true, force: true });
+  await fs.rm(fullpath, { recursive: true, force: true }).catch((err) => {
+    throw new ApiError(500, err.message);
+  });
 
   // remove from filesDB array
   const file_ind = filesDB.findIndex((file) => file.id === file_id);
@@ -133,13 +151,17 @@ router.delete("/:file_id", async (req, res) => {
   await writeFile(
     path.join(process.cwd(), "filesDB.json"),
     JSON.stringify(filesDB),
-  );
+  ).catch((err) => {
+    throw new ApiError(500, err.message);
+  });
 
   // update the dirsDB file
   await writeFile(
     path.join(process.cwd(), "dirsDB.json"),
     JSON.stringify(dirsDB),
-  );
+  ).catch((err) => {
+    throw new ApiError(500, err.message);
+  });
 
   res.status(200).json({ message: "File Deleted!" });
 });

@@ -25,3 +25,4 @@ dist-ssr
 storage
 dirsDB.json
 filesDB.json
+*logs.txt

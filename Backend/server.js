@@ -13,8 +13,8 @@ app.use("/file", fileRoutes);
 
 app.use((err, req, res, next) => {
   res
-    .status(err.status || 500)
-    .json({ message: err.message ?? "Something went wrong!" });
+    .status(err.statusCode || 500)
+    .json({ message: err.message || "Something went wrong!" });
 });
 
 app.listen(8080, () => console.log("server is running at port 8080"));
