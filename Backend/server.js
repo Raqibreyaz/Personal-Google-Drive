@@ -1,14 +1,13 @@
 import express from "express";
 import cors from "cors";
 import multer from "multer";
-import path from 'node:path'
-import crypto from 'node:crypto'
+import path from "node:path";
+import crypto from "node:crypto";
 import cookieParser from "cookie-parser";
 import fileRoutes from "./routes/fileRoutes.js";
 import directoryRoutes from "./routes/directoryRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
-import ApiError from "./utils/apiError.js";
-import usersDB from "./usersDB.json" with { type: "json" };
+import checkAuthentication from "./utils/checkAuthentication.js";
 
 const app = express();
 
@@ -22,17 +21,6 @@ const storage = multer.diskStorage({
 });
 
 const uploader = multer({ storage });
-
-const checkAuthentication = (req, res, next) => {
-  const authToken = req.cookies?.authToken;
-  const user = authToken ? usersDB.find((user) => user.id === authToken) : null;
-
-  if (!authToken || !user) throw new ApiError(400, "Login to use the App!");
-
-  req.user = user
-
-  next();
-};
 
 app.use(cookieParser());
 app.use(

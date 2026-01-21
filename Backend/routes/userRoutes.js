@@ -4,6 +4,7 @@ import path from "path";
 import ApiError from "../utils/apiError.js";
 import usersDB from "../usersDB.json" with { type: "json" };
 import dirsDB from "../dirsDB.json" with { type: "json" };
+import checkAuthentication from "../utils/checkAuthentication.js";
 
 const router = express.Router();
 
@@ -85,8 +86,15 @@ router.post("/login", (req, res, next) => {
     .json({ message: "User logged in!" });
 });
 
-// router.delete('/',(req,res,next)=>{
+router.get("/", checkAuthentication, (req, res, next) => {
+  res.status(200).json({
+    name: req.user.name,
+    email: req.user.email,
+  });
+});
 
-// })
+router.post("/logout", checkAuthentication, (req, res, next) => {
+  res.clearCookie("authToken").status(204).end();
+});
 
 export default router;

@@ -1,7 +1,7 @@
 import express from "express";
 import fs from "fs/promises";
 import path from "node:path";
-import {writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import filesDB from "../filesDB.json" with { type: "json" };
 import dirsDB from "../dirsDB.json" with { type: "json" };
 import ApiError from "../utils/apiError.js";
@@ -12,7 +12,7 @@ const router = express.Router();
 router.get("/:fileId", (req, res, next) => {
   const fileId = req.params.fileId;
   const file = filesDB.find((file) => file.id === fileId);
-  const user = req.user
+  const user = req.user;
 
   // find the parentDir in user's dirsDB
   const parentDir = file
@@ -25,8 +25,9 @@ router.get("/:fileId", (req, res, next) => {
 
   console.log(fullpath);
 
-  if (req.query.action === "download")
-    res.header("Content-Disposition", `attachment; filename=${file.name}`);
+  if (req.query.action === "download") {
+    return res.download(fullpath, file.name);
+  }
 
   res.sendFile(fullpath, (err) => {
     if (err && !res.headersSent)
@@ -37,7 +38,7 @@ router.get("/:fileId", (req, res, next) => {
 // file upload
 router.post("/", async (req, res, next) => {
   let parentDirId = req.body.parentDirId;
-  const user = req.user
+  const user = req.user;
 
   // get the parentDir or assign the root directory
   const parentDir = parentDirId
@@ -90,7 +91,7 @@ router.patch("/:fileId", async (req, res, next) => {
   const fileId = req.params.fileId;
   const file = filesDB.find((file) => file.id === fileId);
   const old_ext = file.extname;
-  const user = req.user
+  const user = req.user;
 
   // find the parentDir in user's dirsDB
   const parentDir = file
@@ -123,7 +124,7 @@ router.patch("/:fileId", async (req, res, next) => {
 router.delete("/:fileId", async (req, res, next) => {
   const fileId = req.params.fileId;
   const file = filesDB.find((file) => file.id === fileId);
-  const user = req.user
+  const user = req.user;
 
   // find the parentDir in user's dirsDB
   const parentDir = file
