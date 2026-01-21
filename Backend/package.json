@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "node --watch server.js 2> err-logs.txt",
+    "dev": "node --watch server.js",
     "start": "node server.js"
   },
   "keywords": [],
@@ -13,8 +13,10 @@
   "license": "ISC",
   "packageManager": "pnpm@10.13.1",
   "dependencies": {
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "express": "^5.2.1",
-    "mime": "^4.1.0"
+    "mime": "^4.1.0",
+    "multer": "^2.0.2"
   }
 }

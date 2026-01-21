@@ -9,18 +9,22 @@ import ApiError from "../utils/apiError.js";
 const router = express.Router();
 
 // serving directory contents
-router.get("/{:dir_id}", async (req, res, next) => {
-  const { dir_id } = req.params;
-  const dir = dir_id ? dirsDB.find((dir) => dir.id === dir_id) : dirsDB[0];
+router.get("/{:dirId}", async (req, res, next) => {
+  // find the directory in user's dirsDB or assign user's root directory
+  const { dirId } = req.params;
+  const user = req.user;
+  const dir = dirId
+    ? dirsDB.find((dir) => dir.user === user.id && dir.id === dirId)
+    : dirsDB.find((dir) => dir.user === user.id && dir.parentDir === null);
 
-  if (!dir) {
-    return next(new ApiError(404, "Directory not found!"));
-  }
+  if (!dir) return next(new ApiError(404, "Directory not found!"));
 
+  // get all files of 'dir'
   const files = filesDB.filter((file) => dir.files.includes(file.id));
 
-  const directories = dirsDB.filter((sub_dir) =>
-    dir.directories.includes(sub_dir.id),
+  // get all directories in of 'dir'(of user only)
+  const directories = dirsDB.filter(
+    (subDir) => subDir.user === user.id && dir.directories.includes(subDir.id),
   );
 
   console.log(files);
@@ -32,24 +36,32 @@ router.get("/{:dir_id}", async (req, res, next) => {
 // creating directory
 router.post("/:dirname", async (req, res, next) => {
   const dirname = req.params.dirname;
-  const dir_id = crypto.randomUUID();
-  const parent_dir_id = req.headers.parent_dir_id || dirsDB[0].id;
+  const dirId = crypto.randomUUID();
+  let parentDirId = req.body.parentDirId;
+  const user = req.user;
 
-  const parentDir = dirsDB.find((dir) => dir.id === parent_dir_id);
+  // get the parentDir or assign the root directory
+  const parentDir = parentDirId
+    ? dirsDB.find((dir) => dir.user === user.id && dir.id === parentDirId)
+    : dirsDB.find((dir) => dir.user === user.id && dir.parentDir === null);
+
   if (!parentDir)
     return next(new ApiError(404, "Given Parent directory doesn't exist!"));
 
+  parentDirId = parentDir.id;
+
   // add entry of this directory in dirsDB array
   dirsDB.push({
-    id: dir_id,
+    id: dirId,
     name: dirname,
-    parentDir: parent_dir_id,
+    parentDir: parentDir.id,
+    user: user.id,
     directories: [],
     files: [],
   });
 
   // add entry of this directory to its parent also
-  parentDir.directories.push(dir_id);
+  parentDir.directories.push(dirId);
 
   // update dirsDB file
   await writeFile(`${process.cwd()}/dirsDB.json`, JSON.stringify(dirsDB)).catch(
@@ -62,18 +74,19 @@ router.post("/:dirname", async (req, res, next) => {
 });
 
 // changing directory name
-router.patch("/:dir_id", async (req, res, next) => {
-  if (!req.body.new_dirname)
+router.patch("/:dirId", async (req, res, next) => {
+  if (!req.body.newDirname)
     return next(new ApiError(400, "New Dirname required!"));
 
-  const dir_id = req.params.dir_id;
+  const user = req.user;
 
-  const new_dirname = req.body.new_dirname;
+  // find the dir
+  const dirId = req.params.dirId;
+  const dir = dirsDB.find((dir) => dir.user === user.id && dir.id === dirId);
+  if (!dir) return next(new ApiError(404, "Directory not found!"));
 
-  const dirIndex = dirsDB.findIndex((dir) => dir.id === dir_id);
-  if (dirIndex === -1) return next(new ApiError(404, "Directory not found!"));
-
-  dirsDB[dirIndex].name = new_dirname;
+  const newDirname = req.body.newDirname;
+  dir.name = newDirname;
 
   await writeFile(`${process.cwd()}/dirsDB.json`, JSON.stringify(dirsDB));
 
@@ -81,20 +94,23 @@ router.patch("/:dir_id", async (req, res, next) => {
 });
 
 // deleting directory
-router.delete("/:dir_id", async (req, res, next) => {
-  const dir_id = req.params.dir_id;
-  const curr_dir = dirsDB.find((dir) => dir.id === dir_id);
-
-  if (!curr_dir) return next(new ApiError(404, "Directory doesn't exist!"));
+router.delete("/:dirId", async (req, res, next) => {
+  // get the given directory
+  const dirId = req.params.dirId;
+  const user = req.user;
+  const currDir = dirsDB.find(
+    (dir) => dir.user === user.id && dir.id === dirId,
+  );
+  if (!currDir) return next(new ApiError(404, "Directory doesn't exist!"));
 
   // remove all the files and sub-dirs of sub-dir
   // remove all the files and sub directories of the directory
-  await deleteDirRecursively(dir_id, dirsDB, filesDB);
+  await deleteDirRecursively(dirId, dirsDB, filesDB);
 
   // remove entry of curr dir from its parent
   dirsDB.forEach((dir) => {
-    if (dir.id === curr_dir.parentDir)
-      dir.directories = dir.directories.filter((d_id) => d_id != dir_id);
+    if (dir.id === currDir.parentDir)
+      dir.directories = dir.directories.filter((dId) => dId != dirId);
   });
 
   // update the dirsDB and filesDB file

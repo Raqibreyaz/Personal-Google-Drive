@@ -23,6 +23,5 @@ dist-ssr
 *.sln
 *.sw?
 storage
-dirsDB.json
-filesDB.json
+*DB.json
 *logs.txt
