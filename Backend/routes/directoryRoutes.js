@@ -5,8 +5,11 @@ import filesDB from "../filesDB.json" with { type: "json" };
 import { writeFile } from "node:fs/promises";
 import { deleteDirRecursively } from "../utils/recursiveDirectoryRemover.js";
 import ApiError from "../utils/apiError.js";
+import validateId from "../utils/validateIdMiddleware.js";
 
 const router = express.Router();
+
+router.param("dirId", validateId);
 
 // serving directory contents
 router.get("/{:dirId}", async (req, res, next) => {

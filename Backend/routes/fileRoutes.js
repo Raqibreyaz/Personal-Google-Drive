@@ -5,8 +5,11 @@ import { writeFile } from "node:fs/promises";
 import filesDB from "../filesDB.json" with { type: "json" };
 import dirsDB from "../dirsDB.json" with { type: "json" };
 import ApiError from "../utils/apiError.js";
+import validateId from "../utils/validateIdMiddleware.js";
 
 const router = express.Router();
+
+router.param("fileId", validateId);
 
 // serving file contents
 router.get("/:fileId", (req, res, next) => {
