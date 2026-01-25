@@ -4,12 +4,11 @@ import multer from "multer";
 import path from "node:path";
 import crypto from "node:crypto";
 import cookieParser from "cookie-parser";
+import connectDB from "./utils/db.js";
 import fileRoutes from "./routes/fileRoutes.js";
 import directoryRoutes from "./routes/directoryRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
-import checkAuthentication from "./utils/checkAuthentication.js";
-
-const app = express();
+import checkAuthentication from "./middlewares/checkAuthentication.js";
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -22,6 +21,8 @@ const storage = multer.diskStorage({
 
 const uploader = multer({ storage });
 
+const app = express();
+
 app.use(cookieParser());
 app.use(
   cors({
@@ -30,6 +31,16 @@ app.use(
   }),
 );
 app.use(express.json());
+
+try {
+  const db = await connectDB();
+  app.use((req, res, next) => {
+    req.db = db;
+    next();
+  });
+} catch (error) {
+  process.exit(1);
+}
 
 app.use("/directory", checkAuthentication, directoryRoutes);
 app.use(

@@ -1,10 +1,11 @@
 import express from "express";
+import { ObjectId } from "mongodb";
 import fs from "fs/promises";
 import path from "path";
 import ApiError from "../utils/apiError.js";
 import usersDB from "../usersDB.json" with { type: "json" };
 import dirsDB from "../dirsDB.json" with { type: "json" };
-import checkAuthentication from "../utils/checkAuthentication.js";
+import checkAuthentication from "../middlewares/checkAuthentication.js";
 
 const router = express.Router();
 
@@ -13,7 +14,12 @@ router.post("/register", async (req, res, next) => {
   if (!name || !password || !email)
     throw new ApiError(400, "Name,Password and Email all are Required!");
 
-  const userFound = usersDB.find((user) => user.email === email);
+  const db = req.db;
+  const userCollection = db.collection("users");
+  const directoryCollection = db.collection("directories");
+
+  // const userFound = usersDB.find((user) => user.email === email);
+  const userFound = await userCollection.findOne({ email });
   if (userFound)
     return res.status(409).json({
       error: "User already exists",
@@ -21,34 +27,48 @@ router.post("/register", async (req, res, next) => {
     });
 
   const storageDirname = `root-${email}`;
-  const storageDirID = crypto.randomUUID();
-  const userId = crypto.randomUUID();
+  // const storageDirID = crypto.randomUUID();
+  // const userId = crypto.randomUUID();
 
-  usersDB.push({
-    id: userId,
+  // usersDB.push({
+  //   id: userId,
+  //   name,
+  //   password,
+  //   email,
+  //   storageDir: storageDirID,
+  // });
+  await userCollection.insertOne({
     name,
     password,
     email,
-    storageDir: storageDirID,
+    storageDir: storageDir._id,
   });
-  dirsDB.push({
-    id: storageDirID,
+
+  // dirsDB.push({
+  //   id: storageDirID,
+  //   name: storageDirname,
+  //   user: userId,
+  //   parentDir: null,
+  //   files: [],
+  //   directories: [],
+  // });
+  await directoryCollection.insertOne({
     name: storageDirname,
-    user: userId,
+    user: user._id,
     parentDir: null,
     files: [],
     directories: [],
   });
 
-  await fs.writeFile(
-    path.join(process.cwd(), "dirsDB.json"),
-    JSON.stringify(dirsDB),
-  );
+  // await fs.writeFile(
+  //   path.join(process.cwd(), "dirsDB.json"),
+  //   JSON.stringify(dirsDB),
+  // );
 
-  await fs.writeFile(
-    path.join(process.cwd(), "usersDB.json"),
-    JSON.stringify(usersDB),
-  );
+  // await fs.writeFile(
+  //   path.join(process.cwd(), "usersDB.json"),
+  //   JSON.stringify(usersDB),
+  // );
 
   res
     .status(200)

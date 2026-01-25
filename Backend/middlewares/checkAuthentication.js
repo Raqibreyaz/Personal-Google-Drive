@@ -1,4 +1,4 @@
-import ApiError from "./apiError.js";
+import ApiError from "../utils/apiError.js";
 import usersDB from "../usersDB.json" with { type: "json" };
 
 const checkAuthentication = (req, res, next) => {
