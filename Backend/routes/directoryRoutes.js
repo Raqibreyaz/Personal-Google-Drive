@@ -2,11 +2,11 @@ import express from "express";
 import { ObjectId } from "mongodb";
 import { deleteDirRecursively } from "../utils/recursiveDirectoryRemover.js";
 import ApiError from "../utils/apiError.js";
-// import validateId from "../middlewares/validateIdMiddleware.js";
+import validateId from "../middlewares/validateIdMiddleware.js";
 
 const router = express.Router();
 
-// router.param("dirId", validateId);
+router.param("dirId", validateId);
 
 // serving directory contents
 router.get("/{:dirId}", async (req, res, next) => {
@@ -27,17 +27,14 @@ router.get("/{:dirId}", async (req, res, next) => {
 
   if (!dir) return next(new ApiError(404, "Directory not found!"));
 
-  const fileIds = dir.files.map((fileId) => new ObjectId(fileId));
-  const dirIds = dir.directories.map((subDirId) => new ObjectId(subDirId));
-
-  // get all files of 'dir'
-  const files = await filesCollection.find({ _id: { $in: fileIds } }).toArray();
+  // get all files where parent is 'dir'
+  const files = await filesCollection.find({ parentDir: dir._id }).toArray();
 
   // get all directories in 'dir'(of user only)
   const directories = await directoryCollection
     .find({
       user: user._id,
-      _id: { $in: dirIds },
+      parentDir: dir._id,
     })
     .toArray();
 
@@ -68,19 +65,11 @@ router.post("/:dirname", async (req, res, next) => {
   parentDirId = parentDir._id;
 
   // add entry of this directory
-  const createdDir = await directoryCollection.insertOne({
+  await directoryCollection.insertOne({
     name: dirname,
     parentDir: parentDir._id,
     user: user._id,
-    directories: [],
-    files: [],
   });
-
-  // add entry of this directory to its parent also
-  await directoryCollection.updateOne(
-    { _id: parentDir._id },
-    { $push: { directories: createdDir.insertedId } },
-  );
 
   res.status(201).json({ message: "Directory created!" });
 });
@@ -114,8 +103,8 @@ router.delete("/:dirId", async (req, res, next) => {
   const db = req.db;
   const user = req.user;
   const dirId = req.params.dirId;
-  const directoryCollection = db.collection("directories");
   const filesCollection = db.collection("files");
+  const directoryCollection = db.collection("directories");
 
   const currDir = await directoryCollection.findOne({
     _id: new ObjectId(dirId),
@@ -126,12 +115,6 @@ router.delete("/:dirId", async (req, res, next) => {
   // remove all the files and sub-dirs of sub-dir
   // remove all the files and sub directories of the directory
   await deleteDirRecursively(currDir._id, directoryCollection, filesCollection);
-
-  // pop out the curr directory's id from parent's list
-  await directoryCollection.updateOne(
-    { _id: currDir.parentDir },
-    { $pull: { directories: currDir._id } },
-  );
 
   res.json({ message: "Directory deleted!" });
 });

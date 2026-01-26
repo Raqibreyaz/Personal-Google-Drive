@@ -1,25 +1,12 @@
 import express from "express";
 import cors from "cors";
-import multer from "multer";
-import path from "node:path";
-import crypto from "node:crypto";
 import cookieParser from "cookie-parser";
 import connectDB from "./utils/db.js";
 import fileRoutes from "./routes/fileRoutes.js";
 import directoryRoutes from "./routes/directoryRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import checkAuthentication from "./middlewares/checkAuthentication.js";
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "./storage");
-  },
-  filename: function (req, file, cb) {
-    cb(null, crypto.randomUUID() + path.extname(file.originalname));
-  },
-});
-
-const uploader = multer({ storage });
+import uploader from "./middlewares/uploader.js";
 
 const app = express();
 
@@ -47,7 +34,7 @@ app.use("/directory", checkAuthentication, directoryRoutes);
 app.use(
   "/file",
   checkAuthentication,
-  uploader.array("uploadFile", 10),
+  uploader.single("uploadFile"),
   fileRoutes,
 );
 app.use("/user", userRoutes);

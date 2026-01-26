@@ -26,8 +26,6 @@ router.post("/register", async (req, res, next) => {
     name: `root-${email}`,
     user: null,
     parentDir: null,
-    files: [],
-    directories: [],
   });
 
   // create the user with the root dir created

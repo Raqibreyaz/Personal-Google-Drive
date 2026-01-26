@@ -6,23 +6,27 @@ export const deleteDirRecursively = async (
   directoryCollection,
   filesCollection,
 ) => {
-  // find the directory from dirDB
-  const dir = await directoryCollection.findOne({ _id: currDirId });
-  if (!dir) return;
+  // get all the sub-directories of current directory
+  const directories = await directoryCollection.find(
+    { parentDir: currDirId },
+    { projection: { _id: 1 } },
+  ).toArray();
+  // get all the files of the current directory
+  const files = await filesCollection
+    .find({ parentDir: currDirId }, { projection: { extname: 1 } })
+    .toArray();
 
   // remove all the sub-directories and their contents recursively
-  for (const dirId of dir.directories)
+  for (const { _id: dirId } of directories)
     await deleteDirRecursively(dirId, directoryCollection, filesCollection);
 
-  // removing all the files now
-  for (const fileId of dir.files) {
-    const file = await filesCollection.findOne({ _id: fileId });
-    await fs.rm(path.join(process.cwd(), "storage", fileId + file.extname));
-    const deleteRes = await filesCollection.deleteOne({ _id: fileId });
-    console.log(deleteRes);
+  // removing all the files from storage
+  for (const { _id: fileId, extname } of files) {
+    await fs.rm(path.join(process.cwd(), "storage", fileId + extname));
   }
+  // remove all the files from DB where parent is 'dir'
+  await filesCollection.deleteMany({ parentDir: currDirId });
 
   // remove the curr-dir from directoryCollection now
-  const deleteRes = await directoryCollection.deleteOne({ _id: currDirId });
-  console.log(deleteRes);
+  await directoryCollection.deleteOne({ _id: currDirId });
 };
