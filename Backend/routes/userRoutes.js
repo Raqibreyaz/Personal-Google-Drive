@@ -1,6 +1,7 @@
 import express from "express";
 import ApiError from "../utils/apiError.js";
 import checkAuthentication from "../middlewares/checkAuthentication.js";
+import { ObjectId } from "mongodb";
 
 const router = express.Router();
 
@@ -21,26 +22,25 @@ router.post("/register", async (req, res, next) => {
       message: "a user with this email already exists",
     });
 
+  const storageDirId = new ObjectId();
+  const userId = new ObjectId();
+
   // create user's root dir with user as null(currently)
-  const createdDir = await directoryCollection.insertOne({
+  await directoryCollection.insertOne({
+    _id: storageDirId,
     name: `root-${email}`,
-    user: null,
+    user: userId,
     parentDir: null,
   });
 
   // create the user with the root dir created
   const createdUser = await userCollection.insertOne({
+    _id: userId,
     name,
     password,
     email,
-    storageDir: createdDir.insertedId,
+    storageDir: storageDirId,
   });
-
-  // now update the root dir with the user's id
-  await directoryCollection.updateOne(
-    { _id: createdDir.insertedId },
-    { $set: { user: createdUser.insertedId } },
-  );
 
   res
     .status(200)
