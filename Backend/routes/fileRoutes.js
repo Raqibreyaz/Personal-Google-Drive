@@ -1,25 +1,30 @@
 import express from "express";
+import { ObjectId } from "mongodb";
 import fs from "fs/promises";
 import path from "node:path";
 import { writeFile } from "node:fs/promises";
-import filesDB from "../filesDB.json" with { type: "json" };
-import dirsDB from "../dirsDB.json" with { type: "json" };
+import filesCollection from "../filesCollection.json" with { type: "json" };
+import directoryCollection from "../directoryCollection.json" with { type: "json" };
 import ApiError from "../utils/apiError.js";
-import validateId from "../middlewares/validateIdMiddleware.js";
+// import validateId from "../middlewares/validateIdMiddleware.js";
 
 const router = express.Router();
 
-router.param("fileId", validateId);
+// router.param("fileId", validateId);
 
 // serving file contents
-router.get("/:fileId", (req, res, next) => {
-  const fileId = req.params.fileId;
-  const file = filesDB.find((file) => file.id === fileId);
+router.get("/:fileId", async (req, res, next) => {
+  const db = req.db;
   const user = req.user;
+  const fileId = req.params.fileId;
+  const directoryCollection = db.collection("directories");
+  const filesCollection = db.collection("files");
 
-  // find the parentDir in user's dirsDB
+  const file = await filesCollection.findOne({ _id: fileId });
+
+  // find the parentDir in user's directoryCollection
   const parentDir = file
-    ? dirsDB.find((dir) => dir.user === user.id && file.parentDir === dir.id)
+    ? directoryCollection.findOne({ user: user._id, _id: file.parentDir })
     : null;
 
   if (!parentDir || !file) return next(new ApiError(404, "File not found!"));
@@ -40,13 +45,22 @@ router.get("/:fileId", (req, res, next) => {
 
 // file upload
 router.post("/", async (req, res, next) => {
-  let parentDirId = req.body.parentDirId;
+  const db = req.db;
   const user = req.user;
+  let parentDirId = req.body.parentDirId;
+  const filesCollection = db.collection("files");
+  const directoryCollection = db.collection("directories");
 
   // get the parentDir or assign the root directory
   const parentDir = parentDirId
-    ? dirsDB.find((dir) => dir.user === user.id && dir.id === parentDirId)
-    : dirsDB.find((dir) => dir.user === user.id && dir.parentDir === null);
+    ? directoryCollection.findOne({
+        user: user._id,
+        _id: new ObjectId(parentDirId),
+      })
+    : directoryCollection.findOne({
+        user: user._id,
+        parentDir: null,
+      });
 
   if (!parentDir)
     throw new ApiError(404, "Given Parent Directory doesn't exist!");
@@ -58,29 +72,19 @@ router.post("/", async (req, res, next) => {
     const fileExt = path.extname(file.filename);
 
     // add entry in parent's files list
-    parentDir.files.push(fileId);
+    await directoryCollection.updateOne(
+      { _id: parentDirId },
+      { $push: { files: fileId } },
+    );
 
-    // add entry in filesDB
-    filesDB.push({
-      id: fileId,
+    // add entry in filesCollection
+    await filesCollection.insertOne({
       name: file.originalname,
       size: file.size,
       parentDir: parentDirId,
       extname: fileExt,
     });
   }
-
-  // update the filesDB file
-  await writeFile(
-    path.join(process.cwd(), "filesDB.json"),
-    JSON.stringify(filesDB),
-  );
-
-  // update the dirsDB file
-  await writeFile(
-    path.join(process.cwd(), "dirsDB.json"),
-    JSON.stringify(dirsDB),
-  );
 
   res.status(201).json({ message: "Got the File!" });
 });
@@ -92,13 +96,15 @@ router.patch("/:fileId", async (req, res, next) => {
 
   const parentPath = path.join(process.cwd(), "storage");
   const fileId = req.params.fileId;
-  const file = filesDB.find((file) => file.id === fileId);
+  const file = filesCollection.find((file) => file.id === fileId);
   const old_ext = file.extname;
   const user = req.user;
 
-  // find the parentDir in user's dirsDB
+  // find the parentDir in user's directoryCollection
   const parentDir = file
-    ? dirsDB.find((dir) => dir.user === user.id && file.parentDir === dir.id)
+    ? directoryCollection.find(
+        (dir) => dir.user === user.id && file.parentDir === dir.id,
+      )
     : null;
 
   if (!parentDir || !file) return next(new ApiError(404, "File not found!"));
@@ -114,10 +120,10 @@ router.patch("/:fileId", async (req, res, next) => {
       path.join(parentPath, file.id + file.extname),
     );
 
-  // commit the changes to filesDB
+  // commit the changes to filesCollection
   await writeFile(
-    path.join(process.cwd(), "filesDB.json"),
-    JSON.stringify(filesDB),
+    path.join(process.cwd(), "filesCollection.json"),
+    JSON.stringify(filesCollection),
   );
 
   res.status(200).json({ message: "File Renamed!" });
@@ -126,12 +132,14 @@ router.patch("/:fileId", async (req, res, next) => {
 // file deletion
 router.delete("/:fileId", async (req, res, next) => {
   const fileId = req.params.fileId;
-  const file = filesDB.find((file) => file.id === fileId);
+  const file = filesCollection.find((file) => file.id === fileId);
   const user = req.user;
 
-  // find the parentDir in user's dirsDB
+  // find the parentDir in user's directoryCollection
   const parentDir = file
-    ? dirsDB.find((dir) => dir.user === user.id && file.parentDir === dir.id)
+    ? directoryCollection.find(
+        (dir) => dir.user === user.id && file.parentDir === dir.id,
+      )
     : null;
 
   if (!parentDir || !file) return next(new ApiError(404, "File not found!"));
@@ -139,23 +147,23 @@ router.delete("/:fileId", async (req, res, next) => {
   const fullpath = path.join(process.cwd(), "storage/", file.id + file.extname);
   await fs.rm(fullpath, { recursive: true, force: true });
 
-  // remove from filesDB array
-  const file_ind = filesDB.findIndex((file) => file.id === fileId);
-  filesDB.splice(file_ind, 1);
+  // remove from filesCollection array
+  const file_ind = filesCollection.findIndex((file) => file.id === fileId);
+  filesCollection.splice(file_ind, 1);
 
   // remove from parent directory's files list
   parentDir.files = parentDir.files.filter((fileId) => fileId !== file.id);
 
-  // update the filesDB file
+  // update the filesCollection file
   await writeFile(
-    path.join(process.cwd(), "filesDB.json"),
-    JSON.stringify(filesDB),
+    path.join(process.cwd(), "filesCollection.json"),
+    JSON.stringify(filesCollection),
   );
 
-  // update the dirsDB file
+  // update the directoryCollection file
   await writeFile(
-    path.join(process.cwd(), "dirsDB.json"),
-    JSON.stringify(dirsDB),
+    path.join(process.cwd(), "directoryCollection.json"),
+    JSON.stringify(directoryCollection),
   );
 
   res.status(200).json({ message: "File Deleted!" });

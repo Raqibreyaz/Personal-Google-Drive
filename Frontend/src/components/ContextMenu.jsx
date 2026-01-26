@@ -17,13 +17,13 @@ function ContextMenu({
         >
           <div
             className="context-menu-item"
-            onClick={() => openRenameModal("directory", item.id, item.name)}
+            onClick={() => openRenameModal("directory", item._id, item.name)}
           >
             Rename
           </div>
           <div
             className="context-menu-item"
-            onClick={() => handleDeleteDirectory(item.id)}
+            onClick={() => handleDeleteDirectory(item._id)}
           >
             Delete
           </div>
@@ -40,7 +40,7 @@ function ContextMenu({
           >
             <div
               className="context-menu-item"
-              onClick={() => handleCancelUpload(item.id)}
+              onClick={() => handleCancelUpload(item._id)}
             >
               Cancel
             </div>
@@ -56,20 +56,20 @@ function ContextMenu({
             <div
               className="context-menu-item"
               onClick={() =>
-                (window.location.href = `${BASE_URL}/file/${item.id}?action=download`)
+                (window.location.href = `${BASE_URL}/file/${item._id}?action=download`)
               }
             >
               Download
             </div>
             <div
               className="context-menu-item"
-              onClick={() => openRenameModal("file", item.id, item.name)}
+              onClick={() => openRenameModal("file", item._id, item.name)}
             >
               Rename
             </div>
             <div
               className="context-menu-item"
-              onClick={() => handleDeleteFile(item.id)}
+              onClick={() => handleDeleteFile(item._id)}
             >
               Delete
             </div>

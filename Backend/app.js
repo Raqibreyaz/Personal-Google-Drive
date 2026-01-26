@@ -32,6 +32,7 @@ app.use(
 );
 app.use(express.json());
 
+// add database access
 try {
   const db = await connectDB();
   app.use((req, res, next) => {

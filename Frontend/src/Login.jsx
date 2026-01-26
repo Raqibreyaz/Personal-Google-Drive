@@ -6,8 +6,8 @@ const Login = () => {
   const BASE_URL = "http://localhost:8080";
 
   const [formData, setFormData] = useState({
-    email: "anurag@gmail.com",
-    password: "abcd",
+    email: "raquib@gmail.com",
+    password: "12345",
   });
 
   // serverError will hold the error message from the server

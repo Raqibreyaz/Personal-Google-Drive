@@ -153,7 +153,7 @@ function DirectoryView() {
       return {
         file,
         name: file.name,
-        id: tempId,
+        _id: tempId,
         isUploading: false,
       };
     });
@@ -163,7 +163,7 @@ function DirectoryView() {
 
     // Initialize progress=0 for each
     newItems.forEach((item) => {
-      setProgressMap((prev) => ({ ...prev, [item.id]: 0 }));
+      setProgressMap((prev) => ({ ...prev, [item._id]: 0 }));
     });
 
     // Add them to the uploadQueue
@@ -200,7 +200,7 @@ function DirectoryView() {
     // Mark it as isUploading: true
     setFilesList((prev) =>
       prev.map((f) =>
-        f.id === currentItem.id ? { ...f, isUploading: true } : f,
+        f._id === currentItem._id ? { ...f, isUploading: true } : f,
       ),
     );
 
@@ -212,7 +212,7 @@ function DirectoryView() {
     xhr.upload.addEventListener("progress", (evt) => {
       if (evt.lengthComputable) {
         const progress = (evt.loaded / evt.total) * 100;
-        setProgressMap((prev) => ({ ...prev, [currentItem.id]: progress }));
+        setProgressMap((prev) => ({ ...prev, [currentItem._id]: progress }));
       }
     });
 
@@ -222,7 +222,7 @@ function DirectoryView() {
     });
 
     // If user cancels, we also remove from the queue
-    setUploadXhrMap((prev) => ({ ...prev, [currentItem.id]: xhr }));
+    setUploadXhrMap((prev) => ({ ...prev, [currentItem._id]: xhr }));
 
     // send the file with parentDirId
     const formData = new FormData();
@@ -242,10 +242,10 @@ function DirectoryView() {
       xhr.abort();
     }
     // Remove it from queue if it’s still there
-    setUploadQueue((prev) => prev.filter((item) => item.id !== tempId));
+    setUploadQueue((prev) => prev.filter((item) => item._id !== tempId));
 
     // Remove from the filesList
-    setFilesList((prev) => prev.filter((f) => f.id !== tempId));
+    setFilesList((prev) => prev.filter((f) => f._id !== tempId));
 
     // Remove from progressMap
     setProgressMap((prev) => {

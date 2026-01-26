@@ -44,17 +44,17 @@ function DirectoryItem({
     }
   }
 
-  const isUploadingItem = item.id.startsWith("temp-");
+  const isUploadingItem = item._id.startsWith("temp-");
 
   return (
     <div
       className="list-item hoverable-row"
       onClick={() =>
         !(activeContextMenu || isUploading)
-          ? handleRowClick(item.isDirectory ? "directory" : "file", item.id)
+          ? handleRowClick(item.isDirectory ? "directory" : "file", item._id)
           : null
       }
-      onContextMenu={(e) => handleContextMenu(e, item.id)}
+      onContextMenu={(e) => handleContextMenu(e, item._id)}
     >
       <div className="item-left-container">
         <div className="item-left">
@@ -69,7 +69,7 @@ function DirectoryItem({
         {/* Three dots for context menu */}
         <div
           className="context-menu-trigger"
-          onClick={(e) => handleContextMenu(e, item.id)}
+          onClick={(e) => handleContextMenu(e, item._id)}
         >
           <BsThreeDotsVertical />
         </div>
@@ -90,7 +90,7 @@ function DirectoryItem({
       )}
 
       {/* Context menu, if active */}
-      {activeContextMenu === item.id && (
+      {activeContextMenu === item._id && (
         <ContextMenu
           item={item}
           contextMenuPos={contextMenuPos}

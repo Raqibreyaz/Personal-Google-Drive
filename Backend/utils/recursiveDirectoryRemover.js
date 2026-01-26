@@ -1,26 +1,28 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-export const deleteDirRecursively = async (currDirId, dirsDB, filesDB) => {
+export const deleteDirRecursively = async (
+  currDirId,
+  directoryCollection,
+  filesCollection,
+) => {
   // find the directory from dirDB
-  const dir_ind = dirsDB.findIndex((dir) => dir.id === currDirId);
-  if (dir_ind === -1) return;
-
-  const dir = dirsDB[dir_ind];
+  const dir = await directoryCollection.findOne({ _id: currDirId });
+  if (!dir) return;
 
   // remove all the sub-directories and their contents recursively
   for (const dirId of dir.directories)
-    await deleteDirRecursively(dirId, dirsDB, filesDB);
+    await deleteDirRecursively(dirId, directoryCollection, filesCollection);
 
   // removing all the files now
   for (const fileId of dir.files) {
-    const fileIndex = filesDB.findIndex((file) => file.id === fileId);
-    await fs.rm(
-      path.join(process.cwd(), "storage", fileId + filesDB[fileIndex].extname),
-    );
-    filesDB.splice(fileIndex, 1);
+    const file = await filesCollection.findOne({ _id: fileId });
+    await fs.rm(path.join(process.cwd(), "storage", fileId + file.extname));
+    const deleteRes = await filesCollection.deleteOne({ _id: fileId });
+    console.log(deleteRes);
   }
 
-  // remove the curr-dir from dirsDB now
-  dirsDB.splice(dir_ind, 1);
+  // remove the curr-dir from directoryCollection now
+  const deleteRes = await directoryCollection.deleteOne({ _id: currDirId });
+  console.log(deleteRes);
 };

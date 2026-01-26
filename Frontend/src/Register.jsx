@@ -6,9 +6,9 @@ const Register = () => {
   const BASE_URL = "http://localhost:8080";
 
   const [formData, setFormData] = useState({
-    name: "Anurag Singh",
-    email: "anurag@gmail.com",
-    password: "abcd",
+    name: "Raquib",
+    email: "raquib@gmail.com",
+    password: "12345",
   });
 
   // serverError will hold the error message from the server
