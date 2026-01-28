@@ -1,5 +1,5 @@
 import express from "express";
-import { ObjectId } from "mongodb";
+import { ObjectId, Long } from "mongodb";
 import fs from "fs/promises";
 import path from "node:path";
 import ApiError from "../utils/apiError.js";
@@ -73,7 +73,7 @@ router.post("/", async (req, res, next) => {
   await filesCollection.insertOne({
     _id: new ObjectId(fileId),
     name: file.originalname,
-    size: file.size,
+    size: Long.fromNumber(file.size), //for handling large file sizes
     parentDir: parentDirId,
     extname: fileExt,
     user: user._id,

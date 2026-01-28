@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import connectDB from "./utils/db.js";
+import setupDB from "./utils/setup.js";
 import fileRoutes from "./routes/fileRoutes.js";
 import directoryRoutes from "./routes/directoryRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
@@ -21,7 +21,7 @@ app.use(express.json());
 
 // add database access
 try {
-  const db = await connectDB();
+  const db = await setupDB();
   app.use((req, res, next) => {
     req.db = db;
     next();
@@ -40,6 +40,7 @@ app.use(
 app.use("/user", userRoutes);
 
 app.use((err, req, res, next) => {
+  // console.log(err);
   res
     .status(err.statusCode || 500)
     .json({ message: err.message || "Something went wrong!" });
