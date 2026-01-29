@@ -1,7 +1,8 @@
 import express from "express";
+import { ObjectId } from "mongodb";
 import ApiError from "../utils/apiError.js";
 import checkAuthentication from "../middlewares/checkAuthentication.js";
-import { ObjectId } from "mongodb";
+import { client } from "../utils/db.js";
 
 const router = express.Router();
 
@@ -17,48 +18,58 @@ router.post("/register", async (req, res, next) => {
   // const userFound = usersDB.find((user) => user.email === email);
   const userFound = await userCollection.findOne({ email });
   if (userFound)
-    return res.status(409).json({
-      error: "User already exists",
-      message: "a user with this email already exists",
-    });
+    throw new ApiError(409, "a user with this email already exists");
 
   const storageDirId = new ObjectId();
   const userId = new ObjectId();
+  const session = client.startSession();
+  session.startTransaction();
 
-  // create user's root dir with user as null(currently)
-  await directoryCollection.insertOne({
-    _id: storageDirId,
-    name: `root-${email}`,
-    user: userId,
-    parentDir: null,
-  });
+  try {
+    // create user's root dir with user as null(currently)
+    await directoryCollection.insertOne(
+      {
+        _id: storageDirId,
+        name: `root-${email}`,
+        user: userId,
+        parentDir: null,
+      },
+      { session },
+    );
+    // {
+    //   throw new ApiError(500, "something went wrong!");
+    // }
+    // create the user with the root dir created
+    const createdUser = await userCollection.insertOne(
+      {
+        _id: userId,
+        name,
+        password,
+        email,
+        storageDir: storageDirId,
+      },
+      { session },
+    );
+    session.commitTransaction();
 
-  // create the user with the root dir created
-  const createdUser = await userCollection.insertOne({
-    _id: userId,
-    name,
-    password,
-    email,
-    storageDir: storageDirId,
-  });
-
-  res
-    .status(200)
-    .cookie("authToken", createdUser.insertedId, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-    })
-    .json({ message: "User registered!" });
+    res
+      .status(200)
+      .cookie("authToken", createdUser.insertedId, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+      })
+      .json({ message: "User registered!" });
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  }
 });
 
 router.post("/login", async (req, res, next) => {
   const { email, password } = req.body;
   if (!email || !password)
-    return res.status(400).json({
-      error: "Invalid Credentials",
-      message: "Email and Password are required!",
-    });
+    throw new ApiError(400, "Email and Password are required!");
 
   const db = req.db;
   const userCollection = db.collection("users");

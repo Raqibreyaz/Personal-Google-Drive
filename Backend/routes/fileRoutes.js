@@ -20,7 +20,7 @@ router.get("/:fileId", async (req, res, next) => {
     _id: new ObjectId(fileId),
     user: user._id,
   });
-  if (!file) return next(new ApiError(404, "File not found!"));
+  if (!file)throw new ApiError(404, "File not found!");
 
   const fullpath = path.join(process.cwd(), "storage/", fileId + file.extname);
 
@@ -32,7 +32,7 @@ router.get("/:fileId", async (req, res, next) => {
 
   res.sendFile(fullpath, (err) => {
     if (err && !res.headersSent)
-      return next(new ApiError(500, `File Sending failed: ${err.message}`));
+      throw new ApiError(500, `File Sending failed: ${err.message}`);
   });
 });
 
@@ -86,7 +86,7 @@ router.post("/", async (req, res, next) => {
 // file renaming
 router.patch("/:fileId", async (req, res, next) => {
   if (!req.body.newFilename)
-    return next(new ApiError(400, "new filename required!"));
+   throw new ApiError(400, "new filename required!");
 
   const db = req.db;
   const user = req.user;
@@ -102,7 +102,7 @@ router.patch("/:fileId", async (req, res, next) => {
   });
   const oldExt = file.extname;
 
-  if (!file) return next(new ApiError(404, "File not found!"));
+  if (!file) throw new ApiError(404, "File not found!");
 
   // renaming when extension differs
   if (oldExt != newExt)
@@ -131,7 +131,7 @@ router.delete("/:fileId", async (req, res, next) => {
     _id: new ObjectId(fileId),
     user: user._id,
   });
-  if (!file) return next(new ApiError(404, "File not found!"));
+  if (!file) throw new ApiError(404, "File not found!");
 
   // remove file from storage
   const fullpath = path.join(process.cwd(), "storage/", fileId + file.extname);

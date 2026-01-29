@@ -25,7 +25,7 @@ router.get("/{:dirId}", async (req, res, next) => {
       })
     : await directoryCollection.findOne({ user: user._id, parentDir: null });
 
-  if (!dir) return next(new ApiError(404, "Directory not found!"));
+  if (!dir) throw new ApiError(404, "Directory not found!");
 
   // get all files where parent is 'dir'
   const files = await filesCollection.find({ parentDir: dir._id }).toArray();
@@ -60,7 +60,7 @@ router.post("/:dirname", async (req, res, next) => {
     : await directoryCollection.findOne({ user: user._id, parentDir: null });
 
   if (!parentDir)
-    return next(new ApiError(404, "Given Parent directory doesn't exist!"));
+    throw new ApiError(404, "Given Parent directory doesn't exist!");
 
   parentDirId = parentDir._id;
 
@@ -76,8 +76,7 @@ router.post("/:dirname", async (req, res, next) => {
 
 // changing directory name
 router.patch("/:dirId", async (req, res, next) => {
-  if (!req.body.newDirname)
-    return next(new ApiError(400, "New Dirname required!"));
+  if (!req.body.newDirname) throw new ApiError(400, "New Dirname required!");
 
   const db = req.db;
   const user = req.user;
@@ -93,7 +92,7 @@ router.patch("/:dirId", async (req, res, next) => {
     },
     { $set: { name: newDirname } },
   );
-  if (!updateRes) return next(new ApiError(404, "Directory not found!"));
+  if (!updateRes) throw new ApiError(404, "Directory not found!");
 
   res.status(200).json({ message: "Directory name updated!" });
 });
@@ -110,7 +109,7 @@ router.delete("/:dirId", async (req, res, next) => {
     _id: new ObjectId(dirId),
     user: user._id,
   });
-  if (!currDir) return next(new ApiError(404, "Directory doesn't exist!"));
+  if (!currDir) throw new ApiError(404, "Directory doesn't exist!");
 
   // remove all the files and sub-dirs of sub-dir
   // remove all the files and sub directories of the directory

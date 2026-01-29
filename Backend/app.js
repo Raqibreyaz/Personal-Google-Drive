@@ -41,9 +41,10 @@ app.use("/user", userRoutes);
 
 app.use((err, req, res, next) => {
   // console.log(err);
+  if (err.code === 121) err.message = "Invalid Fields!";
   res
     .status(err.statusCode || 500)
-    .json({ message: err.message || "Something went wrong!" });
+    .json({ error: err.message || "Something went wrong!" });
 });
 
 app.listen(8080, () => console.log("server is running at port 8080"));
