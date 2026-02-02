@@ -1,15 +1,12 @@
-import { MongoClient } from "mongodb";
-
-export const client = new MongoClient("mongodb://localhost:27017/storageApp");
+import mongoose from "mongoose";
 
 export default async function connectDB() {
-  await client.connect();
-  console.log("Database connected!");
-  return client.db();
+  mongoose.connect("mongodb://raquib:raquib@localhost:27017/storageApp");
+  console.log("Database connection requested!");
 }
 
 process.on("SIGINT", async () => {
-  await client.close();
+  await mongoose.disconnect();
   console.log("Client Disconnected!");
   process.exit(0);
 });

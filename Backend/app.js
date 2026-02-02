@@ -1,14 +1,22 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import setupDB from "./utils/setup.js";
+import connectDB from "./utils/db.js";
+import checkAuthentication from "./middlewares/checkAuthentication.js";
+import uploader from "./middlewares/uploader.js";
 import fileRoutes from "./routes/fileRoutes.js";
 import directoryRoutes from "./routes/directoryRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
-import checkAuthentication from "./middlewares/checkAuthentication.js";
-import uploader from "./middlewares/uploader.js";
 
 const app = express();
+
+// add database access
+try {
+  await connectDB();
+} catch (error) {
+  console.log(error);
+  process.exit(1);
+}
 
 app.use(cookieParser());
 app.use(
@@ -18,17 +26,6 @@ app.use(
   }),
 );
 app.use(express.json());
-
-// add database access
-try {
-  const db = await setupDB();
-  app.use((req, res, next) => {
-    req.db = db;
-    next();
-  });
-} catch (error) {
-  process.exit(1);
-}
 
 app.use("/directory", checkAuthentication, directoryRoutes);
 app.use(
@@ -40,7 +37,7 @@ app.use(
 app.use("/user", userRoutes);
 
 app.use((err, req, res, next) => {
-  // console.log(err);
+  console.log(err);
   if (err.code === 121) err.message = "Invalid Fields!";
   res
     .status(err.statusCode || 500)
