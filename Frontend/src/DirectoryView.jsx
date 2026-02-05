@@ -67,7 +67,7 @@ function DirectoryView() {
       const response = await fetch(`${BASE_URL}/directory/${dirId || ""}`, {
         credentials: "include",
       });
-
+      console.log(response);
       if (response.status === 400) {
         navigate("/login");
         return;

@@ -40,13 +40,25 @@ export const registerUser = async (req, res, next) => {
     );
     session.commitTransaction();
 
+    // adding the current time of registering in the 'token'
+    const expiryAgeInSec = 10;
+    const token = {
+      id: userId.toString(),
+      expiry: Date.now() * 1000 + expiryAgeInSec,
+    };
+
     res
       .status(200)
-      .cookie("authToken", userId, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-      })
+      .cookie(
+        "authToken",
+        Buffer.from(JSON.stringify(token)).toString("base64url"),
+        {
+          httpOnly: true,
+          secure: true,
+          sameSite: "none",
+          maxAge: expiryAgeInSec * 1000,
+        },
+      )
       .json({ message: "User registered!" });
   } catch (error) {
     await session.abortTransaction();
@@ -66,14 +78,25 @@ export const loginUser = async (req, res, next) => {
       message: "Either user not exists or wrong password provided!",
     });
 
+  // adding the current time of login in the 'token'
+  const expiryAgeInSec = 10;
+  const token = {
+    id: user._id.toString(),
+    expiry: Math.round(Date.now() / 1000) + expiryAgeInSec,
+  };
+
   res
     .status(200)
-    .cookie("authToken", user._id, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: 86400 * 1000,
-    })
+    .cookie(
+      "authToken",
+      Buffer.from(JSON.stringify(token)).toString("base64url"),
+      {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        maxAge: expiryAgeInSec * 1000,
+      },
+    )
     .json({ message: "User logged in!" });
 };
 
