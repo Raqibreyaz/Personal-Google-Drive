@@ -1,4 +1,5 @@
 import { ObjectId } from "mongodb";
+import mongoose from "mongoose";
 import ApiError from "../utils/apiError.js";
 import User from "../models/userModel.js";
 import Directory from "../models/directoryModel.js";
@@ -8,14 +9,11 @@ export const registerUser = async (req, res, next) => {
   if (!name || !password || !email)
     throw new ApiError(400, "Name,Password and Email all are Required!");
 
-  const userFound = await User.findOne({ email });
-  if (userFound)
-    throw new ApiError(409, "a user with this email already exists");
-
   const storageDirId = new ObjectId();
   const userId = new ObjectId();
-  // const session = client.startSession();
-  // session.startTransaction();
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
   try {
     // create user's root dir with user as null(currently)
@@ -26,11 +24,11 @@ export const registerUser = async (req, res, next) => {
         user: userId,
         parentDir: null,
       },
-      // { session },
+      { session },
     );
 
     // create the user with the root dir created
-    const createdUser = await User.insertOne(
+    await User.insertOne(
       {
         _id: userId,
         name,
@@ -38,9 +36,9 @@ export const registerUser = async (req, res, next) => {
         email,
         storageDir: storageDirId,
       },
-      // { session },
+      { session },
     );
-    // session.commitTransaction();
+    session.commitTransaction();
 
     res
       .status(200)
@@ -51,7 +49,7 @@ export const registerUser = async (req, res, next) => {
       })
       .json({ message: "User registered!" });
   } catch (error) {
-    // await session.abortTransaction();
+    await session.abortTransaction();
     throw error;
   }
 };

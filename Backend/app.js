@@ -39,6 +39,10 @@ app.use("/user", userRoutes);
 app.use((err, req, res, next) => {
   console.log(err);
   if (err.code === 121) err.message = "Invalid Fields!";
+  else if (err.code === 11000) {
+    const field = Object.keys(err.keyValue)[0];
+    err.message = `A user with this ${field} already exists!`;
+  }
   res
     .status(err.statusCode || 500)
     .json({ error: err.message || "Something went wrong!" });
