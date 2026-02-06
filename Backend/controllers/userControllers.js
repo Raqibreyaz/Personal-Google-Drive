@@ -1,5 +1,6 @@
 import { ObjectId } from "mongodb";
 import mongoose from "mongoose";
+import crypto from "node:crypto";
 import ApiError from "../utils/apiError.js";
 import User from "../models/userModel.js";
 import Directory from "../models/directoryModel.js";
@@ -41,24 +42,28 @@ export const registerUser = async (req, res, next) => {
     session.commitTransaction();
 
     // adding the current time of registering in the 'token'
-    const expiryAgeInSec = 10;
-    const token = {
-      id: userId.toString(),
-      expiry: Date.now() * 1000 + expiryAgeInSec,
-    };
+    const expiryAgeInSec = 86400;
+
+    const { secretKey } = req;
+    const payload = JSON.stringify({
+      id: userId,
+      expiry: Math.round(Date.now() / 1000) + expiryAgeInSec,
+    });
+
+    const token = `${payload}.${crypto
+      .createHash("sha256")
+      .update(secretKey)
+      .update(payload)
+      .digest("hex")}`;
 
     res
       .status(200)
-      .cookie(
-        "authToken",
-        Buffer.from(JSON.stringify(token)).toString("base64url"),
-        {
-          httpOnly: true,
-          secure: true,
-          sameSite: "none",
-          maxAge: expiryAgeInSec * 1000,
-        },
-      )
+      .cookie("authToken", Buffer.from(token).toString("base64url"), {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        maxAge: expiryAgeInSec * 1000,
+      })
       .json({ message: "User registered!" });
   } catch (error) {
     await session.abortTransaction();
@@ -79,24 +84,29 @@ export const loginUser = async (req, res, next) => {
     });
 
   // adding the current time of login in the 'token'
-  const expiryAgeInSec = 10;
-  const token = {
-    id: user._id.toString(),
+  const expiryAgeInSec = 86400;
+  const { secretKey } = req;
+  const userId = user._id.toString();
+
+  const payload = JSON.stringify({
+    id: userId,
     expiry: Math.round(Date.now() / 1000) + expiryAgeInSec,
-  };
+  });
+
+  const token = `${payload}.${crypto
+    .createHash("sha256")
+    .update(secretKey)
+    .update(payload)
+    .digest("hex")}`;
 
   res
     .status(200)
-    .cookie(
-      "authToken",
-      Buffer.from(JSON.stringify(token)).toString("base64url"),
-      {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: expiryAgeInSec * 1000,
-      },
-    )
+    .cookie("authToken", Buffer.from(token).toString("base64url"), {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      maxAge: expiryAgeInSec * 1000,
+    })
     .json({ message: "User logged in!" });
 };
 
