@@ -18,7 +18,7 @@ try {
   process.exit(1);
 }
 
-app.use(cookieParser());
+app.use(cookieParser("my-super-secret-key"));
 app.use(
   cors({
     origin: ["http://localhost:5173"],
@@ -26,10 +26,6 @@ app.use(
   }),
 );
 app.use(express.json());
-app.use((req, res, next) => {
-  req.secretKey = "my-super-secret-key";
-  next();
-});
 app.use("/directory", checkAuthentication, directoryRoutes);
 app.use(
   "/file",

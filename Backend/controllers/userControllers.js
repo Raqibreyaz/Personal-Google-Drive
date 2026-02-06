@@ -43,25 +43,18 @@ export const registerUser = async (req, res, next) => {
 
     // adding the current time of registering in the 'token'
     const expiryAgeInSec = 86400;
-
-    const { secretKey } = req;
     const payload = JSON.stringify({
       id: userId,
       expiry: Math.round(Date.now() / 1000) + expiryAgeInSec,
     });
 
-    const token = `${payload}.${crypto
-      .createHash("sha256")
-      .update(secretKey)
-      .update(payload)
-      .digest("hex")}`;
-
     res
       .status(200)
-      .cookie("authToken", Buffer.from(token).toString("base64url"), {
+      .cookie("authToken", payload, {
         httpOnly: true,
         secure: true,
         sameSite: "none",
+        signed: true,
         maxAge: expiryAgeInSec * 1000,
       })
       .json({ message: "User registered!" });
@@ -85,7 +78,6 @@ export const loginUser = async (req, res, next) => {
 
   // adding the current time of login in the 'token'
   const expiryAgeInSec = 86400;
-  const { secretKey } = req;
   const userId = user._id.toString();
 
   const payload = JSON.stringify({
@@ -93,16 +85,11 @@ export const loginUser = async (req, res, next) => {
     expiry: Math.round(Date.now() / 1000) + expiryAgeInSec,
   });
 
-  const token = `${payload}.${crypto
-    .createHash("sha256")
-    .update(secretKey)
-    .update(payload)
-    .digest("hex")}`;
-
   res
     .status(200)
-    .cookie("authToken", Buffer.from(token).toString("base64url"), {
+    .cookie("authToken", payload, {
       httpOnly: true,
+      signed: true,
       secure: true,
       sameSite: "none",
       maxAge: expiryAgeInSec * 1000,
