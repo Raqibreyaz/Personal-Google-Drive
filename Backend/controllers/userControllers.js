@@ -1,13 +1,9 @@
 import { ObjectId } from "mongodb";
 import mongoose from "mongoose";
-import crypto from "node:crypto";
+import bcrypt from "bcrypt";
 import ApiError from "../utils/apiError.js";
 import User from "../models/userModel.js";
 import Directory from "../models/directoryModel.js";
-import {
-  verifyPassword,
-  hashPassword, 
-} from "../utils/hashAndVerifyPassword.js";
 
 export const registerUser = async (req, res, next) => {
   const { name, password, email } = req.body;
@@ -17,8 +13,7 @@ export const registerUser = async (req, res, next) => {
   const storageDirId = new ObjectId();
   const userId = new ObjectId();
 
-  const { salt: passwordSalt, hash: hashedPassword } =
-    await hashPassword(password);
+  const hashedPassword = await bcrypt.hash(password, 16);
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -40,7 +35,7 @@ export const registerUser = async (req, res, next) => {
       {
         _id: userId,
         name,
-        password: `${hashedPassword}.${passwordSalt}`,
+        password: hashedPassword,
         email,
         storageDir: storageDirId,
       },
@@ -78,9 +73,12 @@ export const loginUser = async (req, res, next) => {
 
   const user = await User.findOne({ email });
 
-  const [storedHash, storedSalt] = user?.password.split(".") || [];
+  // const [storedHash, storedSalt] = user?.password.split(".") || [];
+  const passwordMatches = user
+    ? await bcrypt.compare(password, user.password)
+    : null;
 
-  if (!user || !(await verifyPassword(password, storedHash, storedSalt)))
+  if (!user || !passwordMatches)
     return res.status(400).json({
       error: "Invalid Credentials",
       message: "Either user not exists or wrong password provided!",
