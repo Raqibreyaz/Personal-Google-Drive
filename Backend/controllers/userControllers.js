@@ -4,6 +4,10 @@ import crypto from "node:crypto";
 import ApiError from "../utils/apiError.js";
 import User from "../models/userModel.js";
 import Directory from "../models/directoryModel.js";
+import {
+  verifyPassword,
+  hashPassword, 
+} from "../utils/hashAndVerifyPassword.js";
 
 export const registerUser = async (req, res, next) => {
   const { name, password, email } = req.body;
@@ -12,6 +16,9 @@ export const registerUser = async (req, res, next) => {
 
   const storageDirId = new ObjectId();
   const userId = new ObjectId();
+
+  const { salt: passwordSalt, hash: hashedPassword } =
+    await hashPassword(password);
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -33,7 +40,7 @@ export const registerUser = async (req, res, next) => {
       {
         _id: userId,
         name,
-        password,
+        password: `${hashedPassword}.${passwordSalt}`,
         email,
         storageDir: storageDirId,
       },
@@ -70,7 +77,10 @@ export const loginUser = async (req, res, next) => {
     throw new ApiError(400, "Email and Password are required!");
 
   const user = await User.findOne({ email });
-  if (!user || user.password !== password)
+
+  const [storedHash, storedSalt] = user?.password.split(".") || [];
+
+  if (!user || !(await verifyPassword(password, storedHash, storedSalt)))
     return res.status(400).json({
       error: "Invalid Credentials",
       message: "Either user not exists or wrong password provided!",

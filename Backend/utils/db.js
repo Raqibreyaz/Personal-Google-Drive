@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
 export default async function connectDB() {
-  mongoose.connect("mongodb://raquib:raquib@localhost:27017/storageApp");
   console.log("Database connection requested!");
+  return mongoose.connect("mongodb://raquib:raquib@localhost:27017/storageApp");
 }
 
 process.on("SIGINT", async () => {
