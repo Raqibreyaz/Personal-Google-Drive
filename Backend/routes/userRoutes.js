@@ -5,6 +5,7 @@ import {
   loginUser,
   getUser,
   logoutUser,
+  logoutUserFromAllDevices,
 } from "../controllers/userControllers.js";
 
 const router = express.Router();
@@ -16,5 +17,7 @@ router.post("/register", registerUser);
 router.post("/login", loginUser);
 
 router.post("/logout", checkAuthentication, logoutUser);
+
+router.post("/logout/all", checkAuthentication, logoutUserFromAllDevices);
 
 export default router;

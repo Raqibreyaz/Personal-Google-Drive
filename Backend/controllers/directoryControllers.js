@@ -6,7 +6,7 @@ import File from '../models/fileModel.js'
 
 export const getDirectoryContents = async (req, res, next) => {
   const { dirId } = req.params;
-  const user = req.user;
+  const {user} = req.session
 
   // find the directory in user's dirsDB or assign user's root directory
   const dir = dirId
@@ -35,7 +35,7 @@ export const getDirectoryContents = async (req, res, next) => {
 };
 
 export const createDirectory = async (req, res, next) => {
-  const user = req.user;
+  const {user} = req.session
   const dirname = req.params.dirname;
   let parentDirId = req.body.parentDirId;
 
@@ -64,7 +64,7 @@ export const createDirectory = async (req, res, next) => {
 export const updateDirectoryName = async (req, res, next) => {
   if (!req.body.newDirname) throw new ApiError(400, "New Dirname required!");
 
-  const user = req.user;
+  const {user} = req.session
   const dirId = req.params.dirId;
   const newDirname = req.body.newDirname;
 
@@ -82,7 +82,7 @@ export const updateDirectoryName = async (req, res, next) => {
 };
 
 export const deleteDirectory = async (req, res, next) => {
-  const user = req.user;
+  const {user} = req.session
   const dirId = req.params.dirId;
 
   const currDir = await Directory.findOne({

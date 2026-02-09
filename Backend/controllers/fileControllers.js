@@ -6,7 +6,7 @@ import File from "../models/fileModel.js";
 import Directory from "../models/directoryModel.js";
 
 export const getFileContents = async (req, res, next) => {
-  const user = req.user;
+  const {user} = req.session
   const fileId = req.params.fileId;
 
   const file = await File.findOne({
@@ -30,7 +30,7 @@ export const getFileContents = async (req, res, next) => {
 };
 
 export const saveFile = async (req, res, next) => {
-  const user = req.user;
+  const {user} = req.session
   let parentDirId = req.body.parentDirId;
 
   // get the parentDir or assign the root directory
@@ -68,7 +68,7 @@ export const saveFile = async (req, res, next) => {
 export const renameFile = async (req, res, next) => {
   if (!req.body.newFilename) throw new ApiError(400, "new filename required!");
 
-  const user = req.user;
+  const {user} = req.session
   const fileId = req.params.fileId;
   const newFilename = req.body.newFilename;
   const newExt = path.extname(newFilename);
@@ -96,7 +96,7 @@ export const renameFile = async (req, res, next) => {
 };
 
 export const deleteFile = async (req, res, next) => {
-  const user = req.user;
+  const {user} = req.session
   const fileId = req.params.fileId;
 
   const file = await File.findOne({
