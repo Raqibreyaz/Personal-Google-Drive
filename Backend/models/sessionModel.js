@@ -10,7 +10,7 @@ const sessionSchema = new mongoose.Schema(
     expiresAt: {
       type: Date,
       default: function () {
-        return new Date((Date.now / 1000 + 3600) * 1000); //1hr by default
+        return new Date((Date.now() / 1000 + 3600) * 1000); //1hr by default
       },
     },
   },

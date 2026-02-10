@@ -4,107 +4,203 @@ import "./Auth.css";
 
 const Login = () => {
   const BASE_URL = "http://localhost:8080";
-
-  const [formData, setFormData] = useState({
-    email: "raquib@gmail.com",
-    password: "12345",
-  });
-
-  // serverError will hold the error message from the server
-  const [serverError, setServerError] = useState("");
-
   const navigate = useNavigate();
 
+  // FORM STATE
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  const [otp, setOtp] = useState("");
+
+  // FLOW STATE
+  const [otpSent, setOtpSent] = useState(false);
+  const [tempToken, setTempToken] = useState("");
+
+  // UI STATE
+  const [loading, setLoading] = useState(false);
+  const [serverError, setServerError] = useState("");
+
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    if (serverError) setServerError("");
 
-    // Clear the server error as soon as the user starts typing in either field
-    if (serverError) {
-      setServerError("");
-    }
-
-    setFormData((prevFormData) => ({
-      ...prevFormData,
-      [name]: value,
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // STEP 1: SEND OTP
+  const handleSendOtp = async () => {
+    setLoading(true);
+    setServerError("");
 
     try {
-      const response = await fetch(`${BASE_URL}/user/login`, {
+      const response = await fetch(`${BASE_URL}/auth/send-otp`, {
         method: "POST",
-        body: JSON.stringify(formData),
         headers: {
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
         credentials: "include",
       });
 
       const data = await response.json();
+
       if (data.error) {
-        // If there's an error, set the serverError message
         setServerError(data.error);
-      } else {
-        // On success, navigate to home or any other protected route
-        navigate("/");
+        return;
       }
-    } catch (error) {
-      console.error("Error:", error);
-      setServerError("Something went wrong. Please try again.");
+
+      setOtpSent(true);
+      setTempToken(data.tempToken);
+    } catch (err) {
+      console.error(err);
+      setServerError("Failed to send OTP. Try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // If there's an error, we'll add "input-error" class to both fields
+  // STEP 2: VERIFY OTP + LOGIN
+  const handleVerifyOtpAndLogin = async () => {
+    setLoading(true);
+    setServerError("");
+
+    try {
+      let response = await fetch(`${BASE_URL}/auth/verify-otp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          otp,
+          email: formData.email,
+        }),
+        credentials: "include",
+      });
+
+      let data = await response.json();
+
+      if (data.error) {
+        setServerError(data.error);
+        return;
+      }
+
+      response = await fetch(`${BASE_URL}/user/login`, {
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+        method: "POST",
+        credentials: "include",
+      });
+      data = await response.json();
+
+      if (data.error) {
+        setServerError(data.error);
+        return;
+      }
+
+      // OTP VERIFIED → LOGIN COMPLETE
+      navigate("/");
+    } catch (err) {
+      console.error(err);
+      setServerError("OTP verification failed.", err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (!otpSent) {
+      handleSendOtp();
+    } else {
+      handleVerifyOtpAndLogin();
+    }
+  };
+
   const hasError = Boolean(serverError);
 
   return (
     <div className="container">
-      <h2 className="heading">Login</h2>
+      <h2 className="heading">Login with OTP</h2>
+
       <form className="form" onSubmit={handleSubmit}>
-        {/* Email */}
+        {/* EMAIL */}
         <div className="form-group">
-          <label htmlFor="email" className="label">
-            Email
-          </label>
+          <label className="label">Email</label>
           <input
             className={`input ${hasError ? "input-error" : ""}`}
             type="email"
-            id="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
-            placeholder="Enter your email"
             required
+            disabled={otpSent} // Lock email after OTP sent
           />
         </div>
 
-        {/* Password */}
+        {/* PASSWORD */}
         <div className="form-group">
-          <label htmlFor="password" className="label">
-            Password
-          </label>
+          <label className="label">Password</label>
           <input
             className={`input ${hasError ? "input-error" : ""}`}
             type="password"
-            id="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
-            placeholder="Enter your password"
             required
+            disabled={otpSent} // Lock password after OTP sent
           />
-          {/* Absolutely-positioned error message below password field */}
-          {serverError && <span className="error-msg">{serverError}</span>}
         </div>
 
-        <button type="submit" className="submit-button">
-          Login
+        {/* OTP FIELD APPEARS AFTER OTP SENT */}
+        {otpSent && (
+          <div className="form-group">
+            <label className="label">Enter OTP</label>
+            <input
+              className={`input ${hasError ? "input-error" : ""}`}
+              type="text"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              placeholder="6-digit OTP"
+              required
+            />
+          </div>
+        )}
+
+        {/* ERROR MESSAGE */}
+        {serverError && <p className="error-msg">{serverError}</p>}
+
+        {/* BUTTON */}
+        <button type="submit" className="submit-button" disabled={loading}>
+          {!otpSent
+            ? loading
+              ? "Sending OTP..."
+              : "Send OTP"
+            : loading
+              ? "Verifying..."
+              : "Verify & Login"}
         </button>
+
+        {/* OPTIONAL UX: RESEND OTP */}
+        {otpSent && (
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={handleSendOtp}
+            disabled={loading}
+          >
+            Resend OTP
+          </button>
+        )}
       </form>
 
-      {/* Link to the register page */}
       <p className="link-text">
         Don't have an account? <Link to="/register">Register</Link>
       </p>

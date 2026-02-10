@@ -7,6 +7,7 @@ import uploader from "./middlewares/uploader.js";
 import fileRoutes from "./routes/fileRoutes.js";
 import directoryRoutes from "./routes/directoryRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use(
   fileRoutes,
 );
 app.use("/user", userRoutes);
+app.use("/auth", authRoutes);
 
 app.use((err, req, res, next) => {
   console.log(err);

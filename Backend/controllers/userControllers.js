@@ -44,12 +44,12 @@ export const registerUser = async (req, res, next) => {
     const userSession = await Session.insertOne(
       {
         user: userId,
-        expiresAt: new Date((Date.now() / 1000 + 10) * 1000),
+        expiresAt: new Date((Date.now() / 1000 + 86400) * 1000),
       },
       { session },
     );
 
-    session.commitTransaction();
+    await session.commitTransaction();
 
     createCookie(res, userId, userSession.id);
     res.status(200).json({ message: "User registered!" });
@@ -86,7 +86,7 @@ export const loginUser = async (req, res, next) => {
   // create a new session for the user
   const userSession = await Session.insertOne({
     user: user._id,
-    expiresAt: new Date((Date.now() / 1000 + 10) * 1000),
+    expiresAt: new Date((Date.now() / 1000 + 86400) * 1000),
   });
 
   createCookie(res, user.id, userSession.id);

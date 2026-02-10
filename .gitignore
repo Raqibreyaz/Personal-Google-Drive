@@ -25,3 +25,4 @@ dist-ssr
 storage
 *DB.json
 *logs.txt
+.env

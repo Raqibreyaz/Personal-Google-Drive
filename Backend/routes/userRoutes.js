@@ -1,11 +1,11 @@
 import express from "express";
 import checkAuthentication from "../middlewares/checkAuthentication.js";
 import {
-  registerUser,
   loginUser,
   getUser,
   logoutUser,
   logoutUserFromAllDevices,
+  registerUser,
 } from "../controllers/userControllers.js";
 
 const router = express.Router();
