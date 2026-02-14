@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "./Auth.css";
+import GoogleLoginButton from "./components/GoogleLoginButton";
 
 const Register = () => {
   const BASE_URL = "http://localhost:8080";
@@ -124,6 +125,7 @@ const Register = () => {
         method: "POST",
         body: JSON.stringify(formData),
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
       });
       const data = await response.json();
 
@@ -256,6 +258,10 @@ const Register = () => {
       <p className="link-text">
         Already have an account? <Link to="/login">Login</Link>
       </p>
+      <div className="center-align">
+        <span style={{ display: "block" }}>Or</span>
+        <GoogleLoginButton />
+      </div>
     </div>
   );
 };

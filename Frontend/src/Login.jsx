@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "./Auth.css";
+import GoogleLoginButton from "./components/GoogleLoginButton";
 
 const Login = () => {
   const BASE_URL = "http://localhost:8080";
@@ -16,7 +17,6 @@ const Login = () => {
 
   // FLOW STATE
   const [otpSent, setOtpSent] = useState(false);
-  const [tempToken, setTempToken] = useState("");
 
   // UI STATE
   const [loading, setLoading] = useState(false);
@@ -37,7 +37,7 @@ const Login = () => {
     setServerError("");
 
     try {
-      const response = await fetch(`${BASE_URL}/auth/send-otp`, {
+      const response = await fetch(`${BASE_URL}/auth/login/send-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -52,14 +52,14 @@ const Login = () => {
       const data = await response.json();
 
       if (data.error) {
+        console.log(data.error);
         setServerError(data.error);
         return;
       }
 
       setOtpSent(true);
-      setTempToken(data.tempToken);
     } catch (err) {
-      console.error(err);
+      console.log(err);
       setServerError("Failed to send OTP. Try again.");
     } finally {
       setLoading(false);
@@ -204,6 +204,10 @@ const Login = () => {
       <p className="link-text">
         Don't have an account? <Link to="/register">Register</Link>
       </p>
+      <div className="center-align">
+        <span style={{ display: "block" }}>Or</span>
+        <GoogleLoginButton />
+      </div>
     </div>
   );
 };

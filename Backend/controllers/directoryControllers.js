@@ -2,31 +2,30 @@ import { ObjectId } from "mongodb";
 import ApiError from "../utils/apiError.js";
 import { deleteDirRecursively } from "../utils/recursiveDirectoryRemover.js";
 import Directory from "../models/directoryModel.js";
-import File from '../models/fileModel.js'
+import File from "../models/fileModel.js";
 
 export const getDirectoryContents = async (req, res, next) => {
   const { dirId } = req.params;
-  const {user} = req.session
+  const { user } = req.session;
 
   // find the directory in user's dirsDB or assign user's root directory
   const dir = dirId
     ? await Directory.findOne({
         _id: new ObjectId(dirId),
         user: user._id,
-      })
-    : await Directory.findOne({ user: user._id, parentDir: null });
+      }).lean()
+    : await Directory.findOne({ user: user._id, parentDir: null }).lean();
 
   if (!dir) throw new ApiError(404, "Directory not found!");
 
   // get all files where parent is 'dir'
-  const files = await File.find({ parentDir: dir._id });
+  const files = await File.find({ parentDir: dir._id }).lean();
 
   // get all directories in 'dir'(of user only)
-  const directories = await Directory
-    .find({
-      user: user._id,
-      parentDir: dir._id,
-    })
+  const directories = await Directory.find({
+    user: user._id,
+    parentDir: dir._id,
+  }).lean();
 
   console.log(files);
   console.log(directories);
@@ -35,7 +34,7 @@ export const getDirectoryContents = async (req, res, next) => {
 };
 
 export const createDirectory = async (req, res, next) => {
-  const {user} = req.session
+  const { user } = req.session;
   const dirname = req.params.dirname;
   let parentDirId = req.body.parentDirId;
 
@@ -64,7 +63,7 @@ export const createDirectory = async (req, res, next) => {
 export const updateDirectoryName = async (req, res, next) => {
   if (!req.body.newDirname) throw new ApiError(400, "New Dirname required!");
 
-  const {user} = req.session
+  const { user } = req.session;
   const dirId = req.params.dirId;
   const newDirname = req.body.newDirname;
 
@@ -82,7 +81,7 @@ export const updateDirectoryName = async (req, res, next) => {
 };
 
 export const deleteDirectory = async (req, res, next) => {
-  const {user} = req.session
+  const { user } = req.session;
   const dirId = req.params.dirId;
 
   const currDir = await Directory.findOne({

@@ -13,6 +13,7 @@ function DirectoryView() {
 
   // Displayed directory name
   const [directoryName, setDirectoryName] = useState("My Drive");
+  console.log(directoryName);
 
   // Lists of items
   const [directoriesList, setDirectoriesList] = useState([]);

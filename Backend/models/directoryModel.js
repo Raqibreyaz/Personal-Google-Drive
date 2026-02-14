@@ -18,7 +18,7 @@ const directorySchema = new mongoose.Schema(
       default: null,
     },
   },
-  { strict: "throw" },
+  { strict: "throw", timestamps: true },
 );
 
 export default mongoose.model("directory", directorySchema);

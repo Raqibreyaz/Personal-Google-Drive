@@ -1,77 +1,30 @@
-import { ObjectId } from "mongodb";
-import mongoose from "mongoose";
+import User from "../models/userModel.js";
+import Session from "../models/sessionModel.js";
 import ApiError from "../utils/apiError.js";
 import createCookie from "../utils/createCookie.js";
-import User from "../models/userModel.js";
-import Directory from "../models/directoryModel.js";
-import Session from "../models/sessionModel.js";
+import verifyIdToken from "../utils/verifyIdToken.js";
+import createUserWithEssentials from "../utils/createUserWithEssentials.js";
 
 export const registerUser = async (req, res, next) => {
   const { name, password, email } = req.body;
   if (!name || !password || !email)
     throw new ApiError(400, "Name,Password and Email all are Required!");
 
-  const storageDirId = new ObjectId();
-  const userId = new ObjectId();
+  const { userId, sessionId } = await createUserWithEssentials({
+    name,
+    email,
+    password,
+    authProvider: "local",
+  });
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    // create user's root dir with user as null(currently)
-    await Directory.insertOne(
-      {
-        _id: storageDirId,
-        name: `root-${email}`,
-        user: userId,
-        parentDir: null,
-      },
-      { session },
-    );
-
-    // create the user with the root dir created
-    await User.insertOne(
-      {
-        _id: userId,
-        name,
-        password,
-        email,
-        storageDir: storageDirId,
-      },
-      { session },
-    );
-
-    const userSession = await Session.insertOne(
-      {
-        user: userId,
-        expiresAt: new Date((Date.now() / 1000 + 86400) * 1000),
-      },
-      { session },
-    );
-
-    await session.commitTransaction();
-
-    createCookie(res, userId, userSession.id);
-    res.status(200).json({ message: "User registered!" });
-  } catch (error) {
-    await session.abortTransaction();
-    throw error;
-  }
+  createCookie(res, sessionId);
+  res.status(200).json({ message: "User registered!" });
 };
 
 export const loginUser = async (req, res, next) => {
-  const { email, password } = req.body;
-  if (!email || !password)
-    throw new ApiError(400, "Email and Password are required!");
-
-  const user = await User.findOne({ email });
-  const isPasswordValid = user && (await user.comparePassword(password));
-
-  if (!user || !isPasswordValid)
-    return res.status(400).json({
-      error: "Invalid Credentials",
-      message: "Either user not exists or wrong password provided!",
-    });
+  const { user } = req;
+  if (!user)
+    throw new ApiError(500, "Something went wrong while getting user!");
 
   // first check if user hasn't exhausted number of sessions limits
   const noOfSessions = await Session.countDocuments({ user: user._id });
@@ -89,7 +42,48 @@ export const loginUser = async (req, res, next) => {
     expiresAt: new Date((Date.now() / 1000 + 86400) * 1000),
   });
 
-  createCookie(res, user.id, userSession.id);
+  createCookie(res, userSession.id);
+  res.status(200).json({ message: "User logged in!" });
+};
+
+export const loginWithGoogle = async (req, res, next) => {
+  const { idToken } = req.body;
+  const userData = await verifyIdToken(idToken);
+  const userDoc = await User.findOne({ providerId: userData.sub });
+
+  // create the user with directory and session
+  if (!userDoc) {
+    const { userId, sessionId } = await createUserWithEssentials({
+      name: userData.name,
+      email: userData.email,
+      authProvider: "google",
+      password: null,
+      picture: userData.picture,
+      providerId: userData.sub,
+    });
+
+    createCookie(res, sessionId);
+  }
+
+  // when user exists then create a new session + limit the no of sessions
+  if (userDoc) {
+    // first check if user hasn't exhausted number of sessions limits
+    const noOfSessions = await Session.countDocuments({ user: userDoc._id });
+    if (noOfSessions >= 2)
+      await Session.findOneAndDelete(
+        { user: userDoc._id },
+        { sort: { expiresAt: 1 } },
+      );
+
+    // create a new session for the user
+    const userSession = await Session.insertOne({
+      user: userDoc._id,
+      expiresAt: new Date((Date.now() / 1000 + 86400) * 1000),
+    });
+
+    createCookie(res, userSession.id);
+  }
+
   res.status(200).json({ message: "User logged in!" });
 };
 
@@ -97,6 +91,7 @@ export const getUser = (req, res, next) => {
   res.status(200).json({
     name: req.session.user.name,
     email: req.session.user.email,
+    picture:req.session.user.picture
   });
 };
 

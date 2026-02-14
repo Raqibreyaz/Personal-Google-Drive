@@ -30,7 +30,7 @@ export default async function sendOtpService(email) {
   `;
 
   const info = await transporter.sendMail({
-    // from: "Storage App <email_id>",
+    from: "Storage App <email_id>",
     to: email,
     subject: "Storage App OTP",
     html,

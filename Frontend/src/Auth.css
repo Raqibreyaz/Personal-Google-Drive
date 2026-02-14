@@ -46,7 +46,7 @@
 
 /* Absolutely positioned error message */
 .error-msg {
-  position: absolute;
+  /* position: absolute; */
   top: 100%; /* just below the input */
   left: 0;
   color: red;
@@ -125,4 +125,17 @@
 .submit-button:disabled {
   background-color: #92a6bc;
   cursor: not-allowed;
+}
+
+.center-align {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+}
+
+.profile-img {
+  border-radius: 100%;
+  width: 2rem;
 }

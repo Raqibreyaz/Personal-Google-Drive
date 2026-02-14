@@ -1,15 +1,14 @@
 import mongoose from "mongoose";
 import connectDB from "./db.js";
 
-const client = mongoose.connection.getClient();
-
 export default async function setupDB() {
   await connectDB();
+  const client = mongoose.connection.getClient();
   const db = client.db();
 
   const usersSchema = {
     bsonType: "object",
-    required: ["_id", "name", "password", "email", "storageDir", "__v"],
+    required: ["_id", "name", "email", "storageDir"],
     properties: {
       _id: {
         bsonType: "objectId",
@@ -19,10 +18,19 @@ export default async function setupDB() {
         minLength: 3,
         description: "Directory name is required!",
       },
-      password: {
+      authProvider: {
         bsonType: "string",
+        enum: ["local", "google"],
+      },
+      providerId: {
+        bsonType: ["string", "null"],
+      },
+      picture: {
+        bsonType: ["string", "null"],
+      },
+      password: {
+        bsonType: ["string", "null"],
         minLength: 4,
-        description: "Password is required!",
       },
       email: {
         bsonType: "string",
@@ -33,6 +41,12 @@ export default async function setupDB() {
         bsonType: "objectId",
         description: "A storage directory must be assigned to the user",
       },
+      createdAt: {
+        bsonType: "date",
+      },
+      updatedAt: {
+        bsonType: "date",
+      },
       __v: {
         bsonType: "int",
       },
@@ -42,7 +56,7 @@ export default async function setupDB() {
 
   const filesSchema = {
     bsonType: "object",
-    required: ["_id", "name", "size", "parentDir", "extname", "user", "__v"],
+    required: ["_id", "name", "size", "parentDir", "extname", "user"],
     properties: {
       _id: {
         bsonType: "objectId",
@@ -53,7 +67,7 @@ export default async function setupDB() {
         description: "Filename required!",
       },
       size: {
-        bsonType: "long",
+        bsonType: "int",
         description: "File size required!",
       },
       parentDir: {
@@ -67,6 +81,12 @@ export default async function setupDB() {
         bsonType: "objectId",
         description: "Provide the user of the file!",
       },
+      createdAt: {
+        bsonType: "date",
+      },
+      updatedAt: {
+        bsonType: "date",
+      },
       __v: {
         bsonType: "int",
       },
@@ -76,7 +96,7 @@ export default async function setupDB() {
 
   const directorySchema = {
     bsonType: "object",
-    required: ["_id", "name", "user", "parentDir", "__v"],
+    required: ["_id", "name", "user", "parentDir"],
     properties: {
       _id: {
         bsonType: "objectId",
@@ -91,6 +111,12 @@ export default async function setupDB() {
       },
       parentDir: {
         bsonType: ["objectId", "null"],
+      },
+      createdAt: {
+        bsonType: "date",
+      },
+      updatedAt: {
+        bsonType: "date",
       },
       __v: {
         bsonType: "int",
