@@ -4,6 +4,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import DirectoryView from "./DirectoryView";
 import Register from "./Register";
 import Login from "./Login";
+import Callback from "./Callback";
 
 const router = createBrowserRouter([
   {
@@ -22,11 +23,16 @@ const router = createBrowserRouter([
     path: "/directory/:dirId",
     element: <DirectoryView />,
   },
+  {
+    path: "/callback",
+    element: <Callback />,
+  },
 ]);
 
 function App() {
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "<client_id>";
   return (
-    <GoogleOAuthProvider clientId="<client_id>">
+    <GoogleOAuthProvider clientId={clientId}>
       <RouterProvider router={router} />
     </GoogleOAuthProvider>
   );

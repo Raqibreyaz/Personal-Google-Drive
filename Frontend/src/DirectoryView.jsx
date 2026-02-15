@@ -7,7 +7,8 @@ import DirectoryList from "./components/DirectoryList";
 import "./DirectoryView.css";
 
 function DirectoryView() {
-  const BASE_URL = "http://localhost:8080";
+  const BACKEND_URI =
+    import.meta.env.VITE_BACKEND_URI || "http://localhost:8080";
   const { dirId } = useParams();
   const navigate = useNavigate();
 
@@ -65,7 +66,7 @@ function DirectoryView() {
   async function getDirectoryItems() {
     setErrorMessage(""); // clear any existing error
     try {
-      const response = await fetch(`${BASE_URL}/directory/${dirId || ""}`, {
+      const response = await fetch(`${BACKEND_URI}/directory/${dirId || ""}`, {
         credentials: "include",
       });
       console.log(response);
@@ -137,7 +138,7 @@ function DirectoryView() {
     if (type === "directory") {
       navigate(`/directory/${id}`);
     } else {
-      window.location.href = `${BASE_URL}/file/${id}`;
+      window.location.href = `${BACKEND_URI}/file/${id}`;
     }
   }
 
@@ -207,7 +208,7 @@ function DirectoryView() {
 
     // Start upload
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", `${BASE_URL}/file`, true);
+    xhr.open("POST", `${BACKEND_URI}/file`, true);
     xhr.withCredentials = true;
 
     xhr.upload.addEventListener("progress", (evt) => {
@@ -268,7 +269,7 @@ function DirectoryView() {
   async function handleDeleteFile(id) {
     setErrorMessage("");
     try {
-      const response = await fetch(`${BASE_URL}/file/${id}`, {
+      const response = await fetch(`${BACKEND_URI}/file/${id}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -282,7 +283,7 @@ function DirectoryView() {
   async function handleDeleteDirectory(id) {
     setErrorMessage("");
     try {
-      const response = await fetch(`${BASE_URL}/directory/${id}`, {
+      const response = await fetch(`${BACKEND_URI}/directory/${id}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -300,7 +301,7 @@ function DirectoryView() {
     e.preventDefault();
     setErrorMessage("");
     try {
-      const response = await fetch(`${BASE_URL}/directory/${newDirname}`, {
+      const response = await fetch(`${BACKEND_URI}/directory/${newDirname}`, {
         method: "POST",
         body: JSON.stringify({
           parentDirId: dirId || "",
@@ -335,8 +336,8 @@ function DirectoryView() {
     try {
       const url =
         renameType === "file"
-          ? `${BASE_URL}/file/${renameId}`
-          : `${BASE_URL}/directory/${renameId}`;
+          ? `${BACKEND_URI}/file/${renameId}`
+          : `${BACKEND_URI}/directory/${renameId}`;
       const response = await fetch(url, {
         method: "PATCH",
         headers: {
@@ -460,7 +461,7 @@ function DirectoryView() {
           handleDeleteFile={handleDeleteFile}
           handleDeleteDirectory={handleDeleteDirectory}
           openRenameModal={openRenameModal}
-          BASE_URL={BASE_URL}
+          BACKEND_URI={BACKEND_URI}
         />
       )}
     </div>

@@ -2,10 +2,13 @@ import nodemailer from "nodemailer";
 import OTP from "../models/otpModel.js";
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
+  host: process.env.EMAIL_HOST,
   port: 587,
   secure: false, // Use true for port 465, false for port 587
-  auth: {},
+  auth: {
+    user: process.env.NODEMAILER_EMAIL,
+    pass: process.env.NODEMAILER_PASS,
+  },
 });
 
 export default async function sendOtpService(email) {
@@ -30,7 +33,7 @@ export default async function sendOtpService(email) {
   `;
 
   const info = await transporter.sendMail({
-    from: "Storage App <email_id>",
+    from: `Storage App ${process.env.NODEMAILER_EMAIL}`,
     to: email,
     subject: "Storage App OTP",
     html,

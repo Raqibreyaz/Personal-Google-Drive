@@ -87,11 +87,95 @@ export const loginWithGoogle = async (req, res, next) => {
   res.status(200).json({ message: "User logged in!" });
 };
 
+export const loginWithGithub = async (req, res, next) => {
+  const { code, state } = req.query;
+
+  // 1. Validate state (CSRF protection)
+  const savedState = req.signedCookies.oauth_state;
+
+  if (!savedState || savedState !== state) {
+    throw new ApiError(401, "Invalid OAuth state");
+  }
+  res.clearCookie("oauth_state");
+
+  const params = new URLSearchParams({
+    client_id: process.env.GITHUB_CLIENT_ID,
+    client_secret: process.env.GITHUB_CLIENT_SECRET,
+    redirect_uri: process.env.GITHUB_REDIRECT_URI,
+    code,
+  });
+
+  const tokenRes = await fetch(
+    `https://github.com/login/oauth/access_token?${params.toString()}`,
+    {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+      },
+    },
+  );
+  const { access_token } = await tokenRes.json();
+
+  const userRes = await fetch("https://api.github.com/user", {
+    headers: {
+      Authorization: `Bearer ${access_token}`,
+    },
+  });
+  const { id, name, avatar_url } = await userRes.json();
+  const emailsRes = await fetch("https://api.github.com/user/emails", {
+    headers: {
+      Authorization: `Bearer ${access_token}`,
+    },
+  });
+  const emails = await emailsRes.json();
+  const primaryEmail = emails.find(({ primary }) => primary)?.email;
+
+  const user = await User.findOne({ email: primaryEmail }).lean();
+
+  if (user && user.providerId !== String(id))
+    throw new ApiError(400, "User already exists with another provider");
+
+  if (!user) {
+    // create the user with directory and session
+    const { userId, sessionId } = await createUserWithEssentials({
+      name,
+      email: primaryEmail,
+      authProvider: "github",
+      password: null,
+      picture: avatar_url,
+      providerId: String(id),
+    });
+
+    createCookie(res, sessionId);
+  }
+
+  // when user exists then create a new session + limit the no of sessions
+  if (user) {
+    // first check if user hasn't exhausted number of sessions limits
+    const noOfSessions = await Session.countDocuments({ user: user._id });
+    if (noOfSessions >= 2)
+      await Session.findOneAndDelete(
+        { user: user._id },
+        { sort: { expiresAt: 1 } },
+      );
+
+    // create a new session for the user
+    const userSession = await Session.insertOne({
+      user: user._id,
+      expiresAt: new Date((Date.now() / 1000 + 86400) * 1000),
+    });
+
+    createCookie(res, userSession.id);
+  }
+
+  res.redirect(`${process.env.FRONTEND_URI}/callback`);
+};
+
 export const getUser = (req, res, next) => {
   res.status(200).json({
     name: req.session.user.name,
     email: req.session.user.email,
-    picture:req.session.user.picture
+    picture: req.session.user.picture,
   });
 };
 

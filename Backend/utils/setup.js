@@ -20,7 +20,7 @@ export default async function setupDB() {
       },
       authProvider: {
         bsonType: "string",
-        enum: ["local", "google"],
+        enum: ["local", "google", "github"],
       },
       providerId: {
         bsonType: ["string", "null"],
@@ -54,7 +54,7 @@ export default async function setupDB() {
     additionalProperties: false,
   };
 
-  const filesSchema = {
+  const fileSchema = {
     bsonType: "object",
     required: ["_id", "name", "size", "parentDir", "extname", "user"],
     properties: {
@@ -128,7 +128,7 @@ export default async function setupDB() {
 
   const collections = [
     { name: "users", schema: usersSchema },
-    { name: "files", schema: filesSchema },
+    { name: "files", schema: fileSchema },
     { name: "directories", schema: directorySchema },
   ];
 

@@ -6,7 +6,7 @@ function ContextMenu({
     handleDeleteFile,
     handleDeleteDirectory,
     openRenameModal,
-    BASE_URL,
+    BACKEND_URI,
   }) {
     // Directory context menu
     if (item.isDirectory) {
@@ -56,7 +56,7 @@ function ContextMenu({
             <div
               className="context-menu-item"
               onClick={() =>
-                (window.location.href = `${BASE_URL}/file/${item._id}?action=download`)
+                (window.location.href = `${BACKEND_URI}/file/${item._id}?action=download`)
               }
             >
               Download

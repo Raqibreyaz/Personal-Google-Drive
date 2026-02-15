@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -19,10 +20,10 @@ try {
   process.exit(1);
 }
 
-app.use(cookieParser("my-super-secret-key"));
+app.use(cookieParser(process.env.COOKIE_PARSER_KEY));
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: [process.env.FRONTEND_URI],
     credentials: true,
   }),
 );

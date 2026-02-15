@@ -13,7 +13,7 @@ function DirectoryList({
   handleDeleteFile,
   handleDeleteDirectory,
   openRenameModal,
-  BASE_URL,
+  BACKEND_URI,
 }) {
   return (
     <div className="directory-list">
@@ -35,7 +35,7 @@ function DirectoryList({
             handleDeleteFile={handleDeleteFile}
             handleDeleteDirectory={handleDeleteDirectory}
             openRenameModal={openRenameModal}
-            BASE_URL={BASE_URL}
+            BACKEND_URI={BACKEND_URI}
           />
         );
       })}

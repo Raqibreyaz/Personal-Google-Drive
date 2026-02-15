@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "./Auth.css";
 import GoogleLoginButton from "./components/GoogleLoginButton";
+import GithubLoginButton from "./components/GithubLoginButton";
 
 const Login = () => {
   const BASE_URL = "http://localhost:8080";
@@ -204,9 +205,18 @@ const Login = () => {
       <p className="link-text">
         Don't have an account? <Link to="/register">Register</Link>
       </p>
-      <div className="center-align">
-        <span style={{ display: "block" }}>Or</span>
-        <GoogleLoginButton />
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+        <div>Or</div>
+        <div className="center-align">
+          <GoogleLoginButton />
+          <GithubLoginButton className=""/>
+        </div>
       </div>
     </div>
   );
