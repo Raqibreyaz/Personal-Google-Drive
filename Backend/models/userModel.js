@@ -50,6 +50,15 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    role: {
+      type: String,
+      enum: ["Admin", "Manager", "User"],
+      default: "User",
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
     storageDir: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "directory",

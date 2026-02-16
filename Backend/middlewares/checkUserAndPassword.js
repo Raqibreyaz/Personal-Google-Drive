@@ -5,7 +5,9 @@ export default async function checkUserAndPassword(req, res, next) {
   if (!email || !password)
     throw new ApiError(400, "Email and Password are required!");
 
-  const user = await User.findOne({ email }).select("+password");
+  const user = await User.findOne({ email, isDeleted: false }).select(
+    "+password",
+  );
   console.log(user);
   const isPasswordValid = user ? await user.comparePassword(password) : false;
 

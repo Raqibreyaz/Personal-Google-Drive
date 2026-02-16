@@ -1,3 +1,7 @@
+import fs from "fs/promises";
+import mongoose from "mongoose";
+import Directory from "../models/directoryModel.js";
+import File from "../models/fileModel.js";
 import User from "../models/userModel.js";
 import Session from "../models/sessionModel.js";
 import ApiError from "../utils/apiError.js";
@@ -50,6 +54,9 @@ export const loginWithGoogle = async (req, res, next) => {
   const { idToken } = req.body;
   const userData = await verifyIdToken(idToken);
   const userDoc = await User.findOne({ providerId: userData.sub });
+
+  if (userDoc?.isDeleted)
+    throw new ApiError(500, "Something went wrong while finding the user!");
 
   // create the user with directory and session
   if (!userDoc) {
@@ -132,6 +139,9 @@ export const loginWithGithub = async (req, res, next) => {
 
   const user = await User.findOne({ email: primaryEmail }).lean();
 
+  if (user?.isDeleted)
+    throw new ApiError(500, "Something went wrong while finding the user!");
+
   if (user && user.providerId !== String(id))
     throw new ApiError(400, "User already exists with another provider");
 
@@ -176,13 +186,68 @@ export const getUser = (req, res, next) => {
     name: req.session.user.name,
     email: req.session.user.email,
     picture: req.session.user.picture,
+    role: req.session.user.role,
   });
+};
+
+export const deleteUser = async (req, res, next) => {
+  const { id } = req.params;
+  if (id === req.session.user._id.toString())
+    throw new ApiError(400, "You cant deleted yourself!");
+
+  const user = await User.findByIdAndUpdate(id, { $set: { isDeleted: true } });
+  if (!user) throw new ApiError(404, "User not found!");
+
+  await Session.deleteMany({ user: user._id });
+
+  res.status(200).json({ message: "user got deleted!" });
+
+  // const session = await mongoose.startSession();
+  // session.startTransaction();
+
+  // try {
+  //   await Directory.deleteMany({ user: user._id }, { session });
+  //   await Session.deleteMany({ user: user._id }, { session });
+
+  //   const files = await File.find({ user: user._id }).select("extname");
+  //   for (const file of files) {
+  //     await fs.rm(`storage/${file.id}${file.extname}`);
+  //     await file.deleteOne();
+  //   }
+
+  //   await user.deleteOne({ session });
+  //   await session.commitTransaction();
+
+  //   res.status(200).json({ message: `successfully deleted user ${user.name}` });
+  // } catch (error) {
+  //   await session.abortTransaction();
+  //   throw error;
+  // }
+};
+
+export const getAllUsers = async (req, res, next) => {
+  const users = await User.find({
+    isDeleted: { $ne: true },
+  })
+    .select("name email picture")
+    .lean();
+  for (const user of users) {
+    const sessionExist = await Session.exists({ user: user._id });
+    user.isLoggedIn = !!sessionExist;
+  }
+  res.status(200).json(users);
 };
 
 // delete session and revoke the cookie
 export const logoutUser = async (req, res, next) => {
   await Session.deleteOne({ _id: req.session.sessionId });
   res.clearCookie("authToken").status(204).end();
+};
+
+export const forceLogout = async (req, res, next) => {
+  const { id } = req.params;
+  await Session.deleteMany({ user: id });
+  res.status(204).json({ message: "User sessions revoked!" });
 };
 
 // delete all sessions

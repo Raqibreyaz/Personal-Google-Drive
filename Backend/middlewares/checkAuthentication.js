@@ -6,6 +6,8 @@ const checkAuthentication = async (req, res, next) => {
   const sessionId = req.signedCookies?.authToken ?? "";
   let user = null;
 
+  console.log(sessionId)
+
   // when session exists then allow user
   if (sessionId) {
     const session = await Session.findById(sessionId).lean();

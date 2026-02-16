@@ -43,7 +43,7 @@ function DirectoryHeader({
           // Set user info if logged in
           setUserName(data.name);
           setUserEmail(data.email);
-          setPicture(data.picture);
+          // setPicture(data.picture);
           setLoggedIn(true);
         } else if (response.status === 401) {
           // User not logged in
@@ -72,6 +72,9 @@ function DirectoryHeader({
   // 3. Logout handler
   // -------------------------------------------
   const handleLogout = async () => {
+    const confirmed = confirm(`Do you really want to logout?`);
+    if (!confirmed) return;
+
     try {
       const response = await fetch(`${BASE_URL}/user/logout`, {
         method: "POST",
@@ -96,6 +99,9 @@ function DirectoryHeader({
   };
 
   const handleLogoutAll = async () => {
+    const confirmed = confirm(`You are about to logout all sessions!`);
+    if (!confirmed) return;
+
     try {
       const response = await fetch(`${BASE_URL}/user/logout/all`, {
         method: "POST",

@@ -5,7 +5,8 @@ import DirectoryView from "./DirectoryView";
 import Register from "./Register";
 import Login from "./Login";
 import Callback from "./Callback";
-
+import UsersPage from "./UsersPage";
+  
 const router = createBrowserRouter([
   {
     path: "/",
@@ -22,6 +23,10 @@ const router = createBrowserRouter([
   {
     path: "/directory/:dirId",
     element: <DirectoryView />,
+  },
+  {
+    path: "/users",
+    element: <UsersPage />,
   },
   {
     path: "/callback",

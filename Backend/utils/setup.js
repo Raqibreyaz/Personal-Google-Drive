@@ -28,6 +28,13 @@ export default async function setupDB() {
       picture: {
         bsonType: ["string", "null"],
       },
+      role: {
+        bsonType: "string",
+        enum: ["Admin", "Manager", "User"],
+      },
+      isDeleted: {
+        bsonType: "bool",
+      },
       password: {
         bsonType: ["string", "null"],
         minLength: 4,
