@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 import connectDB from "./db.js";
+import Role from "./role.js";
+import Provider from "./provider.js";
 
 export default async function setupDB() {
   await connectDB();
@@ -20,7 +22,7 @@ export default async function setupDB() {
       },
       authProvider: {
         bsonType: "string",
-        enum: ["local", "google", "github"],
+        enum: Object.values(Provider),
       },
       providerId: {
         bsonType: ["string", "null"],
@@ -30,7 +32,7 @@ export default async function setupDB() {
       },
       role: {
         bsonType: "string",
-        enum: ["Admin", "Manager", "User"],
+        enum: Object.values(Role),
       },
       isDeleted: {
         bsonType: "bool",

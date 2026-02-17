@@ -8,6 +8,8 @@ import ApiError from "../utils/apiError.js";
 import createCookie from "../utils/createCookie.js";
 import verifyIdToken from "../utils/verifyIdToken.js";
 import createUserWithEssentials from "../utils/createUserWithEssentials.js";
+import Role from "../utils/role.js";
+import Provider from "../utils/provider.js";
 
 export const registerUser = async (req, res, next) => {
   const { name, password, email } = req.body;
@@ -18,7 +20,8 @@ export const registerUser = async (req, res, next) => {
     name,
     email,
     password,
-    authProvider: "local",
+    role: Role.USER,
+    authProvider: Provider.LOCAL,
   });
 
   createCookie(res, sessionId);
@@ -53,17 +56,15 @@ export const loginUser = async (req, res, next) => {
 export const loginWithGoogle = async (req, res, next) => {
   const { idToken } = req.body;
   const userData = await verifyIdToken(idToken);
-  const userDoc = await User.findOne({ providerId: userData.sub });
-
-  if (userDoc?.isDeleted)
-    throw new ApiError(500, "Something went wrong while finding the user!");
+  const userDoc = await User.findOne({ email: userData.email });
 
   // create the user with directory and session
   if (!userDoc) {
     const { userId, sessionId } = await createUserWithEssentials({
       name: userData.name,
       email: userData.email,
-      authProvider: "google",
+      authProvider: Provider.GOOGLE,
+      role: Role.USER,
       password: null,
       picture: userData.picture,
       providerId: userData.sub,
@@ -74,6 +75,20 @@ export const loginWithGoogle = async (req, res, next) => {
 
   // when user exists then create a new session + limit the no of sessions
   if (userDoc) {
+    // when user is not a google user
+    if (userDoc.providerId !== String(userData.sub))
+      throw new ApiError(
+        400,
+        `User already exists as a ${userDoc.authProvider} user`,
+      );
+
+    // when user got soft deleted
+    if (userDoc.isDeleted)
+      throw new ApiError(
+        500,
+        "Your account is flagged as deleted, Contact App Owner for further details!",
+      );
+
     // first check if user hasn't exhausted number of sessions limits
     const noOfSessions = await Session.countDocuments({ user: userDoc._id });
     if (noOfSessions >= 2)
@@ -128,7 +143,7 @@ export const loginWithGithub = async (req, res, next) => {
       Authorization: `Bearer ${access_token}`,
     },
   });
-  const { id, name, avatar_url } = await userRes.json();
+  const { id: githubId, name, avatar_url } = await userRes.json();
   const emailsRes = await fetch("https://api.github.com/user/emails", {
     headers: {
       Authorization: `Bearer ${access_token}`,
@@ -139,21 +154,16 @@ export const loginWithGithub = async (req, res, next) => {
 
   const user = await User.findOne({ email: primaryEmail }).lean();
 
-  if (user?.isDeleted)
-    throw new ApiError(500, "Something went wrong while finding the user!");
-
-  if (user && user.providerId !== String(id))
-    throw new ApiError(400, "User already exists with another provider");
-
   if (!user) {
     // create the user with directory and session
     const { userId, sessionId } = await createUserWithEssentials({
       name,
       email: primaryEmail,
-      authProvider: "github",
+      authProvider: Provider.Github,
+      role: Role.USER,
       password: null,
       picture: avatar_url,
-      providerId: String(id),
+      providerId: String(githubId),
     });
 
     createCookie(res, sessionId);
@@ -161,6 +171,18 @@ export const loginWithGithub = async (req, res, next) => {
 
   // when user exists then create a new session + limit the no of sessions
   if (user) {
+    if (user.isDeleted)
+      throw new ApiError(
+        500,
+        "Your account is flagged as deleted, Contact App Owner for further details!",
+      );
+
+    if (user.providerId !== String(githubId))
+      throw new ApiError(
+        400,
+        `User already exists as a ${user.authProvider} user`,
+      );
+
     // first check if user hasn't exhausted number of sessions limits
     const noOfSessions = await Session.countDocuments({ user: user._id });
     if (noOfSessions >= 2)
@@ -190,47 +212,60 @@ export const getUser = (req, res, next) => {
   });
 };
 
+// delete user either soft/hard
 export const deleteUser = async (req, res, next) => {
   const { id } = req.params;
-  if (id === req.session.user._id.toString())
-    throw new ApiError(400, "You cant deleted yourself!");
+  const { permanent } = req.query;
 
-  const user = await User.findByIdAndUpdate(id, { $set: { isDeleted: true } });
+  if (id === req.session.user._id.toString())
+    throw new ApiError(400, "You cant delete yourself!");
+
+  let user = null;
+
+  if (req.receivedUser) user = req.receivedUser;
+  else user = await User.findById(id);
+
   if (!user) throw new ApiError(404, "User not found!");
 
-  await Session.deleteMany({ user: user._id });
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  res.status(200).json({ message: "user got deleted!" });
+  try {
+    await Session.deleteMany({ user: user._id }, { session });
 
-  // const session = await mongoose.startSession();
-  // session.startTransaction();
+    // soft delete
+    if (!permanent) {
+      await user.updateOne({ $set: { isDeleted: true } }, { session });
+    }
 
-  // try {
-  //   await Directory.deleteMany({ user: user._id }, { session });
-  //   await Session.deleteMany({ user: user._id }, { session });
+    // hard delete
+    else {
+      await Directory.deleteMany({ user: user._id }, { session });
+      const files = await File.find({ user: user._id }).select("extname");
+      for (const file of files) {
+        await fs.rm(`storage/${file.id}${file.extname}`);
+        await file.deleteOne();
+      }
+      await user.deleteOne({ session });
+    }
 
-  //   const files = await File.find({ user: user._id }).select("extname");
-  //   for (const file of files) {
-  //     await fs.rm(`storage/${file.id}${file.extname}`);
-  //     await file.deleteOne();
-  //   }
+    await session.commitTransaction();
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  }
 
-  //   await user.deleteOne({ session });
-  //   await session.commitTransaction();
-
-  //   res.status(200).json({ message: `successfully deleted user ${user.name}` });
-  // } catch (error) {
-  //   await session.abortTransaction();
-  //   throw error;
-  // }
+  res.status(200).json({ message: `successfully deleted user ${user.name}` });
 };
 
+// fetch all users(maybe soft deleted ones too!)
 export const getAllUsers = async (req, res, next) => {
-  const users = await User.find({
-    isDeleted: { $ne: true },
-  })
-    .select("name email picture")
-    .lean();
+  const filter = {};
+
+  // only owner will see the soft deleted users
+  if (req.session.user.role !== "Owner") filter.isDeleted = { $ne: true };
+
+  const users = await User.find(filter).select("name email isDeleted").lean();
   for (const user of users) {
     const sessionExist = await Session.exists({ user: user._id });
     user.isLoggedIn = !!sessionExist;
@@ -254,4 +289,27 @@ export const forceLogout = async (req, res, next) => {
 export const logoutUserFromAllDevices = async (req, res, next) => {
   await Session.deleteMany({ user: req.session.user._id });
   res.clearCookie("authToken").status(204).end();
+};
+
+export const recoverUser = async (req, res, next) => {
+  const { id } = req.params;
+  const result = await User.updateOne(
+    { _id: id },
+    { $set: { isDeleted: false } },
+  );
+
+  if (!result.modifiedCount) throw new ApiError(404, "User not found!");
+
+  res.status(200).json({ message: "User recovered successfully!" });
+};
+
+export const changeUserRole = async (req, res, next) => {
+  const { id } = req.params;
+  const { role } = req.body;
+  if (!role) throw new ApiError(400, `Provide user's role to change!`);
+
+  const result = await User.updateOne({ _id: id }, { $set: { role } });
+  if (!result.modifiedCount) throw new ApiError(404, "User not found!");
+
+  res.status(200).json({ message: "User role changes successfully!" });
 };

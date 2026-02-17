@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
+import Role from "../utils/role";
+import Provider from "../utils/provider";
 
 const userSchema = new mongoose.Schema(
   {
@@ -23,8 +25,8 @@ const userSchema = new mongoose.Schema(
     authProvider: {
       type: String,
       trim: true,
-      enum: ["local", "google", "github"],
-      default: "local",
+      enum: Object.values(Provider),
+      default: Provider.LOCAL,
     },
     // only for local users
     password: {
@@ -32,7 +34,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
       minLength: 4,
       required: function () {
-        return this.authProvier === "local";
+        return this.authProvier === Provider.LOCAL;
       },
       select: false, //never return password in queries
     },
@@ -43,7 +45,7 @@ const userSchema = new mongoose.Schema(
       unique: true,
       sparse: true, //skip uniqueness for 'null' values
       required: function () {
-        return this.authProvider !== "local";
+        return this.authProvider !== Provider.LOCAL;
       },
     },
     picture: {
@@ -52,8 +54,8 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["Admin", "Manager", "User"],
-      default: "User",
+      enum: Object.values(Role),
+      default: Role.USER,
     },
     isDeleted: {
       type: Boolean,
@@ -77,4 +79,7 @@ userSchema.methods.comparePassword = async function (receivedPassword) {
   return await bcrypt.compare(receivedPassword, this.password);
 };
 
-export default mongoose.model("user", userSchema);
+userSchema.statics.Role = Role;
+userSchema.statics.Provider = Provider;
+
+export default mongoose.model("User", userSchema);

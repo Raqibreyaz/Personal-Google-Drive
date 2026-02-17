@@ -11,6 +11,7 @@ export default async function createUserWithEssentials({
   authProvider,
   providerId,
   picture,
+  role,
 }) {
   const storageDirId = new ObjectId();
   const userId = new ObjectId();
@@ -40,6 +41,7 @@ export default async function createUserWithEssentials({
         authProvider,
         providerId,
         picture,
+        role,
         storageDir: storageDirId,
       },
       { session },
