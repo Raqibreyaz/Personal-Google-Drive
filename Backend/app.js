@@ -9,6 +9,7 @@ import fileRoutes from "./routes/fileRoutes.js";
 import directoryRoutes from "./routes/directoryRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import fileShareRoutes from "./routes/fileShareRoutes.js";
 
 const app = express();
 
@@ -20,14 +21,15 @@ try {
   process.exit(1);
 }
 
-app.use(cookieParser(process.env.COOKIE_PARSER_KEY));
 app.use(
   cors({
     origin: [process.env.FRONTEND_URI],
     credentials: true,
   }),
 );
+app.use(cookieParser(process.env.COOKIE_PARSER_KEY));
 app.use(express.json());
+
 app.use("/directory", checkAuthentication, directoryRoutes);
 app.use(
   "/file",
@@ -35,6 +37,7 @@ app.use(
   uploader.single("uploadFile"),
   fileRoutes,
 );
+app.use("/share", checkAuthentication, fileShareRoutes);
 app.use("/user", userRoutes);
 app.use("/auth", authRoutes);
 
@@ -50,4 +53,5 @@ app.use((err, req, res, next) => {
     .json({ error: err.message || "Something went wrong!" });
 });
 
-app.listen(8080, () => console.log("server is running at port 8080"));
+const port = process.env.PORT || 8080;
+app.listen(port, () => console.log(`server is running at port ${port}`));

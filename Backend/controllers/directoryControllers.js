@@ -5,16 +5,12 @@ import Directory from "../models/directoryModel.js";
 import File from "../models/fileModel.js";
 
 export const getDirectoryContents = async (req, res, next) => {
-  const { dirId } = req.params;
-  const { user } = req.session;
+  const userId = req.targetUserId;
 
   // find the directory in user's dirsDB or assign user's root directory
-  const dir = dirId
-    ? await Directory.findOne({
-        _id: new ObjectId(dirId),
-        user: user._id,
-      }).lean()
-    : await Directory.findOne({ user: user._id, parentDir: null }).lean();
+  const dir = req.directory
+    ? req.directory
+    : await Directory.findOne({ user: userId, parentDir: null }).lean();
 
   if (!dir) throw new ApiError(404, "Directory not found!");
 
@@ -23,7 +19,6 @@ export const getDirectoryContents = async (req, res, next) => {
 
   // get all directories in 'dir'(of user only)
   const directories = await Directory.find({
-    user: user._id,
     parentDir: dir._id,
   }).lean();
 
@@ -34,27 +29,21 @@ export const getDirectoryContents = async (req, res, next) => {
 };
 
 export const createDirectory = async (req, res, next) => {
-  const { user } = req.session;
+  const userId = req.targetUserId;
   const dirname = req.params.dirname;
-  let parentDirId = req.body.parentDirId;
 
-  const parentDir = parentDirId
-    ? await Directory.findOne({
-        _id: new ObjectId(parentDirId),
-        user: user._id,
-      })
-    : await Directory.findOne({ user: user._id, parentDir: null });
+  const parentDir = req.directory
+    ? req.directory
+    : await Directory.findOne({ user: userId, parentDir: null });
 
   if (!parentDir)
     throw new ApiError(404, "Given Parent directory doesn't exist!");
-
-  parentDirId = parentDir._id;
 
   // add entry of this directory
   await Directory.insertOne({
     name: dirname,
     parentDir: parentDir._id,
-    user: user._id,
+    user: userId,
   });
 
   res.status(201).json({ message: "Directory created!" });
@@ -63,7 +52,6 @@ export const createDirectory = async (req, res, next) => {
 export const updateDirectoryName = async (req, res, next) => {
   if (!req.body.newDirname) throw new ApiError(400, "New Dirname required!");
 
-  const { user } = req.session;
   const dirId = req.params.dirId;
   const newDirname = req.body.newDirname;
 
@@ -71,23 +59,16 @@ export const updateDirectoryName = async (req, res, next) => {
   const updateRes = await Directory.updateOne(
     {
       _id: new ObjectId(dirId),
-      user: user._id,
     },
     { $set: { name: newDirname } },
   );
-  if (!updateRes) throw new ApiError(404, "Directory not found!");
+  if (!updateRes.modifiedCount) throw new ApiError(404, "Directory not found!");
 
   res.status(200).json({ message: "Directory name updated!" });
 };
 
 export const deleteDirectory = async (req, res, next) => {
-  const { user } = req.session;
-  const dirId = req.params.dirId;
-
-  const currDir = await Directory.findOne({
-    _id: new ObjectId(dirId),
-    user: user._id,
-  });
+  const currDir = req.directory;
   if (!currDir) throw new ApiError(404, "Directory doesn't exist!");
 
   // remove all the files and sub-dirs of sub-dir

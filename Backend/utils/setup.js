@@ -135,10 +135,38 @@ export default async function setupDB() {
     additionalProperties: false,
   };
 
+  const fileShareSchema = {
+    bsonType: "object",
+    required: ["_id", "file", "user", "permission"],
+    properties: {
+      _id: {
+        bsonType: "objectId",
+      },
+      file: {
+        bsonType: "objectId",
+        description: "file reference is required!",
+      },
+      user: {
+        bsonType: "objectId",
+        description: "A user reference is required!",
+      },
+      permission: {
+        bsonType: "string",
+        enum: ["Edit", "View"],
+      },
+      __v: {
+        bsonType: "int",
+      },
+    },
+
+    additionalProperties: false,
+  };
+
   const collections = [
     { name: "users", schema: usersSchema },
     { name: "files", schema: fileSchema },
     { name: "directories", schema: directorySchema },
+    { name: "fileshares", schema: fileShareSchema },
   ];
 
   try {

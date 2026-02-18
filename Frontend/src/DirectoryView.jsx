@@ -336,7 +336,7 @@ function DirectoryView() {
     try {
       const url =
         renameType === "file"
-          ? `${BACKEND_URI}/file/${renameId}`
+          ? `${BACKEND_URI}/file/rename/${renameId}`
           : `${BACKEND_URI}/directory/${renameId}`;
       const response = await fetch(url, {
         method: "PATCH",

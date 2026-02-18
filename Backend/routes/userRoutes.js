@@ -16,7 +16,7 @@ import {
   changeUserRole,
 } from "../controllers/userControllers.js";
 import allowOnlyTo from "../middlewares/roleBasedAuth.js";
-import limitPrivileges from "../utils/limitPrivileges.js";
+import limitPrivileges from "../middlewares/limitPrivileges.js";
 import Role from "../utils/role.js";
 
 const router = express.Router();
@@ -38,6 +38,14 @@ router.post("/logout", checkAuthentication, logoutUser);
 // allow only authenticated users to logout
 router.post("/logout/all", checkAuthentication, logoutUserFromAllDevices);
 
+// only non-regular users will be allowed
+router.get(
+  "/all",
+  checkAuthentication,
+  allowOnlyTo([Role.OWNER, Role.ADMIN, Role.MANAGER]),
+  getAllUsers,
+);
+
 // only owner and admin will be allowed to delete user
 // only can delete users which are under them
 router.delete(
@@ -46,14 +54,6 @@ router.delete(
   allowOnlyTo([Role.OWNER, Role.ADMIN]),
   limitPrivileges,
   deleteUser,
-);
-
-// only non-regular users will be allowed
-router.get(
-  "/all",
-  checkAuthentication,
-  allowOnlyTo([Role.OWNER, Role.ADMIN, Role.MANAGER]),
-  getAllUsers,
 );
 
 // only non-regular users will be allowed

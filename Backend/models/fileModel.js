@@ -25,6 +25,11 @@ const fileSchema = new mongoose.Schema(
       ref: "user",
       required: [true, "Provide the user of the file!"],
     },
+    allowAnyoneAccess: {
+      type: String,
+      enum: ["View", "Edit", null],
+      default: null,
+    },
   },
   { strict: "throw", timestamps: true },
 );

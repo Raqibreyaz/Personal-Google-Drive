@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
-import Role from "../utils/role";
-import Provider from "../utils/provider";
+import Role from "../utils/role.js";
+import Provider from "../utils/provider.js";
 
 const userSchema = new mongoose.Schema(
   {
