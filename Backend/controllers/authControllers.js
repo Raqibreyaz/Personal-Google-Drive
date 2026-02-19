@@ -5,6 +5,8 @@ import sendOtpService from "../utils/sendOtpService.js";
 import createCookie from "../utils/createCookie.js";
 
 export const sendOtp = async (req, res, next) => {
+  if (!req.body) throw new ApiError(400, "No data received!");
+
   const { email } = req.body;
   if (!email) throw new ApiError(400, "Email is required!");
 
@@ -13,6 +15,7 @@ export const sendOtp = async (req, res, next) => {
 };
 
 export const verifyOtp = async (req, res, next) => {
+  if (!req.body) throw new ApiError(400, "No data received!");
   const { email, otp } = req.body;
   if (!email || !otp)
     throw new ApiError(400, "Email and Otp both are required!");
@@ -50,6 +53,7 @@ export const githubAuth = async (req, res, next) => {
 };
 
 export const authGithubSetCookie = (req, res) => {
+  if (!req.body) throw new ApiError(400, "No data received!");
   const { sid } = req.body;
   createCookie(res, sid);
   res.status(200).end();

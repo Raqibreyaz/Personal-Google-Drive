@@ -6,7 +6,8 @@ import Register from "./Register";
 import Login from "./Login";
 import Callback from "./Callback";
 import UsersPage from "./UsersPage";
-  
+import SharedWithMePage from "./SharedWithMePage";
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -27,6 +28,10 @@ const router = createBrowserRouter([
   {
     path: "/users",
     element: <UsersPage />,
+  },
+  {
+    path: "/shared",
+    element: <SharedWithMePage />,
   },
   {
     path: "/callback",

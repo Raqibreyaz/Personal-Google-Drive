@@ -63,7 +63,7 @@ const userSchema = new mongoose.Schema(
     },
     storageDir: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "directory",
+      ref: "Directory",
       required: [true, "A storage directory must be assigned to the user"],
     },
   },
@@ -82,4 +82,5 @@ userSchema.methods.comparePassword = async function (receivedPassword) {
 userSchema.statics.Role = Role;
 userSchema.statics.Provider = Provider;
 
-export default mongoose.model("User", userSchema);
+const User = mongoose.model("User", userSchema);
+export default User;

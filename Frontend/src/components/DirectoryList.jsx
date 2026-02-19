@@ -13,6 +13,8 @@ function DirectoryList({
   handleDeleteFile,
   handleDeleteDirectory,
   openRenameModal,
+  onShare,
+  onManageAccess,
   BACKEND_URI,
 }) {
   return (
@@ -35,6 +37,8 @@ function DirectoryList({
             handleDeleteFile={handleDeleteFile}
             handleDeleteDirectory={handleDeleteDirectory}
             openRenameModal={openRenameModal}
+            onShare={onShare}
+            onManageAccess={onManageAccess}
             BACKEND_URI={BACKEND_URI}
           />
         );

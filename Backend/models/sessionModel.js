@@ -19,4 +19,5 @@ const sessionSchema = new mongoose.Schema(
 
 sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-export default mongoose.model("Session", sessionSchema);
+const Session = mongoose.model("Session", sessionSchema);
+export default Session;

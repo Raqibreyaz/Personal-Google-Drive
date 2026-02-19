@@ -13,7 +13,7 @@ const fileSchema = new mongoose.Schema(
     },
     parentDir: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "directory",
+      ref: "Directory",
       required: [true, "Provide File's parent!"],
     },
     extname: {
@@ -22,7 +22,7 @@ const fileSchema = new mongoose.Schema(
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "user",
+      ref: "User",
       required: [true, "Provide the user of the file!"],
     },
     allowAnyoneAccess: {
@@ -34,4 +34,7 @@ const fileSchema = new mongoose.Schema(
   { strict: "throw", timestamps: true },
 );
 
-export default mongoose.model("file", fileSchema);
+fileSchema.index({ name: 1, parentDir: 1 }, { unique: true });
+
+const File = mongoose.model("File", fileSchema);
+export default File;

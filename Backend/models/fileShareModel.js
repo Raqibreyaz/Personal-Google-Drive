@@ -5,10 +5,12 @@ const fileShareSchema = new mongoose.Schema(
     file: {
       type: mongoose.Schema.Types.ObjectId,
       required: [true, "fileId is required!"],
+      ref: "File",
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       required: [true, "userId is required!"],
+      ref: "User",
     },
     permission: {
       type: String,

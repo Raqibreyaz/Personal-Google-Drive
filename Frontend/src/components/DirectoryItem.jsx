@@ -23,6 +23,8 @@ function DirectoryItem({
   handleDeleteFile,
   handleDeleteDirectory,
   openRenameModal,
+  onShare,
+  onManageAccess,
   BACKEND_URI,
 }) {
   // Convert the file icon string to the actual Icon component
@@ -99,6 +101,8 @@ function DirectoryItem({
           handleDeleteFile={handleDeleteFile}
           handleDeleteDirectory={handleDeleteDirectory}
           openRenameModal={openRenameModal}
+          onShare={onShare}
+          onManageAccess={onManageAccess}
           BACKEND_URI={BACKEND_URI}
         />
       )}

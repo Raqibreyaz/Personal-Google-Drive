@@ -9,16 +9,19 @@ const directorySchema = new mongoose.Schema(
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "user",
+      ref: "User",
       required: [true, "A user must be assigned to the directory"],
     },
     parentDir: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "user",
+      ref: "User",
       default: null,
     },
   },
   { strict: "throw", timestamps: true },
 );
 
-export default mongoose.model("directory", directorySchema);
+directorySchema.index({ name: 1, parentDir: 1 }, { unique: true });
+
+const Directory = mongoose.model("Directory", directorySchema);
+export default Directory;

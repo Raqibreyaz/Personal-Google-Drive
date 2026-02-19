@@ -5,7 +5,7 @@ import GoogleLoginButton from "./components/GoogleLoginButton";
 import GithubLoginButton from "./components/GithubLoginButton";
 
 const Login = () => {
-  const BASE_URL = "http://localhost:8080";
+  const BASE_URL = import.meta.env.VITE_BACKEND_URI || "http://localhost:8080";
   const navigate = useNavigate();
 
   // FORM STATE
@@ -215,7 +215,7 @@ const Login = () => {
         <div>Or</div>
         <div className="center-align">
           <GoogleLoginButton />
-          <GithubLoginButton className=""/>
+          <GithubLoginButton className="" />
         </div>
       </div>
     </div>

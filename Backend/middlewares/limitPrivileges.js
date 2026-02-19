@@ -12,7 +12,7 @@ const Limits = Object.freeze(
 export default async function limitPrivileges(req, res, next) {
   const { id } = req.params;
   const { user } = req.session;
-  const { role } = req.body;
+  const role = req.body?.role;
 
   const receivedUser = await User.findById(id).lean();
 
@@ -22,10 +22,9 @@ export default async function limitPrivileges(req, res, next) {
   if (
     Limits[user.role] < Limits[receivedUser.role] &&
     (!role || Limits[user.role] < Limits[role])
-  )
+  ) {
     return next();
-
-  req.receivedUser = receivedUser;
+  }
 
   throw new ApiError(403, "You are not Authorized for this action!");
 }

@@ -4,6 +4,8 @@ import {
   FaFolderPlus,
   FaUpload,
   FaUser,
+  FaUsers,
+  FaShareAlt,
   FaSignOutAlt,
   FaSignInAlt,
 } from "react-icons/fa";
@@ -18,12 +20,13 @@ function DirectoryHeader({
   disabled = false,
 }) {
   // Use a constant for the API base URL
-  const BASE_URL = "http://localhost:8080";
+  const BASE_URL = import.meta.env.VITE_BACKEND_URI || "http://localhost:8080";
 
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [userName, setUserName] = useState("Guest User");
   const [userEmail, setUserEmail] = useState("guest@example.com");
+  const [userRole, setUserRole] = useState("User");
   const [picture, setPicture] = useState(null);
 
   const userMenuRef = useRef(null);
@@ -43,6 +46,7 @@ function DirectoryHeader({
           // Set user info if logged in
           setUserName(data.name);
           setUserEmail(data.email);
+          setUserRole(data.role);
           // setPicture(data.picture);
           setLoggedIn(true);
         } else if (response.status === 401) {
@@ -193,6 +197,29 @@ function DirectoryHeader({
                     <span className="user-name">{userName}</span>
                     <span className="user-email">{userEmail}</span>
                   </div>
+                  <div className="user-menu-divider" />
+                  <div
+                    className="user-menu-item login-btn"
+                    onClick={() => {
+                      navigate("/shared");
+                      setShowUserMenu(false);
+                    }}
+                  >
+                    <FaShareAlt className="menu-item-icon" />
+                    <span>Shared with Me</span>
+                  </div>
+                  {userRole !== "User" && (
+                    <div
+                      className="user-menu-item login-btn"
+                      onClick={() => {
+                        navigate("/users");
+                        setShowUserMenu(false);
+                      }}
+                    >
+                      <FaUsers className="menu-item-icon" />
+                      <span>Manage Users</span>
+                    </div>
+                  )}
                   <div className="user-menu-divider" />
                   <div
                     className="user-menu-item login-btn"

@@ -2,13 +2,14 @@ import { ObjectId } from "mongodb";
 import fs from "fs/promises";
 import path from "node:path";
 import ApiError from "../utils/apiError.js";
+import User from "../models/userModel.js";
 import File from "../models/fileModel.js";
 import Directory from "../models/directoryModel.js";
 
 export const getFileContents = async (req, res, next) => {
   const fileId = req.params.fileId;
 
-  const file = req.file ? req.file : await File.findById(fileId).lean();
+  const file = req.fileDoc ? req.fileDoc : await File.findById(fileId).lean();
   if (!file) throw new ApiError(404, "File not found!");
 
   const fullpath = path.join(process.cwd(), "storage/", fileId + file.extname);
@@ -24,34 +25,45 @@ export const getFileContents = async (req, res, next) => {
 };
 
 export const saveFile = async (req, res, next) => {
+  if (!req.body) throw new ApiError(400, "No data received!");
+
   const userId = req.targetUserId || req.session.user._id.toString();
-  let parentDirId = req.body.parentDirId;
+  const parentDirId = req.body.parentDirId;
 
   // get the parentDir or assign the root directory
   const parentDir = parentDirId
-    ? await Directory.findOne({
-        user: userId,
-        _id: new ObjectId(parentDirId),
-      })
+    ? await Directory.findOne({ _id: parentDirId, user: userId }).lean()
     : await Directory.findOne({
-        _id: user.storageDir,
-      });
+        user: userId,
+        parentDir: null,
+      }).lean();
 
   if (!parentDir)
     throw new ApiError(404, "Given Parent Directory doesn't exist!");
 
-  parentDirId = parentDir._id;
-
   const file = req.file;
   const [fileId, _] = file.filename.split(".");
   const fileExt = path.extname(file.filename);
+
+  // check if a file with that name already exists in that directory
+  const fileAlreadyExist = !!(await File.exists({
+    parentDir: parentDir._id,
+    name: file.originalname,
+  }).lean());
+  if (fileAlreadyExist) {
+    await fs.rm(`storage/${file.filename}`);
+    throw new ApiError(
+      400,
+      "A file with this name already exist in this directory",
+    );
+  }
 
   // add entry in File
   await File.insertOne({
     _id: new ObjectId(fileId),
     name: file.originalname,
     size: file.size, //for handling large file sizes
-    parentDir: parentDirId,
+    parentDir: parentDir._id,
     extname: fileExt,
     user: userId,
   });
@@ -60,6 +72,8 @@ export const saveFile = async (req, res, next) => {
 };
 
 export const renameFile = async (req, res, next) => {
+  if (!req.body) throw new ApiError(400, "No data received!");
+
   if (!req.body.newFilename) throw new ApiError(400, "new filename required!");
 
   const fileId = req.params.fileId;
@@ -67,8 +81,8 @@ export const renameFile = async (req, res, next) => {
   const newExt = path.extname(newFilename);
   const parentPath = path.join(process.cwd(), "storage");
 
-  const file = req.file
-    ? req.file
+  const file = req.fileDoc
+    ? req.fileDoc
     : await File.findById(req.params.fileId).lean();
   if (!file) throw new ApiError(404, "File not found!");
   const oldExt = file.extname;
@@ -88,7 +102,7 @@ export const renameFile = async (req, res, next) => {
 
 export const setAllowAnyone = async (req, res, next) => {
   const fileId = req.params.fileId;
-  const permission = req.body.permission;
+  const permission = req.body?.permission;
 
   const result = await File.updateOne(
     { _id: fileId },
@@ -103,8 +117,8 @@ export const setAllowAnyone = async (req, res, next) => {
 export const deleteFile = async (req, res, next) => {
   const fileId = req.params.fileId;
 
-  const file = req.file
-    ? req.file
+  const file = req.fileDoc
+    ? req.fileDoc
     : await File.findById(req.params.fileId).lean();
   if (!file) throw new ApiError(404, "File not found!");
 

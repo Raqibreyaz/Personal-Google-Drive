@@ -1,6 +1,8 @@
 import User from "../models/userModel.js";
 
 export default async function checkUserAndPassword(req, res, next) {
+  if (!req.body) throw new ApiError(400, "No data received!");
+
   const { email, password } = req.body;
   if (!email || !password)
     throw new ApiError(400, "Email and Password are required!");

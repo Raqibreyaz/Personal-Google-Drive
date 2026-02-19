@@ -86,6 +86,10 @@ export default async function setupDB() {
       extname: {
         bsonType: "string",
       },
+      allowAnyoneAccess: {
+        bsonType: ["string", "null"],
+        enum: ["View", "Edit", null],
+      },
       user: {
         bsonType: "objectId",
         description: "Provide the user of the file!",

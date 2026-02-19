@@ -3,8 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import DirectoryHeader from "./components/DirectoryHeader";
 import CreateDirectoryModal from "./components/CreateDirectoryModal";
 import RenameModal from "./components/RenameModal";
+import ShareModal from "./components/ShareModal";
+import AccessControlModal from "./components/AccessControlModal";
 import DirectoryList from "./components/DirectoryList";
 import "./DirectoryView.css";
+import "./SharedWithMe.css";
 
 function DirectoryView() {
   const BACKEND_URI =
@@ -14,7 +17,6 @@ function DirectoryView() {
 
   // Displayed directory name
   const [directoryName, setDirectoryName] = useState("My Drive");
-  console.log(directoryName);
 
   // Lists of items
   const [directoriesList, setDirectoriesList] = useState([]);
@@ -31,6 +33,17 @@ function DirectoryView() {
   const [renameType, setRenameType] = useState(null); // "directory" or "file"
   const [renameId, setRenameId] = useState(null);
   const [renameValue, setRenameValue] = useState("");
+
+  // Share modal state
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareFileId, setShareFileId] = useState(null);
+  const [shareFileName, setShareFileName] = useState("");
+
+  // Access control modal state
+  const [showAccessModal, setShowAccessModal] = useState(false);
+  const [accessFileId, setAccessFileId] = useState(null);
+  const [accessFileName, setAccessFileName] = useState("");
+  const [accessCurrentPermission, setAccessCurrentPermission] = useState(null);
 
   // Uploading states
   const fileInputRef = useRef(null);
@@ -69,7 +82,6 @@ function DirectoryView() {
       const response = await fetch(`${BACKEND_URI}/directory/${dirId || ""}`, {
         credentials: "include",
       });
-      console.log(response);
       if (response.status === 400) {
         navigate("/login");
         return;
@@ -243,7 +255,7 @@ function DirectoryView() {
     if (xhr) {
       xhr.abort();
     }
-    // Remove it from queue if it’s still there
+    // Remove it from queue if it's still there
     setUploadQueue((prev) => prev.filter((item) => item._id !== tempId));
 
     // Remove from the filesList
@@ -361,6 +373,28 @@ function DirectoryView() {
       setErrorMessage(error.message);
     }
   }
+
+  /**
+   * Share handlers
+   */
+  function handleOpenShare(fileId, fileName) {
+    setShareFileId(fileId);
+    setShareFileName(fileName);
+    setShowShareModal(true);
+    setActiveContextMenu(null);
+  }
+
+  /**
+   * Access control handlers
+   */
+  function handleOpenAccessControl(fileId, fileName, currentAccess) {
+    setAccessFileId(fileId);
+    setAccessFileName(fileName);
+    setAccessCurrentPermission(currentAccess);
+    setShowAccessModal(true);
+    setActiveContextMenu(null);
+  }
+
   /**
    * Context Menu
    */
@@ -396,7 +430,7 @@ function DirectoryView() {
       {/* Top error message for general errors */}
       {errorMessage &&
         errorMessage !==
-          "Directory not found or you do not have access to it!" && (
+        "Directory not found or you do not have access to it!" && (
           <div className="error-message">{errorMessage}</div>
         )}
 
@@ -434,10 +468,32 @@ function DirectoryView() {
         />
       )}
 
+      {/* Share Modal */}
+      {showShareModal && (
+        <ShareModal
+          fileId={shareFileId}
+          fileName={shareFileName}
+          onClose={() => setShowShareModal(false)}
+          BACKEND_URI={BACKEND_URI}
+        />
+      )}
+
+      {/* Access Control Modal */}
+      {showAccessModal && (
+        <AccessControlModal
+          fileId={accessFileId}
+          fileName={accessFileName}
+          currentAccess={accessCurrentPermission}
+          onClose={() => setShowAccessModal(false)}
+          onAccessChanged={() => getDirectoryItems()}
+          BACKEND_URI={BACKEND_URI}
+        />
+      )}
+
       {combinedItems.length === 0 ? (
         // Check if the error is specifically the "no access" error
         errorMessage ===
-        "Directory not found or you do not have access to it!" ? (
+          "Directory not found or you do not have access to it!" ? (
           <p className="no-data-message">
             Directory not found or you do not have access to it!
           </p>
@@ -461,6 +517,8 @@ function DirectoryView() {
           handleDeleteFile={handleDeleteFile}
           handleDeleteDirectory={handleDeleteDirectory}
           openRenameModal={openRenameModal}
+          onShare={handleOpenShare}
+          onManageAccess={handleOpenAccessControl}
           BACKEND_URI={BACKEND_URI}
         />
       )}

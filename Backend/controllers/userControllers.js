@@ -10,8 +10,11 @@ import verifyIdToken from "../utils/verifyIdToken.js";
 import createUserWithEssentials from "../utils/createUserWithEssentials.js";
 import Role from "../utils/role.js";
 import Provider from "../utils/provider.js";
+import FileShare from "../models/fileShareModel.js";
 
 export const registerUser = async (req, res, next) => {
+  if (!req.body) throw new ApiError(400, "No data received!");
+
   const { name, password, email } = req.body;
   if (!name || !password || !email)
     throw new ApiError(400, "Name,Password and Email all are Required!");
@@ -54,6 +57,8 @@ export const loginUser = async (req, res, next) => {
 };
 
 export const loginWithGoogle = async (req, res, next) => {
+  if (!req.body) throw new ApiError(400, "No data received!");
+
   const { idToken } = req.body;
   const userData = await verifyIdToken(idToken);
   const userDoc = await User.findOne({ email: userData.email });
@@ -217,13 +222,10 @@ export const deleteUser = async (req, res, next) => {
   const { id } = req.params;
   const { permanent } = req.query;
 
-  if (id === req.session.user._id.toString())
+  if (req.session.user._id.equals(id))
     throw new ApiError(400, "You cant delete yourself!");
 
-  let user = null;
-
-  if (req.receivedUser) user = req.receivedUser;
-  else user = await User.findById(id);
+  const user = await User.findById(id);
 
   if (!user) throw new ApiError(404, "User not found!");
 
@@ -246,6 +248,7 @@ export const deleteUser = async (req, res, next) => {
         await fs.rm(`storage/${file.id}${file.extname}`);
         await file.deleteOne();
       }
+      await FileShare.deleteMany({ user: user._id }, { session });
       await user.deleteOne({ session });
     }
 
@@ -255,7 +258,9 @@ export const deleteUser = async (req, res, next) => {
     throw error;
   }
 
-  res.status(200).json({ message: `successfully deleted user ${user.name}` });
+  res.status(200).json({
+    message: `successfully deleted user ${user.name}${permanent ? " permanently" : ""}`,
+  });
 };
 
 // fetch all users(maybe soft deleted ones too!)
@@ -265,7 +270,9 @@ export const getAllUsers = async (req, res, next) => {
   // only owner will see the soft deleted users
   if (req.session.user.role !== "Owner") filter.isDeleted = { $ne: true };
 
-  const users = await User.find(filter).select("name email isDeleted").lean();
+  const users = await User.find(filter)
+    .select("name email isDeleted role")
+    .lean();
   for (const user of users) {
     const sessionExist = await Session.exists({ user: user._id });
     user.isLoggedIn = !!sessionExist;
@@ -282,7 +289,7 @@ export const logoutUser = async (req, res, next) => {
 export const forceLogout = async (req, res, next) => {
   const { id } = req.params;
   await Session.deleteMany({ user: id });
-  res.status(204).json({ message: "User sessions revoked!" });
+  res.status(200).json({ message: "User sessions revoked!" });
 };
 
 // delete all sessions
@@ -304,10 +311,12 @@ export const recoverUser = async (req, res, next) => {
 };
 
 export const changeUserRole = async (req, res, next) => {
+  if (!req.body) throw new ApiError(400, "No data received!");
+
   const { id } = req.params;
   const { role } = req.body;
   if (!role) throw new ApiError(400, `Provide user's role to change!`);
-  if (req.session._id.toString() === id)
+  if (!req.session.user._id.equals(id))
     throw new ApiError(400, `You can't change your own role!`);
 
   const result = await User.updateOne({ _id: id }, { $set: { role } });

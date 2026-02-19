@@ -1,0 +1,253 @@
+.shared-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.shared-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #ccc;
+  padding-bottom: 12px;
+}
+
+.shared-header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #007bff;
+  display: flex;
+  align-items: center;
+  padding: 6px;
+  border-radius: 50%;
+}
+
+.back-btn:hover {
+  background-color: #f0f0f0;
+}
+
+.shared-loading,
+.shared-empty {
+  text-align: center;
+  color: #777;
+  font-style: italic;
+  margin-top: 40px;
+}
+
+.shared-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shared-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+  background-color: #fafafa;
+  transition: background-color 0.15s;
+}
+
+.shared-item:hover {
+  background-color: #f0f0f0;
+}
+
+.shared-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shared-file-icon {
+  font-size: 1.4rem;
+  color: #007bff;
+}
+
+.shared-file-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.shared-file-name {
+  font-weight: 500;
+  color: #222;
+}
+
+.shared-file-size {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.shared-item-right {
+  display: flex;
+  align-items: center;
+}
+
+.shared-permission-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background-color: #e8f4fd;
+  color: #0277bd;
+}
+
+/* Share Modal Styles */
+.share-modal {
+  max-width: 480px;
+}
+
+.share-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.share-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.permission-select {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: white;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.share-error {
+  color: #d32f2f;
+  font-size: 0.85rem;
+  margin-top: 8px;
+}
+
+.share-success {
+  color: #2e7d32;
+  font-size: 0.85rem;
+  margin-top: 8px;
+}
+
+.shared-users-list {
+  margin-top: 16px;
+  border-top: 1px solid #eee;
+  padding-top: 12px;
+}
+
+.shared-users-list h3 {
+  margin: 0 0 8px 0;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.shared-user-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.shared-user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.shared-user-name {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.shared-user-email {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.shared-user-permission {
+  font-size: 0.8rem;
+  color: #0277bd;
+  text-transform: capitalize;
+}
+
+.revoke-btn {
+  background: none;
+  border: none;
+  color: #d32f2f;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.revoke-btn:hover {
+  background-color: #ffeaea;
+}
+
+/* Access Control Modal Styles */
+.access-modal {
+  max-width: 480px;
+}
+
+.access-filename {
+  color: #555;
+  font-size: 0.9rem;
+  margin: 4px 0 16px;
+}
+
+.access-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.access-label {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.link-copy-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.link-input {
+  flex: 1;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.copy-btn {
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px 10px;
+  cursor: pointer;
+  color: #007bff;
+  display: flex;
+  align-items: center;
+}
+
+.copy-btn:hover {
+  background-color: #f0f0f0;
+}

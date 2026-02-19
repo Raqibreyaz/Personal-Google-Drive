@@ -11,13 +11,24 @@ import {
 const router = express.Router();
 
 router.param("dirId", validateId);
+router.param("userId", validateId);
 
-router.get("/{:dirId}", authorizeDataAccess, getDirectoryContents);
+/* for [data_owner] only currently*/
+router.get("/{:dirId}", getDirectoryContents);
 
-router.post("/:dirname", authorizeDataAccess, createDirectory);
+router.post("/:dirname", createDirectory);
 
-router.patch("/:dirId", authorizeDataAccess, updateDirectoryName);
+router.patch("/:dirId", updateDirectoryName);
 
-router.delete("/:dirId", authorizeDataAccess, deleteDirectory);
+router.delete("/:dirId", deleteDirectory);
+
+/* for [data_owner, app_owner, admin] only */
+router.get("/:userId/{:dirId}", authorizeDataAccess, getDirectoryContents);
+
+router.post("/:userId/:dirname", authorizeDataAccess, createDirectory);
+
+router.patch("/:userId/:dirId", authorizeDataAccess, updateDirectoryName);
+
+router.delete("/:userId/:dirId", authorizeDataAccess, deleteDirectory);
 
 export default router;
