@@ -87,6 +87,18 @@ export const renameFile = async (req, res, next) => {
   if (!file) throw new ApiError(404, "File not found!");
   const oldExt = file.extname;
 
+  // check if a file with that name already exists in that directory
+  const fileAlreadyExist = !!(await File.exists({
+    parentDir: file.parentDir,
+    name: newFilename,
+  }).lean());
+  if (fileAlreadyExist) {
+    throw new ApiError(
+      400,
+      "A file with this name already exist in this directory",
+    );
+  }
+
   // renaming when extension differs
   if (oldExt != newExt)
     await fs.rename(

@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
 import "./UsersPage.css";
 
-const ROLES = ["User", "Manager", "Admin", "Owner"];
+// Must match backend Role order: Owner=0, Admin=1, Manager=2, User=3
+const ROLES = ["Owner", "Admin", "Manager", "User"];
+const ROLE_LEVEL = { Owner: 0, Admin: 1, Manager: 2, User: 3 };
 
 export default function UsersPage() {
   const BACKEND_URI =
@@ -14,19 +16,16 @@ export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
 
-  // Get roles the current user is allowed to assign based on hierarchy
-  function getAllowedRoles() {
+  // Can the current user act on this target user? (target must be strictly below)
+  function canActOn(targetRole) {
+    if (!currentUser) return false;
+    return ROLE_LEVEL[currentUser.role] < ROLE_LEVEL[targetRole];
+  }
+
+  // Get roles the current user is allowed to assign (strictly below their own level)
+  function getAssignableRoles() {
     if (!currentUser) return [];
-    switch (currentUser.role) {
-      case "Owner":
-        return ["User", "Manager", "Admin"];
-      case "Admin":
-        return ["User", "Manager"];
-      case "Manager":
-        return ["User"];
-      default:
-        return [];
-    }
+    return ROLES.filter((r) => ROLE_LEVEL[currentUser.role] < ROLE_LEVEL[r]);
   }
 
   const logoutUser = async (userId) => {
@@ -46,8 +45,11 @@ export default function UsersPage() {
     else setError("Failed to logout user.");
   };
 
-  const deleteUser = async (userId) => {
-    const confirmed = confirm("You are about to delete this user!");
+  // Soft delete (marks user as deleted, recoverable)
+  const softDeleteUser = async (userId) => {
+    const confirmed = confirm(
+      "Soft-delete this user? Their account will be deactivated but can be recovered.",
+    );
     if (!confirmed) return;
 
     const res = await fetch(`${BACKEND_URI}/user/${userId}`, {
@@ -61,6 +63,24 @@ export default function UsersPage() {
         ),
       );
     else setError("Failed to delete user.");
+  };
+
+  // Hard delete (permanent, removes all data)
+  const hardDeleteUser = async (userId) => {
+    const confirmed = confirm(
+      "⚠️ PERMANENTLY delete this user and ALL their data? This cannot be undone!",
+    );
+    if (!confirmed) return;
+
+    const res = await fetch(`${BACKEND_URI}/user/${userId}?permanent=true`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (res.ok)
+      setUsers((prevUsers) =>
+        prevUsers.filter((user) => user._id !== userId),
+      );
+    else setError("Failed to permanently delete user.");
   };
 
   const recoverUser = async (userId) => {
@@ -120,7 +140,7 @@ export default function UsersPage() {
     })();
   }, []);
 
-  const allowedRoles = getAllowedRoles();
+  const assignableRoles = getAssignableRoles();
   const isOwner = currentUser?.role === "Owner";
   const isAdminOrOwner =
     currentUser?.role === "Admin" || currentUser?.role === "Owner";
@@ -160,6 +180,9 @@ export default function UsersPage() {
             // Only Owner can see soft-deleted users
             if (isDeleted && !isOwner) return null;
 
+            // Can the current user act on this user? (must be strictly below)
+            const userIsUnderMe = canActOn(user.role);
+
             return (
               <tr
                 key={user._id}
@@ -173,17 +196,19 @@ export default function UsersPage() {
                 </td>
                 <td>{user.email}</td>
                 <td>
-                  {allowedRoles.length > 0 && !isDeleted ? (
+                  {/* Only show role dropdown if the user is strictly below current user */}
+                  {userIsUnderMe && !isDeleted ? (
                     <select
                       className="role-select"
                       value={user.role}
                       onChange={(e) => changeRole(user._id, e.target.value)}
                     >
+                      {/* Show current role + assignable roles only */}
                       {ROLES.map((role) => (
                         <option
                           key={role}
                           value={role}
-                          disabled={!allowedRoles.includes(role)}
+                          disabled={!assignableRoles.includes(role)}
                         >
                           {role}
                         </option>
@@ -203,15 +228,25 @@ export default function UsersPage() {
                 {isAdminOrOwner && (
                   <td className="actions-cell">
                     {isDeleted ? (
+                      /* Soft-deleted user: Owner can recover or permanently delete */
                       isOwner && (
-                        <button
-                          className="recover-button"
-                          onClick={() => recoverUser(user._id)}
-                        >
-                          Recover
-                        </button>
+                        <>
+                          <button
+                            className="recover-button"
+                            onClick={() => recoverUser(user._id)}
+                          >
+                            Recover
+                          </button>
+                          <button
+                            className="hard-delete-button"
+                            onClick={() => hardDeleteUser(user._id)}
+                          >
+                            Delete Permanently
+                          </button>
+                        </>
                       )
-                    ) : (
+                    ) : userIsUnderMe ? (
+                      /* Active user under me: can logout, soft delete, or hard delete (Owner only) */
                       <>
                         <button
                           className="logout-button"
@@ -222,12 +257,20 @@ export default function UsersPage() {
                         </button>
                         <button
                           className="delete-button"
-                          onClick={() => deleteUser(user._id)}
+                          onClick={() => softDeleteUser(user._id)}
                         >
                           Delete
                         </button>
+                        {isOwner && (
+                          <button
+                            className="hard-delete-button"
+                            onClick={() => hardDeleteUser(user._id)}
+                          >
+                            Delete Permanently
+                          </button>
+                        )}
                       </>
-                    )}
+                    ) : null}
                   </td>
                 )}
               </tr>

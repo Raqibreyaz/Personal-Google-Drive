@@ -316,7 +316,7 @@ export const changeUserRole = async (req, res, next) => {
   const { id } = req.params;
   const { role } = req.body;
   if (!role) throw new ApiError(400, `Provide user's role to change!`);
-  if (!req.session.user._id.equals(id))
+  if (req.session.user._id.equals(id))
     throw new ApiError(400, `You can't change your own role!`);
 
   const result = await User.updateOne({ _id: id }, { $set: { role } });

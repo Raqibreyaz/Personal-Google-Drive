@@ -45,6 +45,7 @@ export const createDirectory = async (req, res, next) => {
   const directoryAlreadyExist = !!(await Directory.exists({
     parentDir: parentDir._id,
     name: dirname,
+    user: userId,
   }).lean());
   if (directoryAlreadyExist)
     throw new ApiError(
@@ -71,15 +72,22 @@ export const updateDirectoryName = async (req, res, next) => {
   const dirId = req.params.dirId;
   const newDirname = req.body.newDirname;
 
-  // find & update the dir
-  const updateRes = await Directory.updateOne(
-    {
-      _id: new ObjectId(dirId),
-      user: userId,
-    },
-    { $set: { name: newDirname } },
-  );
-  if (!updateRes.modifiedCount) throw new ApiError(404, "Directory not found!");
+  const directory = await Directory.findOne({ _id: dirId, user: userId });
+  if (!directory) throw new ApiError(404, "Directory doesn't exist!");
+
+  // check if a directory with that name already exists in that directory
+  const directoryAlreadyExist = !!(await Directory.exists({
+    parentDir: directory.parentDir,
+    name: newDirname,
+    user: userId,
+  }).lean());
+  if (directoryAlreadyExist)
+    throw new ApiError(
+      400,
+      "A directory with this name already exist in this level!",
+    );
+
+  await directory.updateOne({ $set: { name: newDirname } });
 
   res.status(200).json({ message: "Directory name updated!" });
 };

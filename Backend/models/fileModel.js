@@ -34,7 +34,8 @@ const fileSchema = new mongoose.Schema(
   { strict: "throw", timestamps: true },
 );
 
-fileSchema.index({ name: 1, parentDir: 1 }, { unique: true });
+//ToDo
+// fileSchema.index({ name: 1, parentDir: 1 }, { unique: true });
 
 const File = mongoose.model("File", fileSchema);
 export default File;

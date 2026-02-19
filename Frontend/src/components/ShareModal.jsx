@@ -3,7 +3,7 @@ import { FaTrash } from "react-icons/fa";
 
 function ShareModal({ fileId, fileName, onClose, BACKEND_URI }) {
     const [userEmail, setUserEmail] = useState("");
-    const [permission, setPermission] = useState("viewer");
+    const [permission, setPermission] = useState("View");
     const [sharedUsers, setSharedUsers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -108,8 +108,8 @@ function ShareModal({ fileId, fileName, onClose, BACKEND_URI }) {
                             value={permission}
                             onChange={(e) => setPermission(e.target.value)}
                         >
-                            <option value="viewer">Viewer</option>
-                            <option value="editor">Editor</option>
+                            <option value="View">Viewer</option>
+                            <option value="Edit">Editor</option>
                         </select>
                         <button
                             className="primary-button"

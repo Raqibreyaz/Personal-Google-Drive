@@ -69,8 +69,8 @@ function AccessControlModal({
                         onChange={(e) => setPermission(e.target.value)}
                     >
                         <option value="">No access (restricted)</option>
-                        <option value="viewer">Can view</option>
-                        <option value="editor">Can edit</option>
+                        <option value="View">Can view</option>
+                        <option value="Edit">Can edit</option>
                     </select>
                 </div>
 

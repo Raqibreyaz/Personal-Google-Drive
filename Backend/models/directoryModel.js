@@ -21,7 +21,8 @@ const directorySchema = new mongoose.Schema(
   { strict: "throw", timestamps: true },
 );
 
-directorySchema.index({ name: 1, parentDir: 1 }, { unique: true });
+//ToDo
+// directorySchema.index({ name: 1, parentDir: 1 }, { unique: true });
 
 const Directory = mongoose.model("Directory", directorySchema);
 export default Directory;
