@@ -1,18 +1,18 @@
 import ApiError from "../utils/apiError.js";
 import User from "../models/userModel.js";
-import Session from "../models/sessionModel.js";
+import { getUserSession } from "../utils/redis.js";
 
 const checkAuthentication = async (req, res, next) => {
   const sessionId = req.signedCookies?.authToken ?? "";
   let user = null;
 
-  console.log(sessionId)
+  console.log(sessionId);
 
   // when session exists then allow user
   if (sessionId) {
-    const session = await Session.findById(sessionId).lean();
-    if (session) {
-      user = await User.findById(session.user).lean();
+    const userId = await getUserSession(sessionId);
+    if (userId) {
+      user = await User.findById(userId).lean();
       req.session = { user, sessionId };
     }
   }

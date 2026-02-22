@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 import mongoose from "mongoose";
 import User from "../models/userModel.js";
 import Directory from "../models/directoryModel.js";
-import Session from "../models/sessionModel.js";
+import { createUserSession } from "./redis.js";
 
 export default async function createUserWithEssentials({
   name,
@@ -47,17 +47,11 @@ export default async function createUserWithEssentials({
       { session },
     );
 
-    const userSession = await Session.insertOne(
-      {
-        user: userId,
-        expiresAt: new Date((Date.now() / 1000 + 86400) * 1000),
-      },
-      { session },
-    );
+    const sessionId = await createUserSession(userId.toString(), 86400);
 
     await session.commitTransaction();
 
-    return { userId: userId.toString(), sessionId: userSession.id };
+    return { userId: userId.toString(), sessionId };
   } catch (error) {
     await session.abortTransaction();
     throw error;

@@ -26,3 +26,4 @@ storage
 *DB.json
 *logs.txt
 .env
+*.resolved

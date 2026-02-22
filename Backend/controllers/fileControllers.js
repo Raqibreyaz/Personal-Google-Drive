@@ -2,8 +2,8 @@ import { ObjectId } from "mongodb";
 import fs from "fs/promises";
 import path from "node:path";
 import ApiError from "../utils/apiError.js";
-import User from "../models/userModel.js";
 import File from "../models/fileModel.js";
+import FileShare from "../models/fileShareModel.js";
 import Directory from "../models/directoryModel.js";
 
 export const getFileContents = async (req, res, next) => {
@@ -138,7 +138,8 @@ export const deleteFile = async (req, res, next) => {
   const fullpath = path.join(process.cwd(), "storage/", fileId + file.extname);
   await fs.rm(fullpath, { recursive: true, force: true });
 
-  // remove from File
+  await FileShare.deleteMany({ file: file._id });
+
   await File.findByIdAndDelete(file._id);
 
   res.status(200).json({ message: "File Deleted!" });
