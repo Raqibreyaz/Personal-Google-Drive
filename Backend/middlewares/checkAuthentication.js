@@ -10,9 +10,9 @@ const checkAuthentication = async (req, res, next) => {
 
   // when session exists then allow user
   if (sessionId) {
-    const userId = await getUserSession(sessionId);
-    if (userId) {
-      user = await User.findById(userId).lean();
+    const session = await getUserSession(sessionId);
+    if (session) {
+      user = await User.findById(session.userId).lean();
       req.session = { user, sessionId };
     }
   }
