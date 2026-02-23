@@ -138,6 +138,8 @@ export const deleteFile = async (req, res, next) => {
   const fullpath = path.join(process.cwd(), "storage/", fileId + file.extname);
   await fs.rm(fullpath, { recursive: true, force: true });
 
+  await FileShare.deleteMany({ file: file._id });
+
   // remove from File
   await File.findByIdAndDelete(file._id);
 

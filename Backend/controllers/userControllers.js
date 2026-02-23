@@ -246,6 +246,7 @@ export const deleteUser = async (req, res, next) => {
       const files = await File.find({ user: user._id }).select("extname");
       for (const file of files) {
         await fs.rm(`storage/${file.id}${file.extname}`);
+        await FileShare.deleteMany({ file: file._id }, { session });
         await file.deleteOne();
       }
       await FileShare.deleteMany({ user: user._id }, { session });
