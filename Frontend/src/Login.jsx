@@ -67,38 +67,25 @@ const Login = () => {
     }
   };
 
-  // STEP 2: VERIFY OTP + LOGIN
+  // STEP 2: VERIFY OTP + LOGIN (single request — backend verifyOtp middleware handles it)
   const handleVerifyOtpAndLogin = async () => {
     setLoading(true);
     setServerError("");
 
     try {
-      let response = await fetch(`${BASE_URL}/auth/verify-otp`, {
+      const response = await fetch(`${BASE_URL}/user/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          otp,
           email: formData.email,
+          otp,
         }),
         credentials: "include",
       });
 
-      let data = await response.json();
-
-      if (data.error) {
-        setServerError(data.error);
-        return;
-      }
-
-      response = await fetch(`${BASE_URL}/user/login`, {
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-        method: "POST",
-        credentials: "include",
-      });
-      data = await response.json();
+      const data = await response.json();
 
       if (data.error) {
         setServerError(data.error);
@@ -109,7 +96,7 @@ const Login = () => {
       navigate("/");
     } catch (err) {
       console.error(err);
-      setServerError("OTP verification failed.", err.message);
+      setServerError("OTP verification failed.");
     } finally {
       setLoading(false);
     }

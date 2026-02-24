@@ -1,6 +1,5 @@
 import express from "express";
 import checkAuthentication from "../middlewares/checkAuthentication.js";
-import checkUserAndPassword from "../middlewares/checkUserAndPassword.js";
 import {
   loginUser,
   getUser,
@@ -17,6 +16,7 @@ import {
 } from "../controllers/userControllers.js";
 import allowOnlyTo from "../middlewares/roleBasedAuth.js";
 import limitPrivileges from "../middlewares/limitPrivileges.js";
+import verifyOtp from "../middlewares/verifyOTP.js";
 import Role from "../utils/role.js";
 
 const router = express.Router();
@@ -24,18 +24,16 @@ const router = express.Router();
 // only authenticated users will be allowed
 router.get("/", checkAuthentication, getUser);
 
-router.post("/register", registerUser);
+// user must verify otp before registering/logging-in
+router.post("/register", verifyOtp, registerUser);
+router.post("/login", verifyOtp, loginUser);
 
-router.post("/login", checkUserAndPassword, loginUser);
-
+// 3rd party login
 router.post("/login/google", loginWithGoogle);
-
 router.get("/login/github", loginWithGithub);
 
 // allow only authenticated users to logout
 router.post("/logout", checkAuthentication, logoutUser);
-
-// allow only authenticated users to logout
 router.post("/logout/all", checkAuthentication, logoutUserFromAllDevices);
 
 // only non-regular users will be allowed

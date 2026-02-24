@@ -3,24 +3,19 @@ import checkUserAndPassword from "../middlewares/checkUserAndPassword.js";
 import checkAuthentication from "../middlewares/checkAuthentication.js";
 import {
   sendOtp,
-  verifyOtp,
   githubAuth,
-  authGithubSetCookie,
   me,
 } from "../controllers/authControllers.js";
+import checkUserNotExist from "../middlewares/checkUserNotExist.js";
 
 const router = express.Router();
 
 router.get("/me", checkAuthentication, me);
 
-router.post("/send-otp", sendOtp);
-
-router.post("/verify-otp", verifyOtp);
+router.post("/register/send-otp",checkUserNotExist, sendOtp);
 
 router.post("/login/send-otp", checkUserAndPassword, sendOtp);
 
 router.get("/github", githubAuth);
-
-router.post("/github/set-cookie", authGithubSetCookie);
 
 export default router;

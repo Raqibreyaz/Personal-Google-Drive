@@ -32,9 +32,13 @@ export const registerUser = async (req, res, next) => {
 };
 
 export const loginUser = async (req, res, next) => {
-  const { user } = req;
-  if (!user)
-    throw new ApiError(500, "Something went wrong while getting user!");
+  if (!req.body) throw new ApiError(400, "No data received!");
+
+  const { email } = req.body;
+  if (!email)
+    throw new ApiError(400, "Email is Required!");
+
+  const user = await User.findOne({ email }).select("_id").lean();
 
   // first check if user hasn't exhausted number of sessions limits
   const noOfSessions = await Session.countDocuments({ user: user._id });
