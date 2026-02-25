@@ -9,12 +9,9 @@ function ShareModal({ fileId, fileName, onClose, BACKEND_URI }) {
     const [error, setError] = useState("");
     const [successMsg, setSuccessMsg] = useState("");
 
-    // Fetch users who have access to this file
     async function fetchSharedUsers() {
         try {
-            const res = await fetch(`${BACKEND_URI}/share/${fileId}`, {
-                credentials: "include",
-            });
+            const res = await fetch(`${BACKEND_URI}/share/${fileId}`, { credentials: "include" });
             if (res.ok) {
                 const data = await res.json();
                 setSharedUsers(data);
@@ -24,17 +21,13 @@ function ShareModal({ fileId, fileName, onClose, BACKEND_URI }) {
         }
     }
 
-    useEffect(() => {
-        fetchSharedUsers();
-    }, [fileId]);
+    useEffect(() => { fetchSharedUsers(); }, [fileId]);
 
-    // Share file with a user
     async function handleShare(e) {
         e.preventDefault();
         setError("");
         setSuccessMsg("");
         setLoading(true);
-
         try {
             const res = await fetch(`${BACKEND_URI}/share/${fileId}`, {
                 method: "POST",
@@ -43,12 +36,7 @@ function ShareModal({ fileId, fileName, onClose, BACKEND_URI }) {
                 body: JSON.stringify({ userEmail, permission }),
             });
             const data = await res.json();
-
-            if (!res.ok) {
-                setError(data.error || "Failed to share file.");
-                return;
-            }
-
+            if (!res.ok) { setError(data.error || "Failed to share file."); return; }
             setSuccessMsg(`Shared with ${userEmail}!`);
             setUserEmail("");
             fetchSharedUsers();
@@ -59,13 +47,9 @@ function ShareModal({ fileId, fileName, onClose, BACKEND_URI }) {
         }
     }
 
-    // Revoke access from a user
     async function handleRevoke(email) {
-        const confirmed = confirm(
-            `Revoke access for ${email}?`,
-        );
+        const confirmed = confirm(`Revoke access for ${email}?`);
         if (!confirmed) return;
-
         try {
             const res = await fetch(`${BACKEND_URI}/share/${fileId}`, {
                 method: "DELETE",
@@ -73,10 +57,8 @@ function ShareModal({ fileId, fileName, onClose, BACKEND_URI }) {
                 credentials: "include",
                 body: JSON.stringify({ userEmail: email }),
             });
-
-            if (res.ok) {
-                fetchSharedUsers();
-            } else {
+            if (res.ok) fetchSharedUsers();
+            else {
                 const data = await res.json();
                 setError(data.error || "Failed to revoke access.");
             }
@@ -86,25 +68,22 @@ function ShareModal({ fileId, fileName, onClose, BACKEND_URI }) {
     }
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div
-                className="modal-content share-modal"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <h2>Share "{fileName}"</h2>
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-[999]" onClick={onClose}>
+            <div className="bg-white p-5 w-[90%] max-w-[480px] rounded" onClick={(e) => e.stopPropagation()}>
+                <h2 className="mt-0">Share "{fileName}"</h2>
 
-                <form onSubmit={handleShare} className="share-form">
+                <form onSubmit={handleShare} className="flex flex-col gap-2">
                     <input
                         type="email"
-                        className="modal-input"
+                        className="p-3 mt-2.5 mb-2.5 border border-gray-300 rounded"
                         placeholder="Enter email address"
                         value={userEmail}
                         onChange={(e) => setUserEmail(e.target.value)}
                         required
                     />
-                    <div className="share-controls">
+                    <div className="flex gap-2 items-center">
                         <select
-                            className="permission-select"
+                            className="py-2 px-3 border border-gray-300 rounded bg-white text-[0.9rem] cursor-pointer"
                             value={permission}
                             onChange={(e) => setPermission(e.target.value)}
                         >
@@ -112,7 +91,7 @@ function ShareModal({ fileId, fileName, onClose, BACKEND_URI }) {
                             <option value="Edit">Editor</option>
                         </select>
                         <button
-                            className="primary-button"
+                            className="bg-blue-600 text-white border-none rounded py-2 px-4 cursor-pointer hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                             type="submit"
                             disabled={loading}
                         >
@@ -121,28 +100,21 @@ function ShareModal({ fileId, fileName, onClose, BACKEND_URI }) {
                     </div>
                 </form>
 
-                {error && <p className="share-error">{error}</p>}
-                {successMsg && <p className="share-success">{successMsg}</p>}
+                {error && <p className="text-red-700 text-[0.85rem] mt-2">{error}</p>}
+                {successMsg && <p className="text-green-700 text-[0.85rem] mt-2">{successMsg}</p>}
 
-                {/* List of users with access */}
                 {sharedUsers.length > 0 && (
-                    <div className="shared-users-list">
-                        <h3>People with access</h3>
+                    <div className="mt-4 border-t border-gray-100 pt-3">
+                        <h3 className="m-0 mb-2 text-[0.95rem] text-gray-500">People with access</h3>
                         {sharedUsers.map((entry) => (
-                            <div key={entry._id} className="shared-user-row">
-                                <div className="shared-user-info">
-                                    <span className="shared-user-name">
-                                        {entry.user?.name || "Unknown"}
-                                    </span>
-                                    <span className="shared-user-email">
-                                        {entry.user?.email || ""}
-                                    </span>
+                            <div key={entry._id} className="flex items-center justify-between py-1.5 border-b border-gray-100">
+                                <div className="flex flex-col">
+                                    <span className="font-medium text-[0.9rem]">{entry.user?.name || "Unknown"}</span>
+                                    <span className="text-[0.8rem] text-gray-500">{entry.user?.email || ""}</span>
                                 </div>
-                                <span className="shared-user-permission">
-                                    {entry.permission}
-                                </span>
+                                <span className="text-[0.8rem] text-sky-700 capitalize">{entry.permission}</span>
                                 <button
-                                    className="revoke-btn"
+                                    className="bg-none border-none text-red-700 cursor-pointer text-[0.85rem] py-1 px-2 rounded hover:bg-red-50"
                                     title="Revoke access"
                                     onClick={() => handleRevoke(entry.user?.email)}
                                 >
@@ -153,8 +125,8 @@ function ShareModal({ fileId, fileName, onClose, BACKEND_URI }) {
                     </div>
                 )}
 
-                <div className="modal-buttons" style={{ marginTop: "16px" }}>
-                    <button className="secondary-button" onClick={onClose}>
+                <div className="flex justify-end gap-2.5 mt-4">
+                    <button className="bg-gray-300 text-gray-700 border-none rounded py-2 px-4 cursor-pointer hover:bg-gray-400" onClick={onClose}>
                         Close
                     </button>
                 </div>

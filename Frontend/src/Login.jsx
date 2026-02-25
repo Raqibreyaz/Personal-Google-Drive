@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import "./Auth.css";
 import GoogleLoginButton from "./components/GoogleLoginButton";
 import GithubLoginButton from "./components/GithubLoginButton";
 
@@ -8,94 +7,51 @@ const Login = () => {
   const BASE_URL = import.meta.env.VITE_BACKEND_URI || "http://localhost:8080";
   const navigate = useNavigate();
 
-  // FORM STATE
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [otp, setOtp] = useState("");
-
-  // FLOW STATE
   const [otpSent, setOtpSent] = useState(false);
-
-  // UI STATE
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
 
   const handleChange = (e) => {
     if (serverError) setServerError("");
-
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  // STEP 1: SEND OTP
   const handleSendOtp = async () => {
     setLoading(true);
     setServerError("");
-
     try {
       const response = await fetch(`${BASE_URL}/auth/login/send-otp`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email, password: formData.password }),
         credentials: "include",
       });
-
       const data = await response.json();
-
-      if (data.error) {
-        console.log(data.error);
-        setServerError(data.error);
-        return;
-      }
-
+      if (data.error) { setServerError(data.error); return; }
       setOtpSent(true);
     } catch (err) {
-      console.log(err);
       setServerError("Failed to send OTP. Try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  // STEP 2: VERIFY OTP + LOGIN (single request — backend verifyOtp middleware handles it)
   const handleVerifyOtpAndLogin = async () => {
     setLoading(true);
     setServerError("");
-
     try {
       const response = await fetch(`${BASE_URL}/auth/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          otp,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email, otp }),
         credentials: "include",
       });
-
       const data = await response.json();
-
-      if (data.error) {
-        setServerError(data.error);
-        return;
-      }
-
-      // OTP VERIFIED → LOGIN COMPLETE
+      if (data.error) { setServerError(data.error); return; }
       navigate("/");
     } catch (err) {
-      console.error(err);
       setServerError("OTP verification failed.");
     } finally {
       setLoading(false);
@@ -104,55 +60,48 @@ const Login = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    if (!otpSent) {
-      handleSendOtp();
-    } else {
-      handleVerifyOtpAndLogin();
-    }
+    if (!otpSent) handleSendOtp();
+    else handleVerifyOtpAndLogin();
   };
 
   const hasError = Boolean(serverError);
 
   return (
-    <div className="container">
-      <h2 className="heading">Login with OTP</h2>
+    <div className="max-w-[400px] mx-auto p-5">
+      <h2 className="text-center mb-5">Login with OTP</h2>
 
-      <form className="form" onSubmit={handleSubmit}>
-        {/* EMAIL */}
-        <div className="form-group">
-          <label className="label">Email</label>
+      <form className="flex flex-col" onSubmit={handleSubmit}>
+        <div className="relative mb-5">
+          <label className="block mb-1 font-bold">Email</label>
           <input
-            className={`input ${hasError ? "input-error" : ""}`}
+            className={`w-full p-2 box-border border rounded ${hasError ? "border-red-500" : "border-gray-300"}`}
             type="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
             required
-            disabled={otpSent} // Lock email after OTP sent
+            disabled={otpSent}
           />
         </div>
 
-        {/* PASSWORD */}
-        <div className="form-group">
-          <label className="label">Password</label>
+        <div className="relative mb-5">
+          <label className="block mb-1 font-bold">Password</label>
           <input
-            className={`input ${hasError ? "input-error" : ""}`}
+            className={`w-full p-2 box-border border rounded ${hasError ? "border-red-500" : "border-gray-300"}`}
             type="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
             required
-            disabled={otpSent} // Lock password after OTP sent
+            disabled={otpSent}
           />
         </div>
 
-        {/* OTP FIELD APPEARS AFTER OTP SENT */}
         {otpSent && (
-          <div className="form-group">
-            <label className="label">Enter OTP</label>
+          <div className="relative mb-5">
+            <label className="block mb-1 font-bold">Enter OTP</label>
             <input
-              className={`input ${hasError ? "input-error" : ""}`}
+              className={`w-full p-2 box-border border rounded ${hasError ? "border-red-500" : "border-gray-300"}`}
               type="text"
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
@@ -162,25 +111,22 @@ const Login = () => {
           </div>
         )}
 
-        {/* ERROR MESSAGE */}
-        {serverError && <p className="error-msg">{serverError}</p>}
+        {serverError && <p className="text-red-500 text-[0.7rem] mt-0.5 whitespace-nowrap">{serverError}</p>}
 
-        {/* BUTTON */}
-        <button type="submit" className="submit-button" disabled={loading}>
+        <button
+          type="submit"
+          className="bg-blue-600 text-white border-none rounded py-2.5 px-4 w-full cursor-pointer text-base hover:opacity-90 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          disabled={loading}
+        >
           {!otpSent
-            ? loading
-              ? "Sending OTP..."
-              : "Send OTP"
-            : loading
-              ? "Verifying..."
-              : "Verify & Login"}
+            ? loading ? "Sending OTP..." : "Send OTP"
+            : loading ? "Verifying..." : "Verify & Login"}
         </button>
 
-        {/* OPTIONAL UX: RESEND OTP */}
         {otpSent && (
           <button
             type="button"
-            className="secondary-button"
+            className="bg-gray-300 text-gray-700 border-none rounded py-2 px-4 cursor-pointer hover:bg-gray-400 mt-2"
             onClick={handleSendOtp}
             disabled={loading}
           >
@@ -189,20 +135,17 @@ const Login = () => {
         )}
       </form>
 
-      <p className="link-text">
-        Don't have an account? <Link to="/register">Register</Link>
+      <p className="text-center mt-2.5">
+        Don't have an account?{" "}
+        <Link to="/register" className="text-blue-700 no-underline font-medium hover:underline hover:text-blue-900">
+          Register
+        </Link>
       </p>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
+      <div className="flex flex-col items-center">
         <div>Or</div>
-        <div className="center-align">
+        <div className="flex justify-center items-center gap-0.5">
           <GoogleLoginButton />
-          <GithubLoginButton className="" />
+          <GithubLoginButton />
         </div>
       </div>
     </div>

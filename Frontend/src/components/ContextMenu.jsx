@@ -10,81 +10,45 @@ function ContextMenu({
   onManageAccess,
   BACKEND_URI,
 }) {
-  // Directory context menu
+  const menuClass = "fixed bg-white shadow-md rounded z-[999] py-1";
+  const itemClass = "px-5 py-2 cursor-pointer whitespace-nowrap text-gray-700 hover:bg-gray-100";
+
   if (item.isDirectory) {
     return (
-      <div
-        className="context-menu"
-        style={{ top: contextMenuPos.y, left: contextMenuPos.x }}
-      >
-        <div
-          className="context-menu-item"
-          onClick={() => openRenameModal("directory", item._id, item.name)}
-        >
+      <div className={menuClass} style={{ top: contextMenuPos.y, left: contextMenuPos.x }}>
+        <div className={itemClass} onClick={() => openRenameModal("directory", item._id, item.name)}>
           Rename
         </div>
-        <div
-          className="context-menu-item"
-          onClick={() => handleDeleteDirectory(item._id)}
-        >
+        <div className={itemClass} onClick={() => handleDeleteDirectory(item._id)}>
           Delete
         </div>
       </div>
     );
   } else {
-    // File context menu
     if (isUploadingItem && item.isUploading) {
-      // Only show "Cancel"
       return (
-        <div
-          className="context-menu"
-          style={{ top: contextMenuPos.y, left: contextMenuPos.x }}
-        >
-          <div
-            className="context-menu-item"
-            onClick={() => handleCancelUpload(item._id)}
-          >
+        <div className={menuClass} style={{ top: contextMenuPos.y, left: contextMenuPos.x }}>
+          <div className={itemClass} onClick={() => handleCancelUpload(item._id)}>
             Cancel
           </div>
         </div>
       );
     } else {
-      // Normal file
       return (
-        <div
-          className="context-menu"
-          style={{ top: contextMenuPos.y, left: contextMenuPos.x }}
-        >
-          <div
-            className="context-menu-item"
-            onClick={() =>
-              (window.location.href = `${BACKEND_URI}/file/${item._id}?action=download`)
-            }
-          >
+        <div className={menuClass} style={{ top: contextMenuPos.y, left: contextMenuPos.x }}>
+          <div className={itemClass} onClick={() => (window.location.href = `${BACKEND_URI}/file/${item._id}?action=download`)}>
             Download
           </div>
-          <div
-            className="context-menu-item"
-            onClick={() => openRenameModal("file", item._id, item.name)}
-          >
+          <div className={itemClass} onClick={() => openRenameModal("file", item._id, item.name)}>
             Rename
           </div>
-          <div
-            className="context-menu-item"
-            onClick={() => onShare(item._id, item.name)}
-          >
+          <div className={itemClass} onClick={() => onShare(item._id, item.name)}>
             Share
           </div>
-          <div
-            className="context-menu-item"
-            onClick={() => onManageAccess(item._id, item.name, item.allowAnyoneAccess)}
-          >
+          <div className={itemClass} onClick={() => onManageAccess(item._id, item.name, item.allowAnyoneAccess)}>
             Manage Access
           </div>
-          <div
-            className="context-menu-item"
-            onClick={() => handleDeleteFile(item._id)}
-          >
+          <div className={itemClass} onClick={() => handleDeleteFile(item._id)}>
             Delete
           </div>
         </div>

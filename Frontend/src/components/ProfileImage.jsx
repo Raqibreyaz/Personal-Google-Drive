@@ -1,5 +1,5 @@
 import React from "react";
 
 export default function ProfileImage({ src }) {
-  return <img className="profile-img" src={src} alt={"profile"} />;
+  return <img className="rounded-full w-8" src={src} alt={"profile"} />;
 }

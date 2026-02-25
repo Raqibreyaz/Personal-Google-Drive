@@ -18,10 +18,9 @@ function DirectoryList({
   BACKEND_URI,
 }) {
   return (
-    <div className="directory-list">
+    <div className="flex flex-col gap-2.5 mt-5">
       {items.map((item) => {
         const uploadProgress = progressMap[item._id] || 0;
-
         return (
           <DirectoryItem
             key={item._id}

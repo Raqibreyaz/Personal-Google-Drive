@@ -1,28 +1,23 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
-import "./UsersPage.css";
 
-// Must match backend Role order: Owner=0, Admin=1, Manager=2, User=3
 const ROLES = ["Owner", "Admin", "Manager", "User"];
 const ROLE_LEVEL = { Owner: 0, Admin: 1, Manager: 2, User: 3 };
 
 export default function UsersPage() {
-  const BACKEND_URI =
-    import.meta.env.VITE_BACKEND_URI || "http://localhost:8080";
+  const BACKEND_URI = import.meta.env.VITE_BACKEND_URI || "http://localhost:8080";
   const navigate = useNavigate();
 
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
 
-  // Can the current user act on this target user? (target must be strictly below)
   function canActOn(targetRole) {
     if (!currentUser) return false;
     return ROLE_LEVEL[currentUser.role] < ROLE_LEVEL[targetRole];
   }
 
-  // Get roles the current user is allowed to assign (strictly below their own level)
   function getAssignableRoles() {
     if (!currentUser) return [];
     return ROLES.filter((r) => ROLE_LEVEL[currentUser.role] < ROLE_LEVEL[r]);
@@ -31,79 +26,41 @@ export default function UsersPage() {
   const logoutUser = async (userId) => {
     const confirmed = confirm("You are about to logout this user!");
     if (!confirmed) return;
-
-    const res = await fetch(`${BACKEND_URI}/user/logout/${userId}`, {
-      method: "POST",
-      credentials: "include",
-    });
+    const res = await fetch(`${BACKEND_URI}/user/logout/${userId}`, { method: "POST", credentials: "include" });
     if (res.ok)
-      setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user._id === userId ? { ...user, isLoggedIn: false } : user,
-        ),
-      );
+      setUsers((prev) => prev.map((user) => user._id === userId ? { ...user, isLoggedIn: false } : user));
     else setError("Failed to logout user.");
   };
 
-  // Soft delete (marks user as deleted, recoverable)
   const softDeleteUser = async (userId) => {
-    const confirmed = confirm(
-      "Soft-delete this user? Their account will be deactivated but can be recovered.",
-    );
+    const confirmed = confirm("Soft-delete this user? Their account will be deactivated but can be recovered.");
     if (!confirmed) return;
-
-    const res = await fetch(`${BACKEND_URI}/user/${userId}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
+    const res = await fetch(`${BACKEND_URI}/user/${userId}`, { method: "DELETE", credentials: "include" });
     if (res.ok)
-      setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user._id === userId ? { ...user, isDeleted: true } : user,
-        ),
-      );
+      setUsers((prev) => prev.map((user) => user._id === userId ? { ...user, isDeleted: true } : user));
     else setError("Failed to delete user.");
   };
 
-  // Hard delete (permanent, removes all data)
   const hardDeleteUser = async (userId) => {
-    const confirmed = confirm(
-      "⚠️ PERMANENTLY delete this user and ALL their data? This cannot be undone!",
-    );
+    const confirmed = confirm("⚠️ PERMANENTLY delete this user and ALL their data? This cannot be undone!");
     if (!confirmed) return;
-
-    const res = await fetch(`${BACKEND_URI}/user/${userId}?permanent=true`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-    if (res.ok)
-      setUsers((prevUsers) =>
-        prevUsers.filter((user) => user._id !== userId),
-      );
+    const res = await fetch(`${BACKEND_URI}/user/${userId}?permanent=true`, { method: "DELETE", credentials: "include" });
+    if (res.ok) setUsers((prev) => prev.filter((user) => user._id !== userId));
     else setError("Failed to permanently delete user.");
   };
 
   const recoverUser = async (userId) => {
     const confirmed = confirm("Recover this user?");
     if (!confirmed) return;
-
-    const res = await fetch(`${BACKEND_URI}/user/recover/${userId}`, {
-      method: "PATCH",
-      credentials: "include",
-    });
+    const res = await fetch(`${BACKEND_URI}/user/recover/${userId}`, { method: "PATCH", credentials: "include" });
     if (res.ok)
-      setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user._id === userId ? { ...user, isDeleted: false } : user,
-        ),
-      );
+      setUsers((prev) => prev.map((user) => user._id === userId ? { ...user, isDeleted: false } : user));
     else setError("Failed to recover user.");
   };
 
   const changeRole = async (userId, newRole) => {
     const confirmed = confirm(`Change this user's role to ${newRole}?`);
     if (!confirmed) return;
-
     const res = await fetch(`${BACKEND_URI}/user/role/${userId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -111,105 +68,87 @@ export default function UsersPage() {
       body: JSON.stringify({ role: newRole }),
     });
     if (res.ok)
-      setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user._id === userId ? { ...user, role: newRole } : user,
-        ),
-      );
+      setUsers((prev) => prev.map((user) => user._id === userId ? { ...user, role: newRole } : user));
     else setError("Failed to change role.");
   };
 
   const fetchUsers = async () => {
-    const res = await fetch(`${BACKEND_URI}/user/all`, {
-      credentials: "include",
-    });
+    const res = await fetch(`${BACKEND_URI}/user/all`, { credentials: "include" });
     const data = await res.json();
     if (res.ok) setUsers(data);
   };
 
   useEffect(() => {
     (async () => {
-      const userRes = await fetch(`${BACKEND_URI}/user`, {
-        credentials: "include",
-      });
+      const userRes = await fetch(`${BACKEND_URI}/user`, { credentials: "include" });
       const userData = await userRes.json();
       if (userRes.ok && userData.role !== "User") setCurrentUser(userData);
       else navigate("/");
-
       fetchUsers();
     })();
   }, []);
 
   const assignableRoles = getAssignableRoles();
   const isOwner = currentUser?.role === "Owner";
-  const isAdminOrOwner =
-    currentUser?.role === "Admin" || currentUser?.role === "Owner";
+  const isAdminOrOwner = currentUser?.role === "Admin" || currentUser?.role === "Owner";
+
+  const actionBtnBase = "py-1.5 px-3 text-[13px] border-none rounded text-white cursor-pointer transition-colors duration-200";
 
   return (
-    <div className="users-container">
-      <header className="users-header">
-        <button className="back-btn" onClick={() => navigate("/")}>
+    <div className="max-w-[900px] mx-auto p-5 font-sans">
+      <header className="flex items-center gap-3 mb-6 border-b-2 border-gray-300 pb-3">
+        <button className="bg-none border-none text-xl cursor-pointer text-blue-600 flex items-center p-1.5 rounded-full hover:bg-gray-100" onClick={() => navigate("/")}>
           <FaArrowLeft />
         </button>
         <div>
-          <h1 className="title">All Users</h1>
-          <p className="users-subtitle">
+          <h1 className="m-0 text-3xl font-bold">All Users</h1>
+          <p className="mt-1 text-[0.9rem] text-gray-500">
             {currentUser?.name} — {currentUser?.role}
           </p>
         </div>
       </header>
 
-      {error && <div className="users-error">{error}</div>}
+      {error && (
+        <div className="bg-red-50 text-red-700 py-2.5 px-4 rounded-md mb-4 text-[0.9rem]">{error}</div>
+      )}
 
-      <table className="user-table">
+      <table className="w-full border-collapse">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Status</th>
-            {isAdminOrOwner && <th>Actions</th>}
+            <th className="border border-gray-200 p-3 text-left bg-gray-50 font-semibold text-[0.9rem] text-gray-700">Name</th>
+            <th className="border border-gray-200 p-3 text-left bg-gray-50 font-semibold text-[0.9rem] text-gray-700">Email</th>
+            <th className="border border-gray-200 p-3 text-left bg-gray-50 font-semibold text-[0.9rem] text-gray-700">Role</th>
+            <th className="border border-gray-200 p-3 text-left bg-gray-50 font-semibold text-[0.9rem] text-gray-700">Status</th>
+            {isAdminOrOwner && <th className="border border-gray-200 p-3 text-left bg-gray-50 font-semibold text-[0.9rem] text-gray-700">Actions</th>}
           </tr>
         </thead>
         <tbody>
           {users.map((user) => {
             if (user.email === currentUser?.email) return null;
-
             const isDeleted = user.isDeleted;
-
-            // Only Owner can see soft-deleted users
             if (isDeleted && !isOwner) return null;
-
-            // Can the current user act on this user? (must be strictly below)
             const userIsUnderMe = canActOn(user.role);
 
             return (
-              <tr
-                key={user._id}
-                className={isDeleted ? "deleted-row" : ""}
-              >
-                <td>
+              <tr key={user._id} className={isDeleted ? "opacity-60 bg-red-50" : ""}>
+                <td className="border border-gray-200 p-3">
                   {user.name}
                   {isDeleted && (
-                    <span className="deleted-badge">deleted</span>
+                    <span className="inline-block bg-red-200 text-red-800 text-[0.7rem] py-0.5 px-1.5 rounded-lg ml-2 font-semibold uppercase">
+                      deleted
+                    </span>
                   )}
                 </td>
-                <td>{user.email}</td>
-                <td>
-                  {/* Only show role dropdown if the user is strictly below current user */}
+                <td className="border border-gray-200 p-3">{user.email}</td>
+                <td className="border border-gray-200 p-3">
                   {userIsUnderMe && !isDeleted ? (
                     <select
-                      className="role-select"
+                      className="py-1.5 px-2.5 border border-gray-300 rounded text-[0.85rem] bg-white cursor-pointer focus:outline-none focus:border-blue-600"
                       value={user.role}
                       onChange={(e) => changeRole(user._id, e.target.value)}
                     >
-                      {/* Show current role + assignable roles only */}
                       {ROLES.map((role) => (
-                        <option
-                          key={role}
-                          value={role}
-                          disabled={!assignableRoles.includes(role)}
-                        >
+                        <option key={role} value={role} disabled={!assignableRoles.includes(role)}>
                           {role}
                         </option>
                       ))}
@@ -218,59 +157,48 @@ export default function UsersPage() {
                     user.role
                   )}
                 </td>
-                <td>
+                <td className="border border-gray-200 p-3">
                   <span
-                    className={`status-badge ${user.isLoggedIn ? "logged-in" : "logged-out"}`}
+                    className={`inline-block py-0.5 px-2.5 rounded-xl text-[0.8rem] font-medium ${user.isLoggedIn ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-500"
+                      }`}
                   >
                     {user.isLoggedIn ? "Online" : "Offline"}
                   </span>
                 </td>
                 {isAdminOrOwner && (
-                  <td className="actions-cell">
-                    {isDeleted ? (
-                      /* Soft-deleted user: Owner can recover or permanently delete */
-                      isOwner && (
+                  <td className="border border-gray-200 p-3">
+                    <div className="flex gap-2 flex-wrap">
+                      {isDeleted ? (
+                        isOwner && (
+                          <>
+                            <button className={`${actionBtnBase} bg-green-600 hover:bg-green-700`} onClick={() => recoverUser(user._id)}>
+                              Recover
+                            </button>
+                            <button className={`${actionBtnBase} bg-pink-900 hover:bg-pink-950`} onClick={() => hardDeleteUser(user._id)}>
+                              Delete Permanently
+                            </button>
+                          </>
+                        )
+                      ) : userIsUnderMe ? (
                         <>
                           <button
-                            className="recover-button"
-                            onClick={() => recoverUser(user._id)}
+                            className={`${actionBtnBase} bg-blue-600 hover:enabled:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed`}
+                            onClick={() => logoutUser(user._id)}
+                            disabled={!user.isLoggedIn}
                           >
-                            Recover
+                            Logout
                           </button>
-                          <button
-                            className="hard-delete-button"
-                            onClick={() => hardDeleteUser(user._id)}
-                          >
-                            Delete Permanently
+                          <button className={`${actionBtnBase} bg-red-600 hover:bg-red-700`} onClick={() => softDeleteUser(user._id)}>
+                            Delete
                           </button>
+                          {isOwner && (
+                            <button className={`${actionBtnBase} bg-pink-900 hover:bg-pink-950`} onClick={() => hardDeleteUser(user._id)}>
+                              Delete Permanently
+                            </button>
+                          )}
                         </>
-                      )
-                    ) : userIsUnderMe ? (
-                      /* Active user under me: can logout, soft delete, or hard delete (Owner only) */
-                      <>
-                        <button
-                          className="logout-button"
-                          onClick={() => logoutUser(user._id)}
-                          disabled={!user.isLoggedIn}
-                        >
-                          Logout
-                        </button>
-                        <button
-                          className="delete-button"
-                          onClick={() => softDeleteUser(user._id)}
-                        >
-                          Delete
-                        </button>
-                        {isOwner && (
-                          <button
-                            className="hard-delete-button"
-                            onClick={() => hardDeleteUser(user._id)}
-                          >
-                            Delete Permanently
-                          </button>
-                        )}
-                      </>
-                    ) : null}
+                      ) : null}
+                    </div>
                   </td>
                 )}
               </tr>
