@@ -1,19 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
+import { loginWithGoogle } from "../api/auth.js";
 
 export default function GoogleLoginButton() {
-  const BACKEND_URI =
-    import.meta.env.VITE_BACKEND_URI || "http://localhost:8080";
   const navigate = useNavigate();
   return (
     <GoogleLogin
       onSuccess={async function ({ credential }) {
-        const res = await fetch(`${BACKEND_URI}/auth/login/google`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ idToken: credential }),
-        });
+        const res = await loginWithGoogle(credential);
         if (res.ok) navigate("/");
       }}
       onError={function () {

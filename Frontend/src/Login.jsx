@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import GoogleLoginButton from "./components/GoogleLoginButton";
 import GithubLoginButton from "./components/GithubLoginButton";
+import { sendLoginOtp, loginWithOtp } from "./api/auth.js";
 
 const Login = () => {
-  const BASE_URL = import.meta.env.VITE_BACKEND_URI || "http://localhost:8080";
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -22,12 +22,7 @@ const Login = () => {
     setLoading(true);
     setServerError("");
     try {
-      const response = await fetch(`${BASE_URL}/auth/login/send-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: formData.email, password: formData.password }),
-        credentials: "include",
-      });
+      const response = await sendLoginOtp(formData.email, formData.password);
       const data = await response.json();
       if (data.error) { setServerError(data.error); return; }
       setOtpSent(true);
@@ -42,12 +37,7 @@ const Login = () => {
     setLoading(true);
     setServerError("");
     try {
-      const response = await fetch(`${BASE_URL}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: formData.email, otp }),
-        credentials: "include",
-      });
+      const response = await loginWithOtp(formData.email, otp);
       const data = await response.json();
       if (data.error) { setServerError(data.error); return; }
       navigate("/");

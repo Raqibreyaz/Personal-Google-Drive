@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FaCopy, FaCheck } from "react-icons/fa";
+import { setFileAccess, getFileUrl } from "../api/file.js";
 
 function AccessControlModal({
     fileId,
@@ -7,25 +8,19 @@ function AccessControlModal({
     currentAccess,
     onClose,
     onAccessChanged,
-    BACKEND_URI,
 }) {
     const [permission, setPermission] = useState(currentAccess || "");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [copied, setCopied] = useState(false);
 
-    const fileLink = `${BACKEND_URI}/file/${fileId}`;
+    const fileLink = getFileUrl(fileId);
 
     async function handleSave() {
         setLoading(true);
         setError("");
         try {
-            const res = await fetch(`${BACKEND_URI}/file/set-access/${fileId}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ permission: permission || null }),
-            });
+            const res = await setFileAccess(fileId, permission || null);
             if (!res.ok) {
                 const data = await res.json();
                 setError(data.error || "Failed to update access.");

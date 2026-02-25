@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import GoogleLoginButton from "./components/GoogleLoginButton";
 import GithubLoginButton from "./components/GithubLoginButton";
+import { sendRegisterOtp, registerWithOtp } from "./api/auth.js";
 
 const Register = () => {
-  const BASE_URL = import.meta.env.VITE_BACKEND_URI || "http://localhost:8080";
   const [formData, setFormData] = useState({ name: "", email: "", password: "" });
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
@@ -21,12 +21,7 @@ const Register = () => {
     setLoading(true);
     setServerError("");
     try {
-      const res = await fetch(`${BASE_URL}/auth/register/send-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: formData.email }),
-        credentials: "include",
-      });
+      const res = await sendRegisterOtp(formData.email);
       const data = await res.json();
       if (data.error) { setServerError(data.error); return; }
       setOtpSent(true);
@@ -41,12 +36,7 @@ const Register = () => {
     setLoading(true);
     setServerError("");
     try {
-      const response = await fetch(`${BASE_URL}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, otp }),
-        credentials: "include",
-      });
+      const response = await registerWithOtp(formData, otp);
       const data = await response.json();
       if (data.error) { setServerError(data.error); return; }
       navigate("/");

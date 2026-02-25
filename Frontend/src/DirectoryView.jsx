@@ -6,10 +6,11 @@ import RenameModal from "./components/RenameModal";
 import ShareModal from "./components/ShareModal";
 import AccessControlModal from "./components/AccessControlModal";
 import DirectoryList from "./components/DirectoryList";
+import { getDirectory, createDirectory, deleteDirectory, renameDirectory } from "./api/directory.js";
+import { deleteFile, renameFile, getFileUrl, uploadFile } from "./api/file.js";
+import { BASE_URL } from "./api/client.js";
 
 function DirectoryView() {
-  const BACKEND_URI =
-    import.meta.env.VITE_BACKEND_URI || "http://localhost:8080";
   const { dirId } = useParams();
   const navigate = useNavigate();
 
@@ -59,9 +60,7 @@ function DirectoryView() {
   async function getDirectoryItems() {
     setErrorMessage("");
     try {
-      const response = await fetch(`${BACKEND_URI}/directory/${dirId || ""}`, {
-        credentials: "include",
-      });
+      const response = await getDirectory(dirId);
       if (response.status === 400) { navigate("/login"); return; }
       await handleFetchErrors(response);
       const data = await response.json();
@@ -92,7 +91,7 @@ function DirectoryView() {
 
   function handleRowClick(type, id) {
     if (type === "directory") navigate(`/directory/${id}`);
-    else window.location.href = `${BACKEND_URI}/file/${id}`;
+    else window.location.href = getFileUrl(id);
   }
 
   function handleFileSelect(e) {
@@ -130,21 +129,13 @@ function DirectoryView() {
       prev.map((f) => f._id === currentItem._id ? { ...f, isUploading: true } : f),
     );
 
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", `${BACKEND_URI}/file/${dirId ?? ""}`, true);
-    xhr.withCredentials = true;
-    xhr.upload.addEventListener("progress", (evt) => {
-      if (evt.lengthComputable) {
-        const progress = (evt.loaded / evt.total) * 100;
+    const xhr = uploadFile(dirId, currentItem.file, {
+      onProgress: (progress) => {
         setProgressMap((prev) => ({ ...prev, [currentItem._id]: progress }));
-      }
+      },
+      onLoad: () => { processUploadQueue(restQueue); },
     });
-    xhr.addEventListener("load", () => { processUploadQueue(restQueue); });
     setUploadXhrMap((prev) => ({ ...prev, [currentItem._id]: xhr }));
-
-    const formData = new FormData();
-    formData.append("uploadFile", currentItem.file);
-    xhr.send(formData);
   }
 
   function handleCancelUpload(tempId) {
@@ -159,7 +150,7 @@ function DirectoryView() {
   async function handleDeleteFile(id) {
     setErrorMessage("");
     try {
-      const response = await fetch(`${BACKEND_URI}/file/${id}`, { method: "DELETE", credentials: "include" });
+      const response = await deleteFile(id);
       await handleFetchErrors(response);
       getDirectoryItems();
     } catch (error) { setErrorMessage(error.message); }
@@ -168,7 +159,7 @@ function DirectoryView() {
   async function handleDeleteDirectory(id) {
     setErrorMessage("");
     try {
-      const response = await fetch(`${BACKEND_URI}/directory/${id}`, { method: "DELETE", credentials: "include" });
+      const response = await deleteDirectory(id);
       await handleFetchErrors(response);
       getDirectoryItems();
     } catch (error) { setErrorMessage(error.message); }
@@ -178,12 +169,7 @@ function DirectoryView() {
     e.preventDefault();
     setErrorMessage("");
     try {
-      const response = await fetch(`${BACKEND_URI}/directory/${dirId ?? ""}`, {
-        method: "POST",
-        body: JSON.stringify({ dirname: newDirname }),
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
+      const response = await createDirectory(dirId, newDirname);
       await handleFetchErrors(response);
       setNewDirname("New Folder");
       setShowCreateDirModal(false);
@@ -202,15 +188,9 @@ function DirectoryView() {
     e.preventDefault();
     setErrorMessage("");
     try {
-      const url = renameType === "file"
-        ? `${BACKEND_URI}/file/rename/${renameId}`
-        : `${BACKEND_URI}/directory/${renameId}`;
-      const response = await fetch(url, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(renameType === "file" ? { newFilename: renameValue } : { newDirname: renameValue }),
-        credentials: "include",
-      });
+      const response = renameType === "file"
+        ? await renameFile(renameId, renameValue)
+        : await renameDirectory(renameId, renameValue);
       await handleFetchErrors(response);
       setShowRenameModal(false);
       setRenameValue("");
@@ -295,7 +275,6 @@ function DirectoryView() {
           fileId={shareFileId}
           fileName={shareFileName}
           onClose={() => setShowShareModal(false)}
-          BACKEND_URI={BACKEND_URI}
         />
       )}
 
@@ -306,7 +285,6 @@ function DirectoryView() {
           currentAccess={accessCurrentPermission}
           onClose={() => setShowAccessModal(false)}
           onAccessChanged={() => getDirectoryItems()}
-          BACKEND_URI={BACKEND_URI}
         />
       )}
 
@@ -336,7 +314,7 @@ function DirectoryView() {
           openRenameModal={openRenameModal}
           onShare={handleOpenShare}
           onManageAccess={handleOpenAccessControl}
-          BACKEND_URI={BACKEND_URI}
+          BACKEND_URI={BASE_URL}
         />
       )}
     </div>

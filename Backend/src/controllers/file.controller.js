@@ -4,6 +4,7 @@ import path from "node:path";
 import ApiError from "../helpers/apiError.js";
 import Directory from "../models/directory.model.js";
 import File from "../models/file.model.js";
+import FileShare from "../models/fileShare.model.js";
 
 export const getFileContents = async (req, res, next) => {
   const fileId = req.params.fileId;

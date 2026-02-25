@@ -9,10 +9,10 @@ import {
 import { BsThreeDotsVertical } from "react-icons/bs";
 import RenameModal from "./components/RenameModal";
 import ShareModal from "./components/ShareModal";
+import { getSharedWithMe } from "./api/share.js";
+import { deleteFile, renameFile, getFileUrl, getDownloadUrl } from "./api/file.js";
 
 export default function SharedWithMePage() {
-    const BACKEND_URI =
-        import.meta.env.VITE_BACKEND_URI || "http://localhost:8080";
     const navigate = useNavigate();
 
     const [sharedFiles, setSharedFiles] = useState([]);
@@ -32,7 +32,7 @@ export default function SharedWithMePage() {
 
     async function fetchSharedFiles() {
         try {
-            const res = await fetch(`${BACKEND_URI}/share/`, { credentials: "include" });
+            const res = await getSharedWithMe();
             if (res.status === 401 || res.status === 400) { navigate("/login"); return; }
             if (!res.ok) { setError("Failed to load shared files."); return; }
             const data = await res.json();
@@ -61,7 +61,7 @@ export default function SharedWithMePage() {
 
     function handleFileClick(fileId) {
         if (activeContextMenu) return;
-        window.open(`${BACKEND_URI}/file/${fileId}`, "_blank");
+        window.open(getFileUrl(fileId), "_blank");
     }
 
     function handleContextMenu(e, fileId) {
@@ -75,7 +75,7 @@ export default function SharedWithMePage() {
         const confirmed = confirm("Delete this file?");
         if (!confirmed) return;
         try {
-            const res = await fetch(`${BACKEND_URI}/file/${fileId}`, { method: "DELETE", credentials: "include" });
+            const res = await deleteFile(fileId);
             if (res.ok) setSharedFiles((prev) => prev.filter((entry) => entry.file?._id !== fileId));
             else { const data = await res.json(); setError(data.error || "Failed to delete file."); }
         } catch (err) { setError("Something went wrong."); }
@@ -92,12 +92,7 @@ export default function SharedWithMePage() {
     async function handleRenameSubmit(e) {
         e.preventDefault();
         try {
-            const res = await fetch(`${BACKEND_URI}/file/rename/${renameFileId}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ newFilename: renameValue }),
-            });
+            const res = await renameFile(renameFileId, renameValue);
             if (res.ok) { setShowRenameModal(false); setRenameValue(""); setRenameFileId(null); fetchSharedFiles(); }
             else { const data = await res.json(); setError(data.error || "Failed to rename file."); }
         } catch (err) { setError("Something went wrong."); }
@@ -128,7 +123,7 @@ export default function SharedWithMePage() {
             )}
 
             {showShareModal && (
-                <ShareModal fileId={shareFileId} fileName={shareFileName} onClose={() => setShowShareModal(false)} BACKEND_URI={BACKEND_URI} />
+                <ShareModal fileId={shareFileId} fileName={shareFileName} onClose={() => setShowShareModal(false)} />
             )}
 
             {loading ? (
@@ -170,7 +165,7 @@ export default function SharedWithMePage() {
 
                                 {activeContextMenu === fileId && (
                                     <div className="fixed bg-white shadow-md rounded z-[999] py-1" style={{ top: contextMenuPos.y, left: contextMenuPos.x }}>
-                                        <div className={menuItemClass} onClick={(e) => { e.stopPropagation(); window.location.href = `${BACKEND_URI}/file/${fileId}?action=download`; }}>
+                                        <div className={menuItemClass} onClick={(e) => { e.stopPropagation(); window.location.href = getDownloadUrl(fileId); }}>
                                             Download
                                         </div>
                                         {isEditor && (

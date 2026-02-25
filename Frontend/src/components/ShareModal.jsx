@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { FaTrash } from "react-icons/fa";
+import { getSharedUsers, shareFile, revokeShare } from "../api/share.js";
 
-function ShareModal({ fileId, fileName, onClose, BACKEND_URI }) {
+function ShareModal({ fileId, fileName, onClose }) {
     const [userEmail, setUserEmail] = useState("");
     const [permission, setPermission] = useState("View");
     const [sharedUsers, setSharedUsers] = useState([]);
@@ -9,9 +10,9 @@ function ShareModal({ fileId, fileName, onClose, BACKEND_URI }) {
     const [error, setError] = useState("");
     const [successMsg, setSuccessMsg] = useState("");
 
-    async function fetchSharedUsers() {
+    async function fetchSharedUsersList() {
         try {
-            const res = await fetch(`${BACKEND_URI}/share/${fileId}`, { credentials: "include" });
+            const res = await getSharedUsers(fileId);
             if (res.ok) {
                 const data = await res.json();
                 setSharedUsers(data);
@@ -21,7 +22,7 @@ function ShareModal({ fileId, fileName, onClose, BACKEND_URI }) {
         }
     }
 
-    useEffect(() => { fetchSharedUsers(); }, [fileId]);
+    useEffect(() => { fetchSharedUsersList(); }, [fileId]);
 
     async function handleShare(e) {
         e.preventDefault();
@@ -29,17 +30,12 @@ function ShareModal({ fileId, fileName, onClose, BACKEND_URI }) {
         setSuccessMsg("");
         setLoading(true);
         try {
-            const res = await fetch(`${BACKEND_URI}/share/${fileId}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ userEmail, permission }),
-            });
+            const res = await shareFile(fileId, userEmail, permission);
             const data = await res.json();
             if (!res.ok) { setError(data.error || "Failed to share file."); return; }
             setSuccessMsg(`Shared with ${userEmail}!`);
             setUserEmail("");
-            fetchSharedUsers();
+            fetchSharedUsersList();
         } catch (err) {
             setError("Something went wrong.");
         } finally {
@@ -51,13 +47,8 @@ function ShareModal({ fileId, fileName, onClose, BACKEND_URI }) {
         const confirmed = confirm(`Revoke access for ${email}?`);
         if (!confirmed) return;
         try {
-            const res = await fetch(`${BACKEND_URI}/share/${fileId}`, {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ userEmail: email }),
-            });
-            if (res.ok) fetchSharedUsers();
+            const res = await revokeShare(fileId, email);
+            if (res.ok) fetchSharedUsersList();
             else {
                 const data = await res.json();
                 setError(data.error || "Failed to revoke access.");
