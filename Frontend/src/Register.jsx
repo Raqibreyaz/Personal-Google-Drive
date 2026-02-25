@@ -63,7 +63,7 @@ const Register = () => {
     setServerError("");
 
     try {
-      const response = await fetch(`${BASE_URL}/user/register`, {
+      const response = await fetch(`${BASE_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...formData, otp }),

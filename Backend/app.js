@@ -1,15 +1,14 @@
-import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import connectDB from "./utils/db.js";
-import checkAuthentication from "./middlewares/checkAuthentication.js";
-import uploader from "./middlewares/uploader.js";
-import fileRoutes from "./routes/fileRoutes.js";
-import directoryRoutes from "./routes/directoryRoutes.js";
-import userRoutes from "./routes/userRoutes.js";
-import authRoutes from "./routes/authRoutes.js";
-import fileShareRoutes from "./routes/fileShareRoutes.js";
+import connectDB from "./src/config/db.js";
+import checkAuthentication from "./src/middlewares/authenticate.middleware.js";
+import uploader from "./src/middlewares/upload.middleware.js";
+import fileRoutes from "./src/routes/file.route.js";
+import directoryRoutes from "./src/routes/directory.route.js";
+import userRoutes from "./src/routes/user.route.js";
+import authRoutes from "./src/routes/auth.route.js";
+import fileShareRoutes from "./src/routes/fileShare.route.js";
 
 const app = express();
 

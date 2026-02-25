@@ -73,7 +73,7 @@ const Login = () => {
     setServerError("");
 
     try {
-      const response = await fetch(`${BASE_URL}/user/login`, {
+      const response = await fetch(`${BASE_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -156,7 +156,7 @@ const Login = () => {
               type="text"
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
-              placeholder="6-digit OTP"
+              placeholder="4-digit OTP"
               required
             />
           </div>

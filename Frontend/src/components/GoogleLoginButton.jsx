@@ -8,7 +8,7 @@ export default function GoogleLoginButton() {
   return (
     <GoogleLogin
       onSuccess={async function ({ credential }) {
-        const res = await fetch(`${BACKEND_URI}/user/login/google`, {
+        const res = await fetch(`${BACKEND_URI}/auth/login/google`, {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },

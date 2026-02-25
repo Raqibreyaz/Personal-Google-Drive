@@ -220,7 +220,7 @@ function DirectoryView() {
 
     // Start upload
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", `${BACKEND_URI}/file`, true);
+    xhr.open("POST", `${BACKEND_URI}/file/${dirId ?? ""}`, true);
     xhr.withCredentials = true;
 
     xhr.upload.addEventListener("progress", (evt) => {
@@ -241,8 +241,6 @@ function DirectoryView() {
     // send the file with parentDirId
     const formData = new FormData();
     formData.append("uploadFile", currentItem.file);
-
-    if (dirId) formData.append("parentDirId", dirId);
 
     xhr.send(formData);
   }
@@ -313,10 +311,10 @@ function DirectoryView() {
     e.preventDefault();
     setErrorMessage("");
     try {
-      const response = await fetch(`${BACKEND_URI}/directory/${newDirname}`, {
+      const response = await fetch(`${BACKEND_URI}/directory/${dirId ?? ""}`, {
         method: "POST",
         body: JSON.stringify({
-          parentDirId: dirId || "",
+          dirname: newDirname
         }),
         headers: {
           "Content-Type": "application/json",
