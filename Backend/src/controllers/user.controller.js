@@ -1,5 +1,7 @@
 import fs from "fs/promises";
 import mongoose from "mongoose";
+import appRootPath from "app-root-path";
+import path from "node:path";
 import Directory from "../models/directory.model.js";
 import File from "../models/file.model.js";
 import User from "../models/user.model.js";
@@ -44,7 +46,12 @@ export const deleteUser = async (req, res, next) => {
       await Directory.deleteMany({ user: user._id }, { session });
       const files = await File.find({ user: user._id }).select("extname");
       for (const file of files) {
-        await fs.rm(`storage/${file.id}${file.extname}`);
+        const fullpath = path.join(
+          appRootPath.path,
+          "storage",
+          `${file.id}${file.extname}`,
+        );
+        await fs.rm(fullpath);
         await FileShare.deleteMany({ file: file._id }, { session });
         await file.deleteOne();
       }

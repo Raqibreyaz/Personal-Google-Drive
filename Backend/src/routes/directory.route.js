@@ -8,8 +8,10 @@ import {
   updateDirectoryName,
 } from "../controllers/directory.controller.js";
 import validate from "../middlewares/validate.middleware.js";
-import createDirectorySchema from "../validators/createDirectory.validator.js";
-import renameDirectorySchema from "../validators/renameDirectory.validator.js";
+import {
+  createDirectorySchema,
+  renameDirectorySchema,
+} from "../validators/directory.validator.js";
 
 const router = express.Router();
 

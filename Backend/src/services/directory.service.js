@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import Directory from "../models/directory.model.js";
 import File from "../models/file.model.js";
+import appRootPath from "app-root-path";
 
 export const deleteDirRecursively = async (currDirId) => {
   // get all the sub-directories of current directory
@@ -18,7 +19,7 @@ export const deleteDirRecursively = async (currDirId) => {
 
   // removing all the files from storage
   for (const { _id: fileId, extname } of files) {
-    await fs.rm(path.join(process.cwd(), "storage", fileId + extname));
+    await fs.rm(path.join(appRootPath.path, "storage", fileId + extname));
   }
 
   // remove all the files from DB where parent is 'dir'

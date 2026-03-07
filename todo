@@ -1,0 +1,15 @@
+Yet to be Done:
+- add rate limiting
+- custom throttle function with initial allowed requests
+- Malicious file upload, browser renders html not code
+- use redis for rate-limiting and throttling storage
+- update password feature
+- name,dirname sanitize at frontend
+- more robust error handling
+
+Done:
+- absolute path for 'storage' dir
+- XSS attack in name,dirname field
+- migrate to sameSite: 'lax'
+- add CSRF token in custom header, when sameSite: 'none'
+- fix broken access control(if exist)

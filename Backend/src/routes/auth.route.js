@@ -11,12 +11,14 @@ import {
   githubAuth,
 } from "../controllers/auth.controller.js";
 import validate from "../middlewares/validate.middleware.js";
-import checkNotUserAndSendOTPSchema from "../validators/checkNotUserAndSendOTP.validator.js";
-import checkUserAndSendOTPSchema from "../validators/checkUserAndSendOTP.validator.js";
-import verifyOTPAndRegisterSchema from "../validators/verifyOTPAndRegister.validator.js";
-import verifyOTPAndLoginSchema from "../validators/verifyOTPAndLogin.validator.js";
-import googleLoginSchema from "../validators/googleLogin.validator.js";
-import githubLoginSchema from "../validators/githubLogin.validator.js";
+import {
+  checkNotUserAndSendOTPSchema,
+  checkUserAndSendOTPSchema,
+  verifyOTPAndRegisterSchema,
+  verifyOTPAndLoginSchema,
+  googleLoginSchema,
+  githubLoginSchema,
+} from "../validators/auth.validator.js";
 
 const router = express.Router();
 

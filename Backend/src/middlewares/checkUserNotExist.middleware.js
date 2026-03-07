@@ -8,7 +8,6 @@ export default async function checkUserNotExist(req, res, next) {
   if (!email) throw new ApiError(400, "Email is required!");
 
   const user = await User.findOne({ email }).lean();
-  console.log(user);
 
   // check if user exist
   if (user)

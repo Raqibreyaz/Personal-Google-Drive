@@ -10,9 +10,11 @@ import {
 import authorizeDataAccess from "../middlewares/authorizeDataAccess.middleware.js";
 import checkFileAccessAllowed from "../middlewares/checkFileAccess.middleware.js";
 import validate from "../middlewares/validate.middleware.js";
-import getFileSchema from "../validators/getFile.validator.js";
-import renameFileSchema from "../validators/renameFile.validator.js";
-import setAllowAnyoneSchema from "../validators/setAllowAnyone.validator.js";
+import {
+  getFileSchema,
+  renameFileSchema,
+  setAllowAnyoneSchema,
+} from "../validators/file.validator.js";
 
 const router = express.Router();
 

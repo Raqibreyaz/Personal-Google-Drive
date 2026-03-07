@@ -4,9 +4,8 @@ import Session from "../models/session.model.js";
 
 const checkAuthentication = async (req, res, next) => {
   const sessionId = req.signedCookies?.authToken ?? "";
-  let user = null;
 
-  console.log(sessionId)
+  let user = null;
 
   // when session exists then allow user
   if (sessionId) {

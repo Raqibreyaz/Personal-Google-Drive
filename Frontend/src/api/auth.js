@@ -19,7 +19,3 @@ export async function registerWithOtp(formData, otp) {
 export async function loginWithGoogle(idToken) {
   return apiPost("/auth/login/google", { idToken });
 }
-
-export async function getMe() {
-  return apiGet("/auth/me");
-}

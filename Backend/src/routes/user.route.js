@@ -15,8 +15,10 @@ import {
   changeUserRole,
 } from "../controllers/user.controller.js";
 import validate from "../middlewares/validate.middleware.js";
-import deleteUserSchema from "../validators/deleteUser.validator.js";
-import changeUserRoleSchema from "../validators/changeUserRole.validator.js";
+import {
+  deleteUserSchema,
+  changeUserRoleSchema,
+} from "../validators/user.validator.js";
 
 const router = express.Router();
 

@@ -9,8 +9,10 @@ import {
 } from "../controllers/fileShare.controller.js";
 import checkFileAccessAllowed from "../middlewares/checkFileAccess.middleware.js";
 import validate from "../middlewares/validate.middleware.js";
-import revokeFileAccessSchema from "../validators/revokeFileAccess.validator.js";
-import shareFileSchema from "../validators/shareFile.validator.js";
+import {
+  revokeFileAccessSchema,
+  shareFileSchema,
+} from "../validators/fileShare.validator.js";
 
 const router = express.Router();
 router.param("fileId", validateId);

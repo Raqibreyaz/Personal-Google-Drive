@@ -2,6 +2,7 @@ import crypto from "crypto";
 import User from "../models/user.model.js";
 import Session from "../models/session.model.js";
 import ApiError from "../helpers/apiError.js";
+import dataSanitizer from "../helpers/dataSanitizer.js";
 import createCookie from "../helpers/createCookie.js";
 import verifyIdToken from "../services/google.service.js";
 import createUserWithEssentials from "../services/user.service.js";
@@ -16,8 +17,12 @@ export const registerUser = async (req, res, next) => {
   if (!name || !password || !email)
     throw new ApiError(400, "Name,Password and Email all are Required!");
 
+  const sanitizedName = dataSanitizer.sanitize(name);
+  if (!sanitizedName || sanitizedName.length !== name.length)
+    throw new ApiError(400, "Invalid name of user!");
+
   const { userId, sessionId } = await createUserWithEssentials({
-    name,
+    name: sanitizedName,
     email,
     password,
     role: Role.USER,
@@ -119,6 +124,9 @@ export const loginWithGithub = async (req, res, next) => {
 
   // 1. Validate state (CSRF protection)
   const savedState = req.signedCookies.oauth_state;
+
+  console.log(savedState);
+  console.log(state);
 
   if (!savedState || savedState !== state) {
     throw new ApiError(401, "Invalid OAuth state");
@@ -224,12 +232,14 @@ export const githubAuth = async (req, res, next) => {
   const github_scope = process.env.GITHUB_SCOPE;
   const state = crypto.randomBytes(32).toString("hex");
 
+  const domain = process.env.SITE_DOMAIN || ".local.com";
+
   // Store state in signed cookie (or Redis)
   res.cookie("oauth_state", state, {
+    domain,
     httpOnly: true,
     sameSite: "strict",
     signed: true,
-    secure: true,
   });
 
   const params = new URLSearchParams({

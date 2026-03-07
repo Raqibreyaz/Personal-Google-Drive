@@ -1,6 +1,7 @@
-import { ObjectId } from "mongodb";
 import fs from "fs/promises";
 import path from "node:path";
+import appRootPath from "app-root-path";
+import { ObjectId } from "mongodb";
 import ApiError from "../helpers/apiError.js";
 import Directory from "../models/directory.model.js";
 import File from "../models/file.model.js";
@@ -12,7 +13,13 @@ export const getFileContents = async (req, res, next) => {
   const file = req.fileDoc ? req.fileDoc : await File.findById(fileId).lean();
   if (!file) throw new ApiError(404, "File not found!");
 
-  const fullpath = path.join(process.cwd(), "storage/", fileId + file.extname);
+  const fullpath = path.join(
+    appRootPath.path,
+    "storage/",
+    fileId + file.extname,
+  );
+
+  console.log(fullpath);
 
   if (req.query.action === "download") {
     return res.download(fullpath, file.name);
@@ -49,7 +56,9 @@ export const saveFile = async (req, res, next) => {
     name: file.originalname,
   }).lean());
   if (fileAlreadyExist) {
-    await fs.rm(`storage/${file.filename}`);
+    const fullpath = path.join(appRootPath.path, "storage", file.filename);
+    console.log(fullpath);
+    await fs.rm(fullpath);
     throw new ApiError(
       400,
       "A file with this name already exist in this directory",
@@ -73,7 +82,8 @@ export const renameFile = async (req, res, next) => {
   const fileId = req.params.fileId;
   const newFilename = req.body.newFilename;
   const newExt = path.extname(newFilename);
-  const parentPath = path.join(process.cwd(), "storage");
+  const parentPath = path.join(appRootPath.path, "storage");
+  console.log(parentPath);
 
   const file = req.fileDoc
     ? req.fileDoc
@@ -129,7 +139,13 @@ export const deleteFile = async (req, res, next) => {
   if (!file) throw new ApiError(404, "File not found!");
 
   // remove file from storage
-  const fullpath = path.join(process.cwd(), "storage/", fileId + file.extname);
+  const fullpath = path.join(
+    appRootPath.path,
+    "storage/",
+    fileId + file.extname,
+  );
+  console.log(fullpath);
+
   await fs.rm(fullpath, { recursive: true, force: true });
 
   await FileShare.deleteMany({ file: file._id });

@@ -9,9 +9,8 @@ export default async function checkUserAndPassword(req, res, next) {
     throw new ApiError(400, "Email and Password are required!");
 
   const user = await User.findOne({ email }).select("+password");
-  console.log(user);
 
-  if (user.isDeleted) throw new ApiError(400, "User Account flagged!");
+  if (user?.isDeleted) throw new ApiError(400, "User Account flagged!");
 
   const isPasswordValid = user ? await user.comparePassword(password) : false;
 

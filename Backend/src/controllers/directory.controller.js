@@ -1,5 +1,5 @@
-import { ObjectId } from "mongodb";
 import ApiError from "../helpers/apiError.js";
+import dataSanitizer from "../helpers/dataSanitizer.js";
 import { deleteDirRecursively } from "../services/directory.service.js";
 import Directory from "../models/directory.model.js";
 import File from "../models/file.model.js";
@@ -22,16 +22,17 @@ export const getDirectoryContents = async (req, res, next) => {
     parentDir: dir._id,
   }).lean();
 
-  console.log(files);
-  console.log(directories);
-
   res.status(200).json({ ...dir, files, directories });
 };
 
 export const createDirectory = async (req, res, next) => {
   const userId = req.targetUserId || req.session.user._id.toString();
-  const dirname = req.body.dirname;
+  const initialDirname = req.body.dirname;
+  const dirname = dataSanitizer.sanitize(req.body.dirname);
   const parentDirId = req.params.parentDirId;
+
+  if (!dirname || initialDirname.length !== dirname.length)
+    throw new ApiError(400, "Invalid Dirname!");
 
   const parentDir = parentDirId
     ? await Directory.findOne({ user: userId, _id: parentDirId }).lean()
@@ -64,7 +65,11 @@ export const createDirectory = async (req, res, next) => {
 export const updateDirectoryName = async (req, res, next) => {
   const userId = req.targetUserId || req.session.user._id.toString();
   const dirId = req.params.dirId;
-  const newDirname = req.body.newDirname;
+  const initialDirname = req.body.dirname;
+  const newDirname = dataSanitizer.sanitize(req.body.newDirname);
+
+  if (!newDirname || initialDirname?.length !== newDirname?.length)
+    throw new ApiError(400, "Invalid Dirname!");
 
   const directory = await Directory.findOne({ _id: dirId, user: userId });
   if (!directory) throw new ApiError(404, "Directory doesn't exist!");
