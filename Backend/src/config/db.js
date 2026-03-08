@@ -1,10 +1,11 @@
 import mongoose from "mongoose";
 
 export default async function connectDB() {
-  console.log("Database connection requested!");
   const mongodbUri =
     "mongodb://raquib:raquib@localhost:27017/storageApp?replicaSet=myReplicaSet&authSource=storageApp";
-  return mongoose.connect(process.env.MONGODB_URI || mongodbUri);
+  await mongoose.connect(process.env.MONGODB_URI || mongodbUri);
+
+  console.log("Database Connected!");
 }
 
 process.on("SIGINT", async () => {

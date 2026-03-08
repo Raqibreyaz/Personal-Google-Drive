@@ -1,11 +1,13 @@
 Yet to be Done:
-- add rate limiting
-- custom throttle function with initial allowed requests
-- Malicious file upload, browser renders html not code
-- use redis for rate-limiting and throttling storage
 - update password feature
-- name,dirname sanitize at frontend
 - more robust error handling
+- since multi-device login allowed, then what happens for otp when single account getting logged-in simultaneously
+- Malicious file upload, browser renders html not code
+- delete the uploaded file if any issues occurs before saving the file in DB
+- add OTP expire updation on resend OTP
+- name,dirname sanitize at frontend
+- disable password input on sending OTP successfully at frontend
+- add wait for OTP resend on frontend
 
 Done:
 - absolute path for 'storage' dir
@@ -13,3 +15,7 @@ Done:
 - migrate to sameSite: 'lax'
 - add CSRF token in custom header, when sameSite: 'none'
 - fix broken access control(if exist)
+- add rate limiting
+- custom throttle function with initial allowed requests
+- Google login fix by console
+- use redis for rate-limiting and throttling storage

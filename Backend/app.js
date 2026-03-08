@@ -37,7 +37,7 @@ app.use(
   fileRoutes,
 );
 app.use("/share", checkAuthentication, fileShareRoutes);
-app.use("/user", userRoutes);
+app.use("/user", checkAuthentication, userRoutes);
 app.use("/auth", authRoutes);
 
 app.use((err, req, res, next) => {
