@@ -2,6 +2,7 @@ import { rateLimit, ipKeyGenerator } from "express-rate-limit";
 import RedisStore from "rate-limit-redis";
 import redisClient from "../config/redis.js";
 
+// ─── Env-driven configuration ────────────────────────────────────────────────
 const otpRateLimitWindow = parseInt(process.env.OTP_RATE_LIMIT_WINDOW || 15);
 const otpRateLimit = parseInt(process.env.OTP_RATE_LIMIT || 5);
 
@@ -16,50 +17,56 @@ const writeRateLimit = parseInt(process.env.WRITE_RATE_LIMIT || 30);
 const readRateLimitWindow = parseInt(process.env.READ_RATE_LIMIT_WINDOW || 15);
 const readRateLimit = parseInt(process.env.READ_RATE_LIMIT || 100);
 
-export const otpLimiter = rateLimit({
-  windowMs: otpRateLimitWindow * 60 * 1000,
+// ─── Factory ─────────────────────────────────────────────────────────────────
+/**
+ * Creates a rate limiter with sensible defaults + Redis store.
+ * @param {object} opts
+ * @param {number} opts.windowMin   — window length in minutes
+ * @param {number} opts.limit       — max requests per window
+ * @param {string} opts.errorMsg    — message shown to the user on 429
+ * @param {function} [opts.keyGenerator] — custom key generator (defaults to IP)
+ */
+function createLimiter({ windowMin, limit, errorMsg, keyGenerator }) {
+  return rateLimit({
+    windowMs: windowMin * 60 * 1000,
+    limit,
+    standardHeaders: "draft-7", // sends RateLimit-* and Retry-After headers
+    legacyHeaders: false, // disable X-RateLimit-* headers
+    message: { error: errorMsg },
+    store: new RedisStore({
+      sendCommand: (...args) => redisClient.sendCommand(args.map(String)),
+    }),
+    ...(keyGenerator && { keyGenerator }),
+  });
+}
+
+// ─── Key generator for authenticated users ───────────────────────────────────
+const userKeyGen = (req) =>
+  req.session?.user._id.toString() || ipKeyGenerator(req.ip);
+
+// ─── Exported limiters ───────────────────────────────────────────────────────
+export const otpLimiter = createLimiter({
+  windowMin: otpRateLimitWindow,
   limit: otpRateLimit,
-  message: {
-    error: `Too many OTP requests, try again after ${otpRateLimitWindow} minutes`,
-  },
-  store: new RedisStore({
-    sendCommand: (...args) => redisClient.sendCommand(args.map(String)),
-  }),
-  // uses default IP-based key generator (IPv6-safe)
+  errorMsg: `Too many OTP requests, try again after ${otpRateLimitWindow} minutes`,
 });
 
-export const authLimiter = rateLimit({
-  windowMs: authRateLimitWindow * 60 * 1000,
+export const authLimiter = createLimiter({
+  windowMin: authRateLimitWindow,
   limit: authRateLimit,
-  message: {
-    error: `Too many auth attempts, try again after ${authRateLimitWindow} minutes`,
-  },
-  store: new RedisStore({
-    sendCommand: (...args) => redisClient.sendCommand(args.map(String)),
-  }),
-  // uses default IP-based key generator (IPv6-safe)
+  errorMsg: `Too many auth attempts, try again after ${authRateLimitWindow} minutes`,
 });
 
-export const writeLimiter = rateLimit({
-  windowMs: writeRateLimitWindow * 60 * 1000,
+export const writeLimiter = createLimiter({
+  windowMin: writeRateLimitWindow,
   limit: writeRateLimit,
-  message: {
-    error: `Too many requests, try again after ${writeRateLimitWindow} minutes`,
-  },
-  store: new RedisStore({
-    sendCommand: (...args) => redisClient.sendCommand(args.map(String)),
-  }),
-  keyGenerator: (req) => req.session?.user._id.toString() || ipKeyGenerator(req.ip),
+  errorMsg: `Too many requests, try again after ${writeRateLimitWindow} minutes`,
+  keyGenerator: userKeyGen,
 });
 
-export const readLimiter = rateLimit({
-  windowMs: readRateLimitWindow * 60 * 1000,
+export const readLimiter = createLimiter({
+  windowMin: readRateLimitWindow,
   limit: readRateLimit,
-  message: {
-    error: `Too many requests, try again after ${readRateLimitWindow} minutes`,
-  },
-  store: new RedisStore({
-    sendCommand: (...args) => redisClient.sendCommand(args.map(String)),
-  }),
-  keyGenerator: (req) => req.session?.user._id.toString() || ipKeyGenerator(req.ip),
+  errorMsg: `Too many requests, try again after ${readRateLimitWindow} minutes`,
+  keyGenerator: userKeyGen,
 });

@@ -23,7 +23,6 @@ import {
   writeLimiter,
 } from "../middlewares/rateLimiter.middleware.js";
 import throttleRequest from "../middlewares/throttleRequest.middleware.js";
-import { ipKeyGenerator } from "express-rate-limit";
 
 const router = express.Router();
 
@@ -33,12 +32,7 @@ router.param("userId", validateId);
 router.get(
   "/",
   readLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 5,
-    timeGapInSec: 2,
-  }),
+  throttleRequest("READ"),
   getUser,
 );
 
@@ -46,23 +40,13 @@ router.get(
 router.post(
   "/logout",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 2,
-    timeGapInSec: 3,
-  }),
+  throttleRequest("LOGOUT"),
   logoutUser,
 );
 router.post(
   "/logout/all",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 1,
-    timeGapInSec: 10,
-  }),
+  throttleRequest("LOGOUT_ALL"),
   logoutUserFromAllDevices,
 );
 
@@ -70,12 +54,7 @@ router.post(
 router.get(
   "/all",
   readLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 3,
-    timeGapInSec: 3,
-  }),
+  throttleRequest("READ"),
   allowOnlyTo([Role.OWNER, Role.ADMIN, Role.MANAGER]),
   getAllUsers,
 );
@@ -85,12 +64,7 @@ router.get(
 router.delete(
   "/:userId",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 1,
-    timeGapInSec: 10,
-  }),
+  throttleRequest("ADMIN"),
   allowOnlyTo([Role.OWNER, Role.ADMIN]),
   limitPrivileges,
   validate(deleteUserSchema),
@@ -102,12 +76,7 @@ router.delete(
 router.post(
   "/logout/:userId",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 1,
-    timeGapInSec: 5,
-  }),
+  throttleRequest("ADMIN"),
   allowOnlyTo([Role.OWNER, Role.ADMIN, Role.MANAGER]),
   limitPrivileges,
   forceLogout,
@@ -116,12 +85,7 @@ router.post(
 router.patch(
   "/recover/:userId",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 1,
-    timeGapInSec: 10,
-  }),
+  throttleRequest("ADMIN"),
   allowOnlyTo([Role.OWNER]),
   recoverUser,
 );
@@ -131,12 +95,7 @@ router.patch(
 router.patch(
   "/role/:userId",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 1,
-    timeGapInSec: 10,
-  }),
+  throttleRequest("ADMIN"),
   allowOnlyTo([Role.OWNER, Role.ADMIN, Role.MANAGER]),
   limitPrivileges,
   validate(changeUserRoleSchema),

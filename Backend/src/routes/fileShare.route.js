@@ -18,7 +18,6 @@ import {
   writeLimiter,
 } from "../middlewares/rateLimiter.middleware.js";
 import throttleRequest from "../middlewares/throttleRequest.middleware.js";
-import { ipKeyGenerator } from "express-rate-limit";
 
 const router = express.Router();
 router.param("fileId", validateId);
@@ -28,12 +27,7 @@ router.param("userId", validateId);
 router.get(
   "/",
   readLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 5,
-    timeGapInSec: 2,
-  }),
+  throttleRequest("READ"),
   filesSharedWithMe,
 );
 
@@ -41,12 +35,7 @@ router.get(
 router.get(
   "/:fileId",
   readLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 5,
-    timeGapInSec: 2,
-  }),
+  throttleRequest("READ"),
   checkFileAccessAllowed,
   listUsersHavingTheFile,
 );
@@ -55,12 +44,7 @@ router.get(
 router.post(
   "/:fileId",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 2,
-    timeGapInSec: 3,
-  }),
+  throttleRequest("MUTATE"),
   checkFileAccessAllowed,
   validate(shareFileSchema),
   shareFile,
@@ -70,12 +54,7 @@ router.post(
 router.delete(
   "/:fileId",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 2,
-    timeGapInSec: 3,
-  }),
+  throttleRequest("MUTATE"),
   checkFileAccessAllowed,
   validate(revokeFileAccessSchema),
   revokeAccess,
@@ -85,12 +64,7 @@ router.delete(
 router.get(
   "/:userId",
   readLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 5,
-    timeGapInSec: 2,
-  }),
+  throttleRequest("READ"),
   authorizeDataAccess,
   filesSharedWithMe,
 );
@@ -99,12 +73,7 @@ router.get(
 router.get(
   "/:userId/:fileId",
   readLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 5,
-    timeGapInSec: 2,
-  }),
+  throttleRequest("READ"),
   authorizeDataAccess,
   listUsersHavingTheFile,
 );
@@ -113,12 +82,7 @@ router.get(
 router.post(
   "/:userId/:fileId",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 2,
-    timeGapInSec: 3,
-  }),
+  throttleRequest("MUTATE"),
   authorizeDataAccess,
   validate(shareFileSchema),
   shareFile,
@@ -128,12 +92,7 @@ router.post(
 router.delete(
   "/:userId/:fileId",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 2,
-    timeGapInSec: 3,
-  }),
+  throttleRequest("MUTATE"),
   authorizeDataAccess,
   validate(revokeFileAccessSchema),
   revokeAccess,

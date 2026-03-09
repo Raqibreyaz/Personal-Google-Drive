@@ -21,7 +21,6 @@ import {
   writeLimiter,
 } from "../middlewares/rateLimiter.middleware.js";
 import throttleRequest from "../middlewares/throttleRequest.middleware.js";
-import { ipKeyGenerator } from "express-rate-limit";
 
 const router = express.Router();
 
@@ -33,12 +32,7 @@ router.param("parentDirId", validateId);
 router.post(
   "/{:parentDirId}",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 3,
-    timeGapInSec: 3,
-  }),
+  throttleRequest("WRITE"),
   uploader.single("uploadFile"),
   saveFile,
 );
@@ -46,12 +40,7 @@ router.post(
 router.get(
   "/:fileId",
   readLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 5,
-    timeGapInSec: 2,
-  }),
+  throttleRequest("READ"),
   checkFileAccessAllowed,
   validate(getFileSchema),
   getFileContents,
@@ -60,12 +49,7 @@ router.get(
 router.patch(
   "/rename/:fileId",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 2,
-    timeGapInSec: 3,
-  }),
+  throttleRequest("MUTATE"),
   checkFileAccessAllowed,
   validate(renameFileSchema),
   renameFile,
@@ -74,12 +58,7 @@ router.patch(
 router.patch(
   "/set-access/:fileId",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 2,
-    timeGapInSec: 3,
-  }),
+  throttleRequest("MUTATE"),
   checkFileAccessAllowed,
   validate(setAllowAnyoneSchema),
   setAllowAnyone,
@@ -88,12 +67,7 @@ router.patch(
 router.delete(
   "/:fileId",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 2,
-    timeGapInSec: 3,
-  }),
+  throttleRequest("MUTATE"),
   checkFileAccessAllowed,
   deleteFile,
 );
@@ -102,12 +76,7 @@ router.delete(
 router.post(
   "/:userId/{:parentDirId}",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 3,
-    timeGapInSec: 3,
-  }),
+  throttleRequest("WRITE"),
   authorizeDataAccess,
   uploader.single("uploadFile"),
   saveFile,
@@ -116,12 +85,7 @@ router.post(
 router.get(
   "/:userId/:fileId",
   readLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 5,
-    timeGapInSec: 2,
-  }),
+  throttleRequest("READ"),
   authorizeDataAccess,
   validate(getFileSchema),
   getFileContents,
@@ -130,12 +94,7 @@ router.get(
 router.patch(
   "/rename/:userId/:fileId",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 2,
-    timeGapInSec: 3,
-  }),
+  throttleRequest("MUTATE"),
   authorizeDataAccess,
   validate(renameFileSchema),
   renameFile,
@@ -144,12 +103,7 @@ router.patch(
 router.patch(
   "/set-access/:userId/:fileId",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 2,
-    timeGapInSec: 3,
-  }),
+  throttleRequest("MUTATE"),
   authorizeDataAccess,
   validate(setAllowAnyoneSchema),
   setAllowAnyone,
@@ -158,12 +112,7 @@ router.patch(
 router.delete(
   "/:userId/:fileId",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 2,
-    timeGapInSec: 3,
-  }),
+  throttleRequest("MUTATE"),
   authorizeDataAccess,
   deleteFile,
 );

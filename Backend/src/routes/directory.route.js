@@ -17,7 +17,6 @@ import {
   writeLimiter,
 } from "../middlewares/rateLimiter.middleware.js";
 import throttleRequest from "../middlewares/throttleRequest.middleware.js";
-import { ipKeyGenerator } from "express-rate-limit";
 
 const router = express.Router();
 
@@ -29,24 +28,14 @@ router.param("parentDirId", validateId);
 router.get(
   "/{:dirId}",
   readLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 5,
-    timeGapInSec: 2,
-  }),
+  throttleRequest("READ"),
   getDirectoryContents,
 );
 
 router.post(
   "/{:parentDirId}",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 3,
-    timeGapInSec: 3,
-  }),
+  throttleRequest("WRITE"),
   validate(createDirectorySchema),
   createDirectory,
 );
@@ -54,12 +43,7 @@ router.post(
 router.patch(
   "/:dirId",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 2,
-    timeGapInSec: 3,
-  }),
+  throttleRequest("MUTATE"),
   validate(renameDirectorySchema),
   updateDirectoryName,
 );
@@ -67,12 +51,7 @@ router.patch(
 router.delete(
   "/:dirId",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 2,
-    timeGapInSec: 3,
-  }),
+  throttleRequest("MUTATE"),
   deleteDirectory,
 );
 
@@ -80,12 +59,7 @@ router.delete(
 router.get(
   "/:userId/{:dirId}",
   readLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 5,
-    timeGapInSec: 2,
-  }),
+  throttleRequest("READ"),
   authorizeDataAccess,
   getDirectoryContents,
 );
@@ -93,12 +67,7 @@ router.get(
 router.post(
   "/:userId/:parentDirId",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 3,
-    timeGapInSec: 3,
-  }),
+  throttleRequest("WRITE"),
   authorizeDataAccess,
   validate(createDirectorySchema),
   createDirectory,
@@ -107,12 +76,7 @@ router.post(
 router.patch(
   "/:userId/:dirId",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 2,
-    timeGapInSec: 3,
-  }),
+  throttleRequest("MUTATE"),
   authorizeDataAccess,
   validate(renameDirectorySchema),
   updateDirectoryName,
@@ -121,12 +85,7 @@ router.patch(
 router.delete(
   "/:userId/:dirId",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) =>
-      req.session?.user._id.toString() || ipKeyGenerator(req.ip),
-    freeRequests: 2,
-    timeGapInSec: 3,
-  }),
+  throttleRequest("MUTATE"),
   authorizeDataAccess,
   deleteDirectory,
 );

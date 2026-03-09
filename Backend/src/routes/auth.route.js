@@ -27,7 +27,7 @@ import {
   writeLimiter,
 } from "../middlewares/rateLimiter.middleware.js";
 import throttleRequest from "../middlewares/throttleRequest.middleware.js";
-import { ipKeyGenerator } from "express-rate-limit";
+import { ipOnlyKeyGenerator } from "../config/throttlePresets.js";
 import checkUserExist from "../middlewares/checkUserExist.middleware.js";
 import allowLocalUsersOnly from "../middlewares/allowLocalUsersOnly.middleware.js";
 
@@ -37,11 +37,7 @@ const router = express.Router();
 router.post(
   "/register/send-otp",
   otpLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) => ipKeyGenerator(req.ip),
-    freeRequests: 0,
-    timeGapInSec: 60,
-  }),
+  throttleRequest("OTP", { keyGenerator: ipOnlyKeyGenerator }),
   validate(checkUserAndSendOTPSchema),
   checkUserNotExist,
   sendOtp,
@@ -49,11 +45,7 @@ router.post(
 router.post(
   "/login/send-otp",
   otpLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) => ipKeyGenerator(req.ip),
-    freeRequests: 0,
-    timeGapInSec: 60,
-  }),
+  throttleRequest("OTP", { keyGenerator: ipOnlyKeyGenerator }),
   validate(checkUserWithPasswordAndSendOTPSchema),
   checkUserAndPassword,
   sendOtp,
@@ -62,11 +54,7 @@ router.post(
 router.post(
   "/update-password/send-otp",
   otpLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) => ipKeyGenerator(req.ip),
-    freeRequests: 0,
-    timeGapInSec: 60,
-  }),
+  throttleRequest("OTP", { keyGenerator: ipOnlyKeyGenerator }),
   validate(checkUserAndSendOTPSchema),
   checkUserExist,
   allowLocalUsersOnly,
@@ -77,11 +65,7 @@ router.post(
 router.post(
   "/register",
   authLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) => ipKeyGenerator(req.ip),
-    freeRequests: 1,
-    timeGapInSec: 5,
-  }),
+  throttleRequest("AUTH", { keyGenerator: ipOnlyKeyGenerator }),
   validate(verifyOTPAndRegisterSchema),
   verifyOtp,
   registerUser,
@@ -89,11 +73,7 @@ router.post(
 router.post(
   "/login",
   authLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) => ipKeyGenerator(req.ip),
-    freeRequests: 1,
-    timeGapInSec: 5,
-  }),
+  throttleRequest("AUTH", { keyGenerator: ipOnlyKeyGenerator }),
   validate(verifyOTPAndLoginSchema),
   verifyOtp,
   loginUser,
@@ -103,32 +83,20 @@ router.post(
 router.post(
   "/login/google",
   authLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) => ipKeyGenerator(req.ip),
-    freeRequests: 1,
-    timeGapInSec: 10,
-  }),
+  throttleRequest("OAUTH", { keyGenerator: ipOnlyKeyGenerator }),
   validate(googleLoginSchema),
   loginWithGoogle,
 );
 router.get(
   "/github",
   authLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) => ipKeyGenerator(req.ip),
-    freeRequests: 1,
-    timeGapInSec: 10,
-  }),
+  throttleRequest("OAUTH", { keyGenerator: ipOnlyKeyGenerator }),
   githubAuth,
 );
 router.get(
   "/login/github",
   authLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) => ipKeyGenerator(req.ip),
-    freeRequests: 1,
-    timeGapInSec: 10,
-  }),
+  throttleRequest("OAUTH", { keyGenerator: ipOnlyKeyGenerator }),
   validate(githubLoginSchema),
   loginWithGithub,
 );
@@ -136,11 +104,7 @@ router.get(
 router.patch(
   "/update-password",
   writeLimiter,
-  throttleRequest({
-    throttleKeyGenerator: (req) => ipKeyGenerator(req.ip),
-    freeRequests: 0,
-    timeGapInSec: 10,
-  }),
+  throttleRequest("ADMIN", { keyGenerator: ipOnlyKeyGenerator }),
   validate(updatePasswordSchema),
   verifyOtp,
   updateUserPassword,

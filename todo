@@ -1,5 +1,4 @@
 Yet to be Done:
-- improving the scattered throttling inputs logic of every route
 - more robust error handling
 - name,dirname sanitize at frontend
 - disable password input on sending OTP successfully at frontend
@@ -25,3 +24,4 @@ Done:
 - file uploaded,saved in db,but not present in storage/
 - check where are atomic operations are required
 - Malicious file upload, browser renders html not code
+- improving the scattered throttling inputs logic of every route
