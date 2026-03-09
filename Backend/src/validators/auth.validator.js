@@ -1,10 +1,10 @@
 import { z } from "zod";
 
-export const checkNotUserAndSendOTPSchema = z.object({
+export const checkUserAndSendOTPSchema = z.object({
   body: z.object({ email: z.email() }),
 });
 
-export const checkUserAndSendOTPSchema = z.object({
+export const checkUserWithPasswordAndSendOTPSchema = z.object({
   body: z.object({
     email: z.email(),
     password: z.string().min(6).max(10),
@@ -18,15 +18,18 @@ export const verifyOTPAndRegisterSchema = z.object({
     email: z.email(),
     otp: z
       .string()
-      .length(4)
-      .regex(/^\d{4}$/),
+      .length(6)
+      .regex(/^\d{6}$/),
   }),
 });
 
 export const verifyOTPAndLoginSchema = z.object({
   body: z.object({
     email: z.email(),
-    otp: z.string().length(4),
+    otp: z
+      .string()
+      .length(6)
+      .regex(/^\d{6}$/),
   }),
 });
 
@@ -40,5 +43,15 @@ export const githubLoginSchema = z.object({
   query: z.object({
     state: z.string(),
     code: z.string(),
+  }),
+});
+
+export const updatePasswordSchema = z.object({
+  body: z.object({
+    otp: z
+      .string()
+      .length(6)
+      .regex(/^\d{6}$/),
+    newPassword: z.string().min(6).max(10),
   }),
 });

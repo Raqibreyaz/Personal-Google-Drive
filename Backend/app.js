@@ -1,9 +1,11 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import fs from "fs/promises";
+import path from "node:path";
+import appRootPath from "app-root-path";
 import connectDB from "./src/config/db.js";
 import checkAuthentication from "./src/middlewares/authenticate.middleware.js";
-import uploader from "./src/middlewares/upload.middleware.js";
 import fileRoutes from "./src/routes/file.route.js";
 import directoryRoutes from "./src/routes/directory.route.js";
 import userRoutes from "./src/routes/user.route.js";
@@ -30,15 +32,19 @@ app.use(cookieParser(process.env.COOKIE_PARSER_KEY));
 app.use(express.json());
 
 app.use("/directory", checkAuthentication, directoryRoutes);
-app.use(
-  "/file",
-  checkAuthentication,
-  uploader.single("uploadFile"),
-  fileRoutes,
-);
+app.use("/file", checkAuthentication, fileRoutes);
 app.use("/share", checkAuthentication, fileShareRoutes);
 app.use("/user", checkAuthentication, userRoutes);
 app.use("/auth", authRoutes);
+
+// clean up uploaded file on ANY error (authorization, validation, DB, etc.)
+app.use(async (err, req, res, next) => {
+  if (req.file) {
+    const fullpath = path.join(appRootPath.path, "storage", req.file.filename);
+    await fs.rm(fullpath, { force: true }).catch(() => {});
+  }
+  next(err);
+});
 
 app.use((err, req, res, next) => {
   console.log(err);

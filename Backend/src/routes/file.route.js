@@ -1,5 +1,6 @@
 import express from "express";
 import validateId from "../middlewares/validateId.middleware.js";
+import uploader from "../middlewares/upload.middleware.js";
 import {
   deleteFile,
   getFileContents,
@@ -38,6 +39,7 @@ router.post(
     freeRequests: 3,
     timeGapInSec: 3,
   }),
+  uploader.single("uploadFile"),
   saveFile,
 );
 
@@ -107,6 +109,7 @@ router.post(
     timeGapInSec: 3,
   }),
   authorizeDataAccess,
+  uploader.single("uploadFile"),
   saveFile,
 );
 

@@ -134,6 +134,14 @@ function DirectoryView() {
         setProgressMap((prev) => ({ ...prev, [currentItem._id]: progress }));
       },
       onLoad: () => { processUploadQueue(restQueue); },
+      onError: (errMsg) => {
+        // remove the failed temp entry from the file list
+        setFilesList((prev) => prev.filter((f) => f._id !== currentItem._id));
+        setProgressMap((prev) => { const { [currentItem._id]: _, ...rest } = prev; return rest; });
+        setErrorMessage(errMsg);
+        // continue with remaining uploads
+        processUploadQueue(restQueue);
+      },
     });
     setUploadXhrMap((prev) => ({ ...prev, [currentItem._id]: xhr }));
   }

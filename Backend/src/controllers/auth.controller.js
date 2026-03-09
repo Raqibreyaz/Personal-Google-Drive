@@ -251,3 +251,13 @@ export const githubAuth = async (req, res, next) => {
 
   res.redirect(`https://github.com/login/oauth/authorize?${params.toString()}`);
 };
+
+export const updateUserPassword = async (req, res, next) => {
+  const { email, newPassword } = req.body;
+
+  const user = await User.findOne({ email });
+  user.password = newPassword;
+  await user.save();
+
+  res.status(200).json({ message: "Password updated successfully!" });
+};

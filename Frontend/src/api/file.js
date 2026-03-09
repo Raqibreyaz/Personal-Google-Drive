@@ -28,10 +28,11 @@ export function getDownloadUrl(fileId) {
  * @param {File}        file   - the File object to upload
  * @param {object}      opts
  * @param {function}    opts.onProgress - called with percentage (0-100)
- * @param {function}    opts.onLoad     - called when upload finishes
+ * @param {function}    opts.onLoad     - called when upload succeeds
+ * @param {function}    opts.onError    - called with error message string on failure
  * @returns {XMLHttpRequest}
  */
-export function uploadFile(dirId, file, { onProgress, onLoad } = {}) {
+export function uploadFile(dirId, file, { onProgress, onLoad, onError } = {}) {
   const xhr = new XMLHttpRequest();
   xhr.open("POST", `${BASE_URL}/file/${dirId ?? ""}`, true);
   xhr.withCredentials = true;
@@ -44,9 +45,22 @@ export function uploadFile(dirId, file, { onProgress, onLoad } = {}) {
     });
   }
 
-  if (onLoad) {
-    xhr.addEventListener("load", onLoad);
-  }
+  xhr.addEventListener("load", () => {
+    if (xhr.status >= 200 && xhr.status < 300) {
+      if (onLoad) onLoad();
+    } else {
+      let errMsg = `Upload failed (${xhr.status})`;
+      try {
+        const data = JSON.parse(xhr.responseText);
+        if (data.error) errMsg = data.error;
+      } catch (_) {}
+      if (onError) onError(errMsg);
+    }
+  });
+
+  xhr.addEventListener("error", () => {
+    if (onError) onError("Network error during upload");
+  });
 
   const formData = new FormData();
   formData.append("uploadFile", file);

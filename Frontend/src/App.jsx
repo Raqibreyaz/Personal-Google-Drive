@@ -6,6 +6,7 @@ import Login from "./Login";
 import Callback from "./Callback";
 import UsersPage from "./UsersPage";
 import SharedWithMePage from "./SharedWithMePage";
+import UpdatePassword from "./UpdatePassword";
 
 const router = createBrowserRouter([
   {
@@ -35,6 +36,10 @@ const router = createBrowserRouter([
   {
     path: "/callback",
     element: <Callback />,
+  },
+  {
+    path: "/update-password",
+    element: <UpdatePassword />,
   },
 ]);
 

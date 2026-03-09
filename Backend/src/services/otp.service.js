@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import crypto from "crypto";
 import OTP from "../models/otp.model.js";
 
 const transporter = nodemailer.createTransport({
@@ -12,7 +13,7 @@ const transporter = nodemailer.createTransport({
 });
 
 export default async function sendOtpService(email) {
-  const otp = Math.floor(Math.random() * 9000 + 1000);
+  const otp = crypto.randomInt(100000, 999999);
 
   await OTP.findOneAndUpdate(
     { email },

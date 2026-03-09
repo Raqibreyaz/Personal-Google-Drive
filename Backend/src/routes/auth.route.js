@@ -9,22 +9,27 @@ import {
   loginWithGithub,
   sendOtp,
   githubAuth,
+  updateUserPassword,
 } from "../controllers/auth.controller.js";
 import validate from "../middlewares/validate.middleware.js";
 import {
-  checkNotUserAndSendOTPSchema,
   checkUserAndSendOTPSchema,
   verifyOTPAndRegisterSchema,
   verifyOTPAndLoginSchema,
   googleLoginSchema,
   githubLoginSchema,
+  checkUserWithPasswordAndSendOTPSchema,
+  updatePasswordSchema,
 } from "../validators/auth.validator.js";
 import {
   authLimiter,
   otpLimiter,
+  writeLimiter,
 } from "../middlewares/rateLimiter.middleware.js";
 import throttleRequest from "../middlewares/throttleRequest.middleware.js";
 import { ipKeyGenerator } from "express-rate-limit";
+import checkUserExist from "../middlewares/checkUserExist.middleware.js";
+import allowLocalUsersOnly from "../middlewares/allowLocalUsersOnly.middleware.js";
 
 const router = express.Router();
 
@@ -37,7 +42,7 @@ router.post(
     freeRequests: 0,
     timeGapInSec: 60,
   }),
-  validate(checkNotUserAndSendOTPSchema),
+  validate(checkUserAndSendOTPSchema),
   checkUserNotExist,
   sendOtp,
 );
@@ -49,8 +54,22 @@ router.post(
     freeRequests: 0,
     timeGapInSec: 60,
   }),
-  validate(checkUserAndSendOTPSchema),
+  validate(checkUserWithPasswordAndSendOTPSchema),
   checkUserAndPassword,
+  sendOtp,
+);
+
+router.post(
+  "/update-password/send-otp",
+  otpLimiter,
+  throttleRequest({
+    throttleKeyGenerator: (req) => ipKeyGenerator(req.ip),
+    freeRequests: 0,
+    timeGapInSec: 60,
+  }),
+  validate(checkUserAndSendOTPSchema),
+  checkUserExist,
+  allowLocalUsersOnly,
   sendOtp,
 );
 
@@ -112,6 +131,19 @@ router.get(
   }),
   validate(githubLoginSchema),
   loginWithGithub,
+);
+
+router.patch(
+  "/update-password",
+  writeLimiter,
+  throttleRequest({
+    throttleKeyGenerator: (req) => ipKeyGenerator(req.ip),
+    freeRequests: 0,
+    timeGapInSec: 10,
+  }),
+  validate(updatePasswordSchema),
+  verifyOtp,
+  updateUserPassword,
 );
 
 export default router;

@@ -1,4 +1,4 @@
-import fs from "fs/promises";
+import fs, { access } from "fs/promises";
 import path from "node:path";
 import appRootPath from "app-root-path";
 import { ObjectId } from "mongodb";
@@ -6,6 +6,7 @@ import ApiError from "../helpers/apiError.js";
 import Directory from "../models/directory.model.js";
 import File from "../models/file.model.js";
 import FileShare from "../models/fileShare.model.js";
+import mongoose from "mongoose";
 
 export const getFileContents = async (req, res, next) => {
   const fileId = req.params.fileId;
@@ -19,7 +20,42 @@ export const getFileContents = async (req, res, next) => {
     fileId + file.extname,
   );
 
-  console.log(fullpath);
+  await access(fullpath).catch(() => {
+    throw new ApiError(404, "File data is missing from storage!");
+  });
+
+  // prevent mime sniffing when content-type is not provided
+  res.set("X-Content-Type-Options", "nosniff");
+
+  // safe types can render inline; everything else is neutralized (prevents stored XSS)
+  const SAFE_INLINE_TYPES = new Set([
+    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".ico", ".avif",
+    ".mp4", ".webm", ".mov",
+    ".mp3", ".wav", ".ogg", ".aac", ".m4a", ".flac",
+    ".pdf", ".txt", ".csv",
+  ]);
+
+  // textual types rendered as plain text (visible but scripts can't execute)
+  const RENDER_AS_TEXT = new Set([
+    ".html", ".htm", ".svg", ".xml", ".xhtml",
+    ".js", ".mjs", ".cjs", ".jsx", ".ts", ".tsx",
+    ".css", ".scss", ".less",
+    ".json", ".yaml", ".yml", ".toml",
+    ".py", ".java", ".c", ".cpp", ".h", ".go", ".rs", ".rb", ".php",
+    ".sh", ".bat", ".ps1",
+    ".md", ".log", ".ini", ".cfg", ".conf", ".env",
+  ]);
+
+  const ext = file.extname.toLowerCase();
+  if (SAFE_INLINE_TYPES.has(ext)) {
+    res.set("Content-Disposition", `inline; filename="${file.name}"`);
+  } else if (RENDER_AS_TEXT.has(ext)) {
+    res.set("Content-Type", "text/plain; charset=utf-8");
+    res.set("Content-Disposition", `inline; filename="${file.name}"`);
+  } else {
+    // unknown/binary types — force download
+    res.set("Content-Disposition", `attachment; filename="${file.name}"`);
+  }
 
   if (req.query.action === "download") {
     return res.download(fullpath, file.name);
@@ -56,9 +92,6 @@ export const saveFile = async (req, res, next) => {
     name: file.originalname,
   }).lean());
   if (fileAlreadyExist) {
-    const fullpath = path.join(appRootPath.path, "storage", file.filename);
-    console.log(fullpath);
-    await fs.rm(fullpath);
     throw new ApiError(
       400,
       "A file with this name already exist in this directory",
@@ -69,7 +102,7 @@ export const saveFile = async (req, res, next) => {
   await File.insertOne({
     _id: new ObjectId(fileId),
     name: file.originalname,
-    size: file.size, //for handling large file sizes
+    size: file.size,
     parentDir: parentDir._id,
     extname: fileExt,
     user: userId,
@@ -103,15 +136,22 @@ export const renameFile = async (req, res, next) => {
     );
   }
 
-  // renaming when extension differs
-  if (oldExt != newExt)
-    await fs.rename(
-      path.join(parentPath, fileId + oldExt),
-      path.join(parentPath, fileId + newExt),
-    );
-
   // updating filename in DB
   await File.findByIdAndUpdate(file._id, { $set: { name: newFilename } });
+
+  // renaming when extension differs
+  if (oldExt != newExt) {
+    try {
+      await fs.rename(
+        path.join(parentPath, fileId + oldExt),
+        path.join(parentPath, fileId + newExt),
+      );
+    } catch (error) {
+      // rollback changes
+      await File.findByIdAndUpdate(file._id, { $set: { name: file.name } });
+      throw error;
+    }
+  }
 
   res.status(200).json({ message: "File Renamed!" });
 };
@@ -146,12 +186,20 @@ export const deleteFile = async (req, res, next) => {
   );
   console.log(fullpath);
 
-  await fs.rm(fullpath, { recursive: true, force: true });
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  await FileShare.deleteMany({ file: file._id });
+  try {
+    // remove from File
+    await FileShare.deleteMany({ file: file._id }, { session });
+    await File.findByIdAndDelete(file._id, { session });
 
-  // remove from File
-  await File.findByIdAndDelete(file._id);
+    await fs.rm(fullpath, { recursive: true, force: true });
 
-  res.status(200).json({ message: "File Deleted!" });
+    await session.commitTransaction();
+    res.status(200).json({ message: "File Deleted!" });
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  }
 };

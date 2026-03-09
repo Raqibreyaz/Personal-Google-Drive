@@ -131,6 +131,12 @@ const Login = () => {
           Register
         </Link>
       </p>
+      <p className="text-center mt-1 mb-4 text-sm">
+        Forgot password?{" "}
+        <Link to="/update-password" className="text-blue-700 no-underline font-medium hover:underline hover:text-blue-900">
+          Update it here
+        </Link>
+      </p>
       <div className="flex flex-col items-center">
         <div>Or</div>
         <div className="flex justify-center items-center gap-0.5">

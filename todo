@@ -1,13 +1,11 @@
 Yet to be Done:
-- update password feature
+- improving the scattered throttling inputs logic of every route
 - more robust error handling
-- since multi-device login allowed, then what happens for otp when single account getting logged-in simultaneously
-- Malicious file upload, browser renders html not code
-- delete the uploaded file if any issues occurs before saving the file in DB
-- add OTP expire updation on resend OTP
 - name,dirname sanitize at frontend
 - disable password input on sending OTP successfully at frontend
 - add wait for OTP resend on frontend
+- what are the routes that are yet to be used at the frontend?
+- add pops for confirmation wherever required before performing the action!
 
 Done:
 - absolute path for 'storage' dir
@@ -19,3 +17,11 @@ Done:
 - custom throttle function with initial allowed requests
 - Google login fix by console
 - use redis for rate-limiting and throttling storage
+- put validate middlware in correct order
+- other provider's users are able to send otp using app's login! and can reset the password!
+- update password feature
+- since multi-device login allowed, then what happens for otp when single account getting logged-in simultaneously
+- delete the uploaded file if any issues occurs before saving the file in DB
+- file uploaded,saved in db,but not present in storage/
+- check where are atomic operations are required
+- Malicious file upload, browser renders html not code

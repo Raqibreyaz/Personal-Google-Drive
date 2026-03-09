@@ -15,9 +15,11 @@ const storage = multer.diskStorage({
     const filename = fileId + path.extname(file.originalname);
 
     // when file upload interrupted then delete file
-    req.on("aborted", async () => {
-      const filepath = path.join(storageDirPath, filename);
-      await fs.unlink(filepath);
+    req.on("close", async () => {
+      if (!req.complete) {
+        const filepath = path.join(storageDirPath, filename);
+        await fs.unlink(filepath).catch(() => {});
+      }
     });
 
     cb(null, filename);
