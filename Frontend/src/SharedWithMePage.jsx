@@ -11,13 +11,15 @@ import RenameModal from "./components/RenameModal";
 import ShareModal from "./components/ShareModal";
 import { getSharedWithMe } from "./api/share.js";
 import { deleteFile, renameFile, getFileUrl, getDownloadUrl } from "./api/file.js";
+import useApiCall from "./hooks/useApiCall.js";
+import { sanitizeText } from "./utils/sanitize.js";
 
 export default function SharedWithMePage() {
     const navigate = useNavigate();
+    const { execute, error, setError } = useApiCall();
 
     const [sharedFiles, setSharedFiles] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
 
     const [activeContextMenu, setActiveContextMenu] = useState(null);
     const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
@@ -32,13 +34,11 @@ export default function SharedWithMePage() {
 
     async function fetchSharedFiles() {
         try {
-            const res = await getSharedWithMe();
-            if (res.status === 401 || res.status === 400) { navigate("/login"); return; }
-            if (!res.ok) { setError("Failed to load shared files."); return; }
-            const data = await res.json();
+            const data = await getSharedWithMe();
             setSharedFiles(data);
         } catch (err) {
-            setError("Something went wrong.");
+            // 401 auto-redirects via interceptor
+            setError(err.message);
         } finally {
             setLoading(false);
         }
@@ -71,14 +71,13 @@ export default function SharedWithMePage() {
         else { setActiveContextMenu(fileId); setContextMenuPos({ x: e.clientX - 110, y: e.clientY }); }
     }
 
-    async function handleDeleteFile(fileId) {
+    function handleDeleteFile(fileId) {
         const confirmed = confirm("Delete this file?");
         if (!confirmed) return;
-        try {
-            const res = await deleteFile(fileId);
-            if (res.ok) setSharedFiles((prev) => prev.filter((entry) => entry.file?._id !== fileId));
-            else { const data = await res.json(); setError(data.error || "Failed to delete file."); }
-        } catch (err) { setError("Something went wrong."); }
+        execute(
+            () => deleteFile(fileId),
+            () => setSharedFiles((prev) => prev.filter((entry) => entry.file?._id !== fileId)),
+        );
         setActiveContextMenu(null);
     }
 
@@ -89,13 +88,12 @@ export default function SharedWithMePage() {
         setActiveContextMenu(null);
     }
 
-    async function handleRenameSubmit(e) {
+    function handleRenameSubmit(e) {
         e.preventDefault();
-        try {
-            const res = await renameFile(renameFileId, renameValue);
-            if (res.ok) { setShowRenameModal(false); setRenameValue(""); setRenameFileId(null); fetchSharedFiles(); }
-            else { const data = await res.json(); setError(data.error || "Failed to rename file."); }
-        } catch (err) { setError("Something went wrong."); }
+        execute(
+            () => renameFile(renameFileId, sanitizeText(renameValue)),
+            () => { setShowRenameModal(false); setRenameValue(""); setRenameFileId(null); fetchSharedFiles(); },
+        );
     }
 
     function handleOpenShare(fileId, fileName) {

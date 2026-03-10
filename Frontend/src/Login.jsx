@@ -1,52 +1,32 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import GoogleLoginButton from "./components/GoogleLoginButton";
 import GithubLoginButton from "./components/GithubLoginButton";
 import { sendLoginOtp, loginWithOtp } from "./api/auth.js";
+import useApiCall from "./hooks/useApiCall.js";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { execute, loading, error: serverError, setError: setServerError } = useApiCall();
 
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [serverError, setServerError] = useState("");
 
   const handleChange = (e) => {
     if (serverError) setServerError("");
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSendOtp = async () => {
-    setLoading(true);
-    setServerError("");
-    try {
-      const response = await sendLoginOtp(formData.email, formData.password);
-      const data = await response.json();
-      if (data.error) { setServerError(data.error); return; }
-      setOtpSent(true);
-    } catch (err) {
-      setServerError("Failed to send OTP. Try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleSendOtp = () => execute(
+    () => sendLoginOtp(formData.email, formData.password),
+    () => setOtpSent(true),
+  );
 
-  const handleVerifyOtpAndLogin = async () => {
-    setLoading(true);
-    setServerError("");
-    try {
-      const response = await loginWithOtp(formData.email, otp);
-      const data = await response.json();
-      if (data.error) { setServerError(data.error); return; }
-      navigate("/");
-    } catch (err) {
-      setServerError("OTP verification failed.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleVerifyOtpAndLogin = () => execute(
+    () => loginWithOtp(formData.email, otp),
+    () => navigate("/"),
+  );
 
   const handleSubmit = (e) => {
     e.preventDefault();

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FaCopy, FaCheck } from "react-icons/fa";
 import { setFileAccess, getFileUrl } from "../api/file.js";
+import useApiCall from "../hooks/useApiCall.js";
 
 function AccessControlModal({
     fileId,
@@ -10,29 +11,19 @@ function AccessControlModal({
     onAccessChanged,
 }) {
     const [permission, setPermission] = useState(currentAccess || "");
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
     const [copied, setCopied] = useState(false);
+    const { execute, loading, error } = useApiCall();
 
     const fileLink = getFileUrl(fileId);
 
-    async function handleSave() {
-        setLoading(true);
-        setError("");
-        try {
-            const res = await setFileAccess(fileId, permission || null);
-            if (!res.ok) {
-                const data = await res.json();
-                setError(data.error || "Failed to update access.");
-                return;
-            }
-            if (onAccessChanged) onAccessChanged(permission || null);
-            onClose();
-        } catch (err) {
-            setError("Something went wrong.");
-        } finally {
-            setLoading(false);
-        }
+    function handleSave() {
+        execute(
+            () => setFileAccess(fileId, permission || null),
+            () => {
+                if (onAccessChanged) onAccessChanged(permission || null);
+                onClose();
+            },
+        );
     }
 
     function handleCopyLink() {

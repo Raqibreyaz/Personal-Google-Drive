@@ -4,6 +4,7 @@ can this logged-in user access another user's account data?
 
 import ApiError from "../helpers/apiError.js";
 import Role from "../constants/role.js";
+import { FORBIDDEN } from "../constants/errorCodes.js";
 
 export default async function authorizeDataAccess(req, res, next) {
   const targetUserId = req.params.userId;
@@ -27,5 +28,5 @@ export default async function authorizeDataAccess(req, res, next) {
     return next();
   }
 
-  throw new ApiError(403, "You are not authorized to access this user's data!");
+  throw new ApiError(403, "You are not authorized to access this user's data!", FORBIDDEN);
 }

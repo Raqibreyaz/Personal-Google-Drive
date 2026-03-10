@@ -7,12 +7,19 @@ import Directory from "../models/directory.model.js";
 import File from "../models/file.model.js";
 import FileShare from "../models/fileShare.model.js";
 import mongoose from "mongoose";
+import {
+  FILE_NOT_FOUND,
+  FILE_MISSING_STORAGE,
+  DUPLICATE_FILE,
+  FILE_SEND_FAILED,
+  DIR_NOT_FOUND,
+} from "../constants/errorCodes.js";
 
 export const getFileContents = async (req, res, next) => {
   const fileId = req.params.fileId;
 
   const file = req.fileDoc ? req.fileDoc : await File.findById(fileId).lean();
-  if (!file) throw new ApiError(404, "File not found!");
+  if (!file) throw new ApiError(404, "File not found!", FILE_NOT_FOUND);
 
   const fullpath = path.join(
     appRootPath.path,
@@ -21,7 +28,7 @@ export const getFileContents = async (req, res, next) => {
   );
 
   await access(fullpath).catch(() => {
-    throw new ApiError(404, "File data is missing from storage!");
+    throw new ApiError(404, "File data is missing from storage!", FILE_MISSING_STORAGE);
   });
 
   // prevent mime sniffing when content-type is not provided
@@ -63,7 +70,7 @@ export const getFileContents = async (req, res, next) => {
 
   res.sendFile(fullpath, (err) => {
     if (err && !res.headersSent)
-      throw new ApiError(500, `File Sending failed: ${err.message}`);
+      throw new ApiError(500, `File Sending failed: ${err.message}`, FILE_SEND_FAILED);
   });
 };
 
@@ -80,7 +87,7 @@ export const saveFile = async (req, res, next) => {
       }).lean();
 
   if (!parentDir)
-    throw new ApiError(404, "Given Parent Directory doesn't exist!");
+    throw new ApiError(404, "Given Parent Directory doesn't exist!", DIR_NOT_FOUND);
 
   const file = req.file;
   const [fileId, _] = file.filename.split(".");
@@ -95,6 +102,7 @@ export const saveFile = async (req, res, next) => {
     throw new ApiError(
       400,
       "A file with this name already exist in this directory",
+      DUPLICATE_FILE,
     );
   }
 
@@ -116,12 +124,11 @@ export const renameFile = async (req, res, next) => {
   const newFilename = req.body.newFilename;
   const newExt = path.extname(newFilename);
   const parentPath = path.join(appRootPath.path, "storage");
-  console.log(parentPath);
 
   const file = req.fileDoc
     ? req.fileDoc
     : await File.findById(req.params.fileId).lean();
-  if (!file) throw new ApiError(404, "File not found!");
+  if (!file) throw new ApiError(404, "File not found!", FILE_NOT_FOUND);
   const oldExt = file.extname;
 
   // check if a file with that name already exists in that directory
@@ -133,6 +140,7 @@ export const renameFile = async (req, res, next) => {
     throw new ApiError(
       400,
       "A file with this name already exist in this directory",
+      DUPLICATE_FILE,
     );
   }
 
@@ -165,7 +173,7 @@ export const setAllowAnyone = async (req, res, next) => {
     { $set: { allowAnyoneAccess: permission ? permission : null } },
   );
 
-  if (!result.modifiedCount) throw new ApiError(404, "file not found!");
+  if (!result.modifiedCount) throw new ApiError(404, "file not found!", FILE_NOT_FOUND);
 
   res.status(200).json({ message: "File permissions saved successfully!" });
 };
@@ -176,7 +184,7 @@ export const deleteFile = async (req, res, next) => {
   const file = req.fileDoc
     ? req.fileDoc
     : await File.findById(req.params.fileId).lean();
-  if (!file) throw new ApiError(404, "File not found!");
+  if (!file) throw new ApiError(404, "File not found!", FILE_NOT_FOUND);
 
   // remove file from storage
   const fullpath = path.join(
@@ -184,7 +192,6 @@ export const deleteFile = async (req, res, next) => {
     "storage/",
     fileId + file.extname,
   );
-  console.log(fullpath);
 
   const session = await mongoose.startSession();
   session.startTransaction();

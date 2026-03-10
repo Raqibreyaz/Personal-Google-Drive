@@ -1,51 +1,35 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { sendUpdatePasswordOtp } from "./api/auth.js";
-import { updateUserPassword } from "./api/auth.js";
+import { sendUpdatePasswordOtp, updateUserPassword } from "./api/auth.js";
+import useApiCall from "./hooks/useApiCall.js";
 
 const UpdatePassword = () => {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
-
-  const [otpLoading, setOtpLoading] = useState(false);
-  const [submitLoading, setSubmitLoading] = useState(false);
-  const [serverError, setServerError] = useState("");
   const [otpMsg, setOtpMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
-  const handleSendOtp = async () => {
+  const { execute: executeOtp, loading: otpLoading, error: serverError, setError: setServerError } = useApiCall();
+  const { execute: executeSubmit, loading: submitLoading } = useApiCall();
+
+  const handleSendOtp = () => {
     if (!email) { setServerError("Please enter your email first."); return; }
-    setOtpLoading(true);
-    setServerError("");
-    setOtpMsg("");
-    try {
-      const response = await sendUpdatePasswordOtp(email);
-      const data = await response.json();
-      if (data.error) { setServerError(data.error); return; }
-      setOtpMsg("OTP sent to your email!");
-      setTimeout(() => setOtpMsg(""), 5000);
-    } catch (err) {
-      setServerError("Failed to send OTP. Try again.");
-    } finally {
-      setOtpLoading(false);
-    }
+    executeOtp(
+      () => sendUpdatePasswordOtp(email),
+      () => {
+        setOtpMsg("OTP sent to your email!");
+        setTimeout(() => setOtpMsg(""), 5000);
+      },
+    );
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setSubmitLoading(true);
-    setServerError("");
-    try {
-      const response = await updateUserPassword(email, otp, newPassword);
-      const data = await response.json();
-      if (data.error) { setServerError(data.error); return; }
-      setSuccessMsg("Password updated successfully!");
-    } catch (err) {
-      setServerError("Failed to update password.");
-    } finally {
-      setSubmitLoading(false);
-    }
+    executeSubmit(
+      () => updateUserPassword(email, otp, newPassword),
+      () => setSuccessMsg("Password updated successfully!"),
+    );
   };
 
   const hasError = Boolean(serverError);

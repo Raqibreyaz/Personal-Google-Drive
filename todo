@@ -1,10 +1,8 @@
 Yet to be Done:
-- more robust error handling
-- name,dirname sanitize at frontend
-- disable password input on sending OTP successfully at frontend
 - add wait for OTP resend on frontend
 - what are the routes that are yet to be used at the frontend?
 - add pops for confirmation wherever required before performing the action!
+- migrating from fetch to axios wherever used
 
 Done:
 - absolute path for 'storage' dir
@@ -25,3 +23,5 @@ Done:
 - check where are atomic operations are required
 - Malicious file upload, browser renders html not code
 - improving the scattered throttling inputs logic of every route
+- more robust error handling
+- name,dirname sanitize at frontend

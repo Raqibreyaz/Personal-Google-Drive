@@ -10,6 +10,7 @@ import {
   FaSignInAlt,
 } from "react-icons/fa";
 import ProfileImage from "./ProfileImage";
+import { sanitizeText } from "../utils/sanitize.js";
 
 function DirectoryHeader({
   directoryName,
@@ -35,7 +36,7 @@ function DirectoryHeader({
         const response = await fetch(`${BASE_URL}/user`, { credentials: "include" });
         if (response.ok) {
           const data = await response.json();
-          setUserName(data.name);
+          setUserName(sanitizeText(data.name));
           setUserEmail(data.email);
           setUserRole(data.role);
           setLoggedIn(true);

@@ -1,4 +1,4 @@
-import { apiDelete, apiPatch, BASE_URL } from "./client.js";
+import { apiDelete, apiPatch, BASE_URL, client, ApiError } from "./client.js";
 
 export async function deleteFile(fileId) {
   return apiDelete(`/file/${fileId}`);
@@ -21,8 +21,8 @@ export function getDownloadUrl(fileId) {
 }
 
 /**
- * Upload a file via XHR with progress tracking.
- * Returns the XHR instance so the caller can abort if needed.
+ * Upload a file via axios with progress tracking.
+ * Returns an AbortController so the caller can cancel if needed.
  *
  * @param {string|null} dirId  - parent directory ID (null for root)
  * @param {File}        file   - the File object to upload
@@ -30,41 +30,37 @@ export function getDownloadUrl(fileId) {
  * @param {function}    opts.onProgress - called with percentage (0-100)
  * @param {function}    opts.onLoad     - called when upload succeeds
  * @param {function}    opts.onError    - called with error message string on failure
- * @returns {XMLHttpRequest}
+ * @returns {{ abort: Function }}
  */
 export function uploadFile(dirId, file, { onProgress, onLoad, onError } = {}) {
-  const xhr = new XMLHttpRequest();
-  xhr.open("POST", `${BASE_URL}/file/${dirId ?? ""}`, true);
-  xhr.withCredentials = true;
-
-  if (onProgress) {
-    xhr.upload.addEventListener("progress", (evt) => {
-      if (evt.lengthComputable) {
-        onProgress((evt.loaded / evt.total) * 100);
-      }
-    });
-  }
-
-  xhr.addEventListener("load", () => {
-    if (xhr.status >= 200 && xhr.status < 300) {
-      if (onLoad) onLoad();
-    } else {
-      let errMsg = `Upload failed (${xhr.status})`;
-      try {
-        const data = JSON.parse(xhr.responseText);
-        if (data.error) errMsg = data.error;
-      } catch (_) {}
-      if (onError) onError(errMsg);
-    }
-  });
-
-  xhr.addEventListener("error", () => {
-    if (onError) onError("Network error during upload");
-  });
+  const controller = new AbortController();
 
   const formData = new FormData();
   formData.append("uploadFile", file);
-  xhr.send(formData);
 
-  return xhr;
+  client
+    .post(`/file/${dirId ?? ""}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+      signal: controller.signal,
+      onUploadProgress: (evt) => {
+        if (onProgress && evt.total) {
+          onProgress((evt.loaded / evt.total) * 100);
+        }
+      },
+    })
+    .then(() => {
+      if (onLoad) onLoad();
+    })
+    .catch((err) => {
+      // Cancelled by user — not an error
+      if (err.code === "ERR_CANCELED") return;
+
+      const errMsg =
+        err instanceof ApiError
+          ? err.message
+          : "Network error during upload";
+      if (onError) onError(errMsg);
+    });
+
+  return { abort: () => controller.abort() };
 }

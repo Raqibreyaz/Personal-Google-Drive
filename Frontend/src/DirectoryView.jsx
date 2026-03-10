@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import DirectoryHeader from "./components/DirectoryHeader";
 import CreateDirectoryModal from "./components/CreateDirectoryModal";
@@ -9,15 +9,18 @@ import DirectoryList from "./components/DirectoryList";
 import { getDirectory, createDirectory, deleteDirectory, renameDirectory } from "./api/directory.js";
 import { deleteFile, renameFile, getFileUrl, uploadFile } from "./api/file.js";
 import { BASE_URL } from "./api/client.js";
+import useApiCall from "./hooks/useApiCall.js";
+import { sanitizeText } from "./utils/sanitize.js";
 
 function DirectoryView() {
   const { dirId } = useParams();
   const navigate = useNavigate();
+  const { execute, error: errorMessage, setError: setErrorMessage } = useApiCall();
 
   const [directoryName, setDirectoryName] = useState("My Drive");
   const [directoriesList, setDirectoriesList] = useState([]);
   const [filesList, setFilesList] = useState([]);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [dirNotFound, setDirNotFound] = useState(false);
 
   const [showCreateDirModal, setShowCreateDirModal] = useState(false);
   const [newDirname, setNewDirname] = useState("New Folder");
@@ -38,44 +41,38 @@ function DirectoryView() {
 
   const fileInputRef = useRef(null);
   const [uploadQueue, setUploadQueue] = useState([]);
-  const [uploadXhrMap, setUploadXhrMap] = useState({});
+  const [uploadAbortMap, setUploadAbortMap] = useState({});
   const [progressMap, setProgressMap] = useState({});
   const [isUploading, setIsUploading] = useState(false);
 
   const [activeContextMenu, setActiveContextMenu] = useState(null);
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
 
-  async function handleFetchErrors(response) {
-    if (!response.ok) {
-      let errMsg = `Request failed with status ${response.status}`;
-      try {
-        const data = await response.json();
-        if (data.error) errMsg = data.error;
-      } catch (_) { }
-      throw new Error(errMsg);
-    }
-    return response;
-  }
-
-  async function getDirectoryItems() {
-    setErrorMessage("");
-    try {
-      const response = await getDirectory(dirId);
-      if (response.status === 400) { navigate("/login"); return; }
-      await handleFetchErrors(response);
-      const data = await response.json();
-      setDirectoryName(dirId ? data.name : "My Drive");
-      setDirectoriesList([...data.directories].reverse());
-      setFilesList([...data.files].reverse());
-    } catch (error) {
-      setErrorMessage(error.message);
-    }
-  }
+  const getDirectoryItems = useCallback(() => {
+    execute(
+      () => getDirectory(dirId),
+      (data) => {
+        setDirNotFound(false);
+        setDirectoryName(dirId ? data.name : "My Drive");
+        setDirectoriesList([...data.directories].reverse());
+        setFilesList([...data.files].reverse());
+      },
+    );
+  }, [dirId, execute]);
 
   useEffect(() => {
     getDirectoryItems();
     setActiveContextMenu(null);
-  }, [dirId]);
+  }, [getDirectoryItems]);
+
+  // Check if directory was not found (by error code)
+  useEffect(() => {
+    if (errorMessage) {
+      // Set dirNotFound based on the error — the hook stores err.message,
+      // but we can check via a separate mechanism if needed
+      setDirNotFound(errorMessage.includes("not found"));
+    }
+  }, [errorMessage]);
 
   function getFileIcon(filename) {
     const ext = filename.split(".").pop().toLowerCase();
@@ -129,60 +126,54 @@ function DirectoryView() {
       prev.map((f) => f._id === currentItem._id ? { ...f, isUploading: true } : f),
     );
 
-    const xhr = uploadFile(dirId, currentItem.file, {
+    const { abort } = uploadFile(dirId, currentItem.file, {
       onProgress: (progress) => {
         setProgressMap((prev) => ({ ...prev, [currentItem._id]: progress }));
       },
       onLoad: () => { processUploadQueue(restQueue); },
       onError: (errMsg) => {
-        // remove the failed temp entry from the file list
         setFilesList((prev) => prev.filter((f) => f._id !== currentItem._id));
         setProgressMap((prev) => { const { [currentItem._id]: _, ...rest } = prev; return rest; });
         setErrorMessage(errMsg);
-        // continue with remaining uploads
         processUploadQueue(restQueue);
       },
     });
-    setUploadXhrMap((prev) => ({ ...prev, [currentItem._id]: xhr }));
+    setUploadAbortMap((prev) => ({ ...prev, [currentItem._id]: abort }));
   }
 
   function handleCancelUpload(tempId) {
-    const xhr = uploadXhrMap[tempId];
-    if (xhr) xhr.abort();
+    const abortFn = uploadAbortMap[tempId];
+    if (abortFn) abortFn();
     setUploadQueue((prev) => prev.filter((item) => item._id !== tempId));
     setFilesList((prev) => prev.filter((f) => f._id !== tempId));
     setProgressMap((prev) => { const { [tempId]: _, ...rest } = prev; return rest; });
-    setUploadXhrMap((prev) => { const copy = { ...prev }; delete copy[tempId]; return copy; });
+    setUploadAbortMap((prev) => { const copy = { ...prev }; delete copy[tempId]; return copy; });
   }
 
-  async function handleDeleteFile(id) {
-    setErrorMessage("");
-    try {
-      const response = await deleteFile(id);
-      await handleFetchErrors(response);
-      getDirectoryItems();
-    } catch (error) { setErrorMessage(error.message); }
+  function handleDeleteFile(id) {
+    execute(
+      () => deleteFile(id),
+      () => getDirectoryItems(),
+    );
   }
 
-  async function handleDeleteDirectory(id) {
-    setErrorMessage("");
-    try {
-      const response = await deleteDirectory(id);
-      await handleFetchErrors(response);
-      getDirectoryItems();
-    } catch (error) { setErrorMessage(error.message); }
+  function handleDeleteDirectory(id) {
+    execute(
+      () => deleteDirectory(id),
+      () => getDirectoryItems(),
+    );
   }
 
-  async function handleCreateDirectory(e) {
+  function handleCreateDirectory(e) {
     e.preventDefault();
-    setErrorMessage("");
-    try {
-      const response = await createDirectory(dirId, newDirname);
-      await handleFetchErrors(response);
-      setNewDirname("New Folder");
-      setShowCreateDirModal(false);
-      getDirectoryItems();
-    } catch (error) { setErrorMessage(error.message); }
+    execute(
+      () => createDirectory(dirId, sanitizeText(newDirname)),
+      () => {
+        setNewDirname("New Folder");
+        setShowCreateDirModal(false);
+        getDirectoryItems();
+      },
+    );
   }
 
   function openRenameModal(type, id, currentName) {
@@ -192,20 +183,21 @@ function DirectoryView() {
     setShowRenameModal(true);
   }
 
-  async function handleRenameSubmit(e) {
+  function handleRenameSubmit(e) {
     e.preventDefault();
-    setErrorMessage("");
-    try {
-      const response = renameType === "file"
-        ? await renameFile(renameId, renameValue)
-        : await renameDirectory(renameId, renameValue);
-      await handleFetchErrors(response);
-      setShowRenameModal(false);
-      setRenameValue("");
-      setRenameType(null);
-      setRenameId(null);
-      getDirectoryItems();
-    } catch (error) { setErrorMessage(error.message); }
+    const sanitizedValue = sanitizeText(renameValue);
+    execute(
+      () => renameType === "file"
+        ? renameFile(renameId, sanitizedValue)
+        : renameDirectory(renameId, sanitizedValue),
+      () => {
+        setShowRenameModal(false);
+        setRenameValue("");
+        setRenameType(null);
+        setRenameId(null);
+        getDirectoryItems();
+      },
+    );
   }
 
   function handleOpenShare(fileId, fileName) {
@@ -245,10 +237,9 @@ function DirectoryView() {
 
   return (
     <div className="px-2.5 max-w-[1000px] mx-auto">
-      {errorMessage &&
-        errorMessage !== "Directory not found or you do not have access to it!" && (
-          <div className="text-red-500 mb-2">{errorMessage}</div>
-        )}
+      {errorMessage && !dirNotFound && (
+        <div className="text-red-500 mb-2">{errorMessage}</div>
+      )}
 
       <DirectoryHeader
         directoryName={directoryName}
@@ -256,7 +247,7 @@ function DirectoryView() {
         onUploadFilesClick={() => fileInputRef.current.click()}
         fileInputRef={fileInputRef}
         handleFileSelect={handleFileSelect}
-        disabled={errorMessage === "Directory not found or you do not have access to it!"}
+        disabled={dirNotFound}
       />
 
       {showCreateDirModal && (
@@ -297,7 +288,7 @@ function DirectoryView() {
       )}
 
       {combinedItems.length === 0 ? (
-        errorMessage === "Directory not found or you do not have access to it!" ? (
+        dirNotFound ? (
           <p className="text-center italic mt-10 text-gray-500">
             Directory not found or you do not have access to it!
           </p>

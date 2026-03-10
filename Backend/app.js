@@ -1,16 +1,17 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import fs from "fs/promises";
-import path from "node:path";
-import appRootPath from "app-root-path";
 import connectDB from "./src/config/db.js";
-import checkAuthentication from "./src/middlewares/authenticate.middleware.js";
 import fileRoutes from "./src/routes/file.route.js";
 import directoryRoutes from "./src/routes/directory.route.js";
 import userRoutes from "./src/routes/user.route.js";
 import authRoutes from "./src/routes/auth.route.js";
 import fileShareRoutes from "./src/routes/fileShare.route.js";
+import checkAuthentication from "./src/middlewares/authenticate.middleware.js";
+import {
+  cleanupUploadedFile,
+  globalErrorHandler,
+} from "./src/middlewares/errorHandler.middleware.js";
 
 const app = express();
 
@@ -38,25 +39,10 @@ app.use("/user", checkAuthentication, userRoutes);
 app.use("/auth", authRoutes);
 
 // clean up uploaded file on ANY error (authorization, validation, DB, etc.)
-app.use(async (err, req, res, next) => {
-  if (req.file) {
-    const fullpath = path.join(appRootPath.path, "storage", req.file.filename);
-    await fs.rm(fullpath, { force: true }).catch(() => {});
-  }
-  next(err);
-});
+app.use(cleanupUploadedFile);
 
-app.use((err, req, res, next) => {
-  console.log(err);
-  if (err.code === 121) err.message = "Invalid Fields!";
-  else if (err.code === 11000) {
-    const field = Object.keys(err.keyValue)[0];
-    err.message = `A user with this ${field} already exists!`;
-  }
-  res
-    .status(err.statusCode || 500)
-    .json({ error: err.message || "Something went wrong!" });
-});
+// global error handler — consistent { error, errorCode } response
+app.use(globalErrorHandler);
 
 const port = process.env.PORT || 8080;
 app.listen(port, "0.0.0.0", () =>

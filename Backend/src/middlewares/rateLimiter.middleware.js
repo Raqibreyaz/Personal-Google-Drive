@@ -32,7 +32,7 @@ function createLimiter({ windowMin, limit, errorMsg, keyGenerator }) {
     limit,
     standardHeaders: "draft-7", // sends RateLimit-* and Retry-After headers
     legacyHeaders: false, // disable X-RateLimit-* headers
-    message: { error: errorMsg },
+    message: { error: errorMsg, errorCode: "RATE_LIMITED" },
     store: new RedisStore({
       sendCommand: (...args) => redisClient.sendCommand(args.map(String)),
     }),

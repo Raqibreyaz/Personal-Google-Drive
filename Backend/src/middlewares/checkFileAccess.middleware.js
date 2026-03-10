@@ -6,13 +6,14 @@
 import ApiError from "../helpers/apiError.js";
 import File from "../models/file.model.js";
 import FileShare from "../models/fileShare.model.js";
+import { FILE_NOT_FOUND, FORBIDDEN } from "../constants/errorCodes.js";
 
 export default async function checkFileAccessAllowed(req, res, next) {
   const fileId = req.params.fileId;
   const loggedInUserId = req.session.user._id.toString();
 
   const file = await File.findById(fileId).lean();
-  if (!file) throw new ApiError(404, "File not found!");
+  if (!file) throw new ApiError(404, "File not found!", FILE_NOT_FOUND);
 
   req.fileDoc = file;
 
@@ -39,5 +40,5 @@ export default async function checkFileAccessAllowed(req, res, next) {
     if (fileShare.permission === "View" && req.method === "GET") return next();
   }
 
-  throw new ApiError(400, "You are not authorized to access this data!");
+  throw new ApiError(403, "You are not authorized to access this data!", FORBIDDEN);
 }

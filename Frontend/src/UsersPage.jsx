@@ -10,16 +10,17 @@ import {
   recoverUser as apiRecoverUser,
   changeUserRole as apiChangeUserRole,
 } from "./api/user.js";
+import useApiCall from "./hooks/useApiCall.js";
 
 const ROLES = ["Owner", "Admin", "Manager", "User"];
 const ROLE_LEVEL = { Owner: 0, Admin: 1, Manager: 2, User: 3 };
 
 export default function UsersPage() {
   const navigate = useNavigate();
+  const { execute, error, setError } = useApiCall();
 
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
-  const [error, setError] = useState("");
 
   function canActOn(targetRole) {
     if (!currentUser) return false;
@@ -31,63 +32,63 @@ export default function UsersPage() {
     return ROLES.filter((r) => ROLE_LEVEL[currentUser.role] < ROLE_LEVEL[r]);
   }
 
-  const logoutUser = async (userId) => {
+  const logoutUser = (userId) => {
     const confirmed = confirm("You are about to logout this user!");
     if (!confirmed) return;
-    const res = await apiLogoutUser(userId);
-    if (res.ok)
-      setUsers((prev) => prev.map((user) => user._id === userId ? { ...user, isLoggedIn: false } : user));
-    else setError("Failed to logout user.");
+    execute(
+      () => apiLogoutUser(userId),
+      () => setUsers((prev) => prev.map((user) => user._id === userId ? { ...user, isLoggedIn: false } : user)),
+    );
   };
 
-  const softDeleteUser = async (userId) => {
+  const softDeleteUser = (userId) => {
     const confirmed = confirm("Soft-delete this user? Their account will be deactivated but can be recovered.");
     if (!confirmed) return;
-    const res = await apiSoftDeleteUser(userId);
-    if (res.ok)
-      setUsers((prev) => prev.map((user) => user._id === userId ? { ...user, isDeleted: true } : user));
-    else setError("Failed to delete user.");
+    execute(
+      () => apiSoftDeleteUser(userId),
+      () => setUsers((prev) => prev.map((user) => user._id === userId ? { ...user, isDeleted: true } : user)),
+    );
   };
 
-  const hardDeleteUser = async (userId) => {
+  const hardDeleteUser = (userId) => {
     const confirmed = confirm("⚠️ PERMANENTLY delete this user and ALL their data? This cannot be undone!");
     if (!confirmed) return;
-    const res = await apiHardDeleteUser(userId);
-    if (res.ok) setUsers((prev) => prev.filter((user) => user._id !== userId));
-    else setError("Failed to permanently delete user.");
+    execute(
+      () => apiHardDeleteUser(userId),
+      () => setUsers((prev) => prev.filter((user) => user._id !== userId)),
+    );
   };
 
-  const recoverUser = async (userId) => {
+  const recoverUser = (userId) => {
     const confirmed = confirm("Recover this user?");
     if (!confirmed) return;
-    const res = await apiRecoverUser(userId);
-    if (res.ok)
-      setUsers((prev) => prev.map((user) => user._id === userId ? { ...user, isDeleted: false } : user));
-    else setError("Failed to recover user.");
+    execute(
+      () => apiRecoverUser(userId),
+      () => setUsers((prev) => prev.map((user) => user._id === userId ? { ...user, isDeleted: false } : user)),
+    );
   };
 
-  const changeRole = async (userId, newRole) => {
+  const changeRole = (userId, newRole) => {
     const confirmed = confirm(`Change this user's role to ${newRole}?`);
     if (!confirmed) return;
-    const res = await apiChangeUserRole(userId, newRole);
-    if (res.ok)
-      setUsers((prev) => prev.map((user) => user._id === userId ? { ...user, role: newRole } : user));
-    else setError("Failed to change role.");
-  };
-
-  const fetchUsers = async () => {
-    const res = await getAllUsers();
-    const data = await res.json();
-    if (res.ok) setUsers(data);
+    execute(
+      () => apiChangeUserRole(userId, newRole),
+      () => setUsers((prev) => prev.map((user) => user._id === userId ? { ...user, role: newRole } : user)),
+    );
   };
 
   useEffect(() => {
     (async () => {
-      const userRes = await getCurrentUser();
-      const userData = await userRes.json();
-      if (userRes.ok && userData.role !== "User") setCurrentUser(userData);
-      else navigate("/");
-      fetchUsers();
+      try {
+        const userData = await getCurrentUser();
+        if (userData.role !== "User") setCurrentUser(userData);
+        else navigate("/");
+        const usersData = await getAllUsers();
+        setUsers(usersData);
+      } catch (err) {
+        // 401 is handled by interceptor (auto-redirect to /login)
+        setError(err.message);
+      }
     })();
   }, []);
 
