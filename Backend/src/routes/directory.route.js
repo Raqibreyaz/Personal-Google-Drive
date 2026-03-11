@@ -14,7 +14,8 @@ import {
 } from "../validators/directory.validator.js";
 import {
   readLimiter,
-  writeLimiter,
+  uploadLimiter,
+  mutateLimiter,
 } from "../middlewares/rateLimiter.middleware.js";
 import throttleRequest from "../middlewares/throttleRequest.middleware.js";
 
@@ -34,23 +35,23 @@ router.get(
 
 router.post(
   "/{:parentDirId}",
-  writeLimiter,
-  throttleRequest("WRITE"),
+  uploadLimiter,
   validate(createDirectorySchema),
+  throttleRequest("WRITE"),
   createDirectory,
 );
 
 router.patch(
   "/:dirId",
-  writeLimiter,
-  throttleRequest("MUTATE"),
+  mutateLimiter,
   validate(renameDirectorySchema),
+  throttleRequest("MUTATE"),
   updateDirectoryName,
 );
 
 router.delete(
   "/:dirId",
-  writeLimiter,
+  mutateLimiter,
   throttleRequest("MUTATE"),
   deleteDirectory,
 );
@@ -66,25 +67,25 @@ router.get(
 
 router.post(
   "/:userId/:parentDirId",
-  writeLimiter,
+  uploadLimiter,
+  validate(createDirectorySchema),
   throttleRequest("WRITE"),
   authorizeDataAccess,
-  validate(createDirectorySchema),
   createDirectory,
 );
 
 router.patch(
   "/:userId/:dirId",
-  writeLimiter,
+  mutateLimiter,
+  validate(renameDirectorySchema),
   throttleRequest("MUTATE"),
   authorizeDataAccess,
-  validate(renameDirectorySchema),
   updateDirectoryName,
 );
 
 router.delete(
   "/:userId/:dirId",
-  writeLimiter,
+  mutateLimiter,
   throttleRequest("MUTATE"),
   authorizeDataAccess,
   deleteDirectory,

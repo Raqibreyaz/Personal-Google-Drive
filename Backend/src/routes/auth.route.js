@@ -24,7 +24,7 @@ import {
 import {
   authLimiter,
   otpLimiter,
-  writeLimiter,
+  adminLimiter,
 } from "../middlewares/rateLimiter.middleware.js";
 import throttleRequest from "../middlewares/throttleRequest.middleware.js";
 import { ipOnlyKeyGenerator } from "../config/throttlePresets.js";
@@ -37,16 +37,16 @@ const router = express.Router();
 router.post(
   "/register/send-otp",
   otpLimiter,
-  throttleRequest("OTP", { keyGenerator: ipOnlyKeyGenerator }),
   validate(checkUserAndSendOTPSchema),
+  throttleRequest("OTP", { keyGenerator: ipOnlyKeyGenerator }),
   checkUserNotExist,
   sendOtp,
 );
 router.post(
   "/login/send-otp",
   otpLimiter,
-  throttleRequest("OTP", { keyGenerator: ipOnlyKeyGenerator }),
   validate(checkUserWithPasswordAndSendOTPSchema),
+  throttleRequest("OTP", { keyGenerator: ipOnlyKeyGenerator }),
   checkUserAndPassword,
   sendOtp,
 );
@@ -54,8 +54,8 @@ router.post(
 router.post(
   "/update-password/send-otp",
   otpLimiter,
-  throttleRequest("OTP", { keyGenerator: ipOnlyKeyGenerator }),
   validate(checkUserAndSendOTPSchema),
+  throttleRequest("OTP", { keyGenerator: ipOnlyKeyGenerator }),
   checkUserExist,
   allowLocalUsersOnly,
   sendOtp,
@@ -65,16 +65,16 @@ router.post(
 router.post(
   "/register",
   authLimiter,
-  throttleRequest("AUTH", { keyGenerator: ipOnlyKeyGenerator }),
   validate(verifyOTPAndRegisterSchema),
+  throttleRequest("AUTH", { keyGenerator: ipOnlyKeyGenerator }),
   verifyOtp,
   registerUser,
 );
 router.post(
   "/login",
   authLimiter,
-  throttleRequest("AUTH", { keyGenerator: ipOnlyKeyGenerator }),
   validate(verifyOTPAndLoginSchema),
+  throttleRequest("AUTH", { keyGenerator: ipOnlyKeyGenerator }),
   verifyOtp,
   loginUser,
 );
@@ -83,8 +83,8 @@ router.post(
 router.post(
   "/login/google",
   authLimiter,
-  throttleRequest("OAUTH", { keyGenerator: ipOnlyKeyGenerator }),
   validate(googleLoginSchema),
+  throttleRequest("OAUTH", { keyGenerator: ipOnlyKeyGenerator }),
   loginWithGoogle,
 );
 router.get(
@@ -96,16 +96,16 @@ router.get(
 router.get(
   "/login/github",
   authLimiter,
-  throttleRequest("OAUTH", { keyGenerator: ipOnlyKeyGenerator }),
   validate(githubLoginSchema),
+  throttleRequest("OAUTH", { keyGenerator: ipOnlyKeyGenerator }),
   loginWithGithub,
 );
 
 router.patch(
   "/update-password",
-  writeLimiter,
-  throttleRequest("ADMIN", { keyGenerator: ipOnlyKeyGenerator }),
+  adminLimiter,
   validate(updatePasswordSchema),
+  throttleRequest("ADMIN", { keyGenerator: ipOnlyKeyGenerator }),
   verifyOtp,
   updateUserPassword,
 );

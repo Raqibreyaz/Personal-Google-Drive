@@ -3,7 +3,7 @@ import { ipKeyGenerator } from "express-rate-limit";
 // ─── Key generators ──────────────────────────────────────────────────────────
 /** Authenticated routes: identify by user-id, fall back to IP */
 export const userKeyGenerator = (req) =>
-  req.session?.user._id.toString() || ipKeyGenerator(req.ip);
+  req.session?.user?._id?.toString() || ipKeyGenerator(req.ip);
 
 /** Pre-auth routes (login, register, OTP): identify by IP only */
 export const ipOnlyKeyGenerator = (req) => ipKeyGenerator(req.ip);

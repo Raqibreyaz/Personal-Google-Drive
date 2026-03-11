@@ -1,7 +1,5 @@
 Yet to be Done:
-- add wait for OTP resend on frontend
 - what are the routes that are yet to be used at the frontend?
-- add pops for confirmation wherever required before performing the action!
 - migrating from fetch to axios wherever used
 
 Done:
@@ -25,3 +23,5 @@ Done:
 - improving the scattered throttling inputs logic of every route
 - more robust error handling
 - name,dirname sanitize at frontend
+- add wait for OTP resend on frontend
+- add pops for confirmation wherever required before performing the action!

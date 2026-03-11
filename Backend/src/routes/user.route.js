@@ -20,7 +20,8 @@ import {
 } from "../validators/user.validator.js";
 import {
   readLimiter,
-  writeLimiter,
+  mutateLimiter,
+  adminLimiter,
 } from "../middlewares/rateLimiter.middleware.js";
 import throttleRequest from "../middlewares/throttleRequest.middleware.js";
 
@@ -39,13 +40,13 @@ router.get(
 // allow only authenticated users to logout
 router.post(
   "/logout",
-  writeLimiter,
+  mutateLimiter,
   throttleRequest("LOGOUT"),
   logoutUser,
 );
 router.post(
   "/logout/all",
-  writeLimiter,
+  mutateLimiter,
   throttleRequest("LOGOUT_ALL"),
   logoutUserFromAllDevices,
 );
@@ -63,11 +64,11 @@ router.get(
 // only can delete users which are under them
 router.delete(
   "/:userId",
-  writeLimiter,
+  adminLimiter,
+  validate(deleteUserSchema),
   throttleRequest("ADMIN"),
   allowOnlyTo([Role.OWNER, Role.ADMIN]),
   limitPrivileges,
-  validate(deleteUserSchema),
   deleteUser,
 );
 
@@ -75,7 +76,7 @@ router.delete(
 // only can logout users which are under them
 router.post(
   "/logout/:userId",
-  writeLimiter,
+  adminLimiter,
   throttleRequest("ADMIN"),
   allowOnlyTo([Role.OWNER, Role.ADMIN, Role.MANAGER]),
   limitPrivileges,
@@ -84,7 +85,7 @@ router.post(
 
 router.patch(
   "/recover/:userId",
-  writeLimiter,
+  adminLimiter,
   throttleRequest("ADMIN"),
   allowOnlyTo([Role.OWNER]),
   recoverUser,
@@ -94,11 +95,11 @@ router.patch(
 // a user can only change role for which he is allowed
 router.patch(
   "/role/:userId",
-  writeLimiter,
+  adminLimiter,
+  validate(changeUserRoleSchema),
   throttleRequest("ADMIN"),
   allowOnlyTo([Role.OWNER, Role.ADMIN, Role.MANAGER]),
   limitPrivileges,
-  validate(changeUserRoleSchema),
   changeUserRole,
 );
 

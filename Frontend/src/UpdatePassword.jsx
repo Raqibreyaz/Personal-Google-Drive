@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { sendUpdatePasswordOtp, updateUserPassword } from "./api/auth.js";
 import useApiCall from "./hooks/useApiCall.js";
+import useOtpTimer from "./hooks/useOtpTimer.js";
 
 const UpdatePassword = () => {
   const [email, setEmail] = useState("");
@@ -12,6 +13,7 @@ const UpdatePassword = () => {
 
   const { execute: executeOtp, loading: otpLoading, error: serverError, setError: setServerError } = useApiCall();
   const { execute: executeSubmit, loading: submitLoading } = useApiCall();
+  const { secondsLeft, startTimer } = useOtpTimer();
 
   const handleSendOtp = () => {
     if (!email) { setServerError("Please enter your email first."); return; }
@@ -20,6 +22,7 @@ const UpdatePassword = () => {
       () => {
         setOtpMsg("OTP sent to your email!");
         setTimeout(() => setOtpMsg(""), 5000);
+        startTimer();
       },
     );
   };
@@ -55,9 +58,9 @@ const UpdatePassword = () => {
               type="button"
               className="bg-gray-600 text-white border-none rounded py-2 px-3 cursor-pointer text-sm hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
               onClick={handleSendOtp}
-              disabled={otpLoading}
+              disabled={otpLoading || secondsLeft > 0}
             >
-              {otpLoading ? "Sending..." : "Send OTP"}
+              {otpLoading ? "Sending..." : secondsLeft > 0 ? `Resend in ${secondsLeft}s` : "Send OTP"}
             </button>
           </div>
           {otpMsg && <p className="text-green-600 text-[0.75rem] mt-1 font-medium">{otpMsg}</p>}

@@ -36,22 +36,15 @@ client.interceptors.response.use(
     }
 
     const { status, data } = error.response;
-
-    // Auto-redirect on 401 (session expired / not logged in)
-    if (status === 401) {
-      window.location.href = "/login";
-      return Promise.reject(
-        new ApiError(
-          data?.error || "Session expired",
-          data?.errorCode || "AUTH_REQUIRED",
-          401,
-        ),
-      );
-    }
-
-    // Server returned a structured error
-    const message = data?.error || `Request failed (${status})`;
     const errorCode = data?.errorCode || "UNKNOWN_ERROR";
+    const message = data?.error || `Request failed (${status})`;
+
+    // Only redirect w  hen the session is missing/expired (authenticate middleware),
+    // NOT for other 401s like invalid credentials on login/register pages.
+    if (status === 401 && errorCode === "AUTH_REQUIRED") {
+      window.location.href = "/login";
+      return Promise.reject(new ApiError(message, errorCode, 401));
+    }
 
     return Promise.reject(new ApiError(message, errorCode, status));
   },

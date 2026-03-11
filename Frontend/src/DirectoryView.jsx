@@ -15,14 +15,15 @@ import { sanitizeText } from "./utils/sanitize.js";
 function DirectoryView() {
   const { dirId } = useParams();
   const navigate = useNavigate();
-  const { execute, error: errorMessage, setError: setErrorMessage } = useApiCall();
+  const { execute, error: errorMessage, errorCode, setError: setErrorMessage } = useApiCall();
 
   const [directoryName, setDirectoryName] = useState("My Drive");
   const [directoriesList, setDirectoriesList] = useState([]);
   const [filesList, setFilesList] = useState([]);
-  const [dirNotFound, setDirNotFound] = useState(false);
 
   const [showCreateDirModal, setShowCreateDirModal] = useState(false);
+
+  const dirNotFound = errorCode === "DIR_NOT_FOUND";
   const [newDirname, setNewDirname] = useState("New Folder");
 
   const [showRenameModal, setShowRenameModal] = useState(false);
@@ -52,7 +53,6 @@ function DirectoryView() {
     execute(
       () => getDirectory(dirId),
       (data) => {
-        setDirNotFound(false);
         setDirectoryName(dirId ? data.name : "My Drive");
         setDirectoriesList([...data.directories].reverse());
         setFilesList([...data.files].reverse());
@@ -65,14 +65,6 @@ function DirectoryView() {
     setActiveContextMenu(null);
   }, [getDirectoryItems]);
 
-  // Check if directory was not found (by error code)
-  useEffect(() => {
-    if (errorMessage) {
-      // Set dirNotFound based on the error — the hook stores err.message,
-      // but we can check via a separate mechanism if needed
-      setDirNotFound(errorMessage.includes("not found"));
-    }
-  }, [errorMessage]);
 
   function getFileIcon(filename) {
     const ext = filename.split(".").pop().toLowerCase();
@@ -150,14 +142,18 @@ function DirectoryView() {
     setUploadAbortMap((prev) => { const copy = { ...prev }; delete copy[tempId]; return copy; });
   }
 
-  function handleDeleteFile(id) {
+  function handleDeleteFile(id, name) {
+    const confirmed = confirm(`Delete this File: ${name}?`);
+    if (!confirmed) return;
     execute(
       () => deleteFile(id),
       () => getDirectoryItems(),
     );
   }
 
-  function handleDeleteDirectory(id) {
+  function handleDeleteDirectory(id, name) {
+    const confirmed = confirm(`Delete this Directory: ${name}?`);
+    if (!confirmed) return;
     execute(
       () => deleteDirectory(id),
       () => getDirectoryItems(),

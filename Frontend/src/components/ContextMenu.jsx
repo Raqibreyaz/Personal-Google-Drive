@@ -19,7 +19,7 @@ function ContextMenu({
         <div className={itemClass} onClick={() => openRenameModal("directory", item._id, item.name)}>
           Rename
         </div>
-        <div className={itemClass} onClick={() => handleDeleteDirectory(item._id)}>
+        <div className={itemClass} onClick={() => handleDeleteDirectory(item._id, item.name)}>
           Delete
         </div>
       </div>
@@ -48,7 +48,7 @@ function ContextMenu({
           <div className={itemClass} onClick={() => onManageAccess(item._id, item.name, item.allowAnyoneAccess)}>
             Manage Access
           </div>
-          <div className={itemClass} onClick={() => handleDeleteFile(item._id)}>
+          <div className={itemClass} onClick={() => handleDeleteFile(item._id, item.name)}>
             Delete
           </div>
         </div>

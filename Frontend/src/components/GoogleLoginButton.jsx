@@ -7,8 +7,12 @@ export default function GoogleLoginButton() {
   return (
     <GoogleLogin
       onSuccess={async function ({ credential }) {
-        await loginWithGoogle(credential);
-        navigate("/");
+        try {
+          await loginWithGoogle(credential);
+          navigate("/");
+        } catch (err) {
+          alert(err.message || "Google login failed");
+        }
       }}
       onError={function () {
         alert("Some Error Occured!");

@@ -1,5 +1,7 @@
 import redisClient from "../config/redis.js";
-import THROTTLE_PRESETS, { userKeyGenerator } from "../config/throttlePresets.js";
+import THROTTLE_PRESETS, {
+  userKeyGenerator,
+} from "../config/throttlePresets.js";
 
 const MAX_THROTTLE_DELAY_MS = parseInt(
   process.env.MAX_THROTTLE_DELAY_MS || 10000,
@@ -26,7 +28,7 @@ const throttleRequest = (presetName, options = {}) => {
   const keyGenerator = options.keyGenerator || userKeyGenerator;
 
   return async (req, res, next) => {
-    const throttleKey = `throttle:${keyGenerator(req)}`;
+    const throttleKey = `throttle:${presetName}:${keyGenerator(req)}`;
     const currentTime = Date.now();
 
     try {
@@ -87,9 +89,11 @@ const throttleRequest = (presetName, options = {}) => {
         String(currentTime + delay),
       );
 
-      setTimeout(() => {
+      const timeout = setTimeout(() => {
         next();
       }, delay);
+
+      req.on("close", () => clearTimeout(timeout));
     } catch (error) {
       // On Redis failure, let the request through (fail-open)
       console.error("Throttle middleware error:", error);

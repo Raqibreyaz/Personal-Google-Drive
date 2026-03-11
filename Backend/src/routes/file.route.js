@@ -18,7 +18,8 @@ import {
 } from "../validators/file.validator.js";
 import {
   readLimiter,
-  writeLimiter,
+  uploadLimiter,
+  mutateLimiter,
 } from "../middlewares/rateLimiter.middleware.js";
 import throttleRequest from "../middlewares/throttleRequest.middleware.js";
 
@@ -31,7 +32,7 @@ router.param("parentDirId", validateId);
 /* for [data_owner, viewer, editor] only */
 router.post(
   "/{:parentDirId}",
-  writeLimiter,
+  uploadLimiter,
   throttleRequest("WRITE"),
   uploader.single("uploadFile"),
   saveFile,
@@ -40,33 +41,33 @@ router.post(
 router.get(
   "/:fileId",
   readLimiter,
+  validate(getFileSchema),
   throttleRequest("READ"),
   checkFileAccessAllowed,
-  validate(getFileSchema),
   getFileContents,
 );
 
 router.patch(
   "/rename/:fileId",
-  writeLimiter,
+  mutateLimiter,
+  validate(renameFileSchema),
   throttleRequest("MUTATE"),
   checkFileAccessAllowed,
-  validate(renameFileSchema),
   renameFile,
 );
 
 router.patch(
   "/set-access/:fileId",
-  writeLimiter,
+  mutateLimiter,
+  validate(setAllowAnyoneSchema),
   throttleRequest("MUTATE"),
   checkFileAccessAllowed,
-  validate(setAllowAnyoneSchema),
   setAllowAnyone,
 );
 
 router.delete(
   "/:fileId",
-  writeLimiter,
+  mutateLimiter,
   throttleRequest("MUTATE"),
   checkFileAccessAllowed,
   deleteFile,
@@ -75,7 +76,7 @@ router.delete(
 /* for [data_owner, app_owner, admin] only */
 router.post(
   "/:userId/{:parentDirId}",
-  writeLimiter,
+  uploadLimiter,
   throttleRequest("WRITE"),
   authorizeDataAccess,
   uploader.single("uploadFile"),
@@ -85,33 +86,33 @@ router.post(
 router.get(
   "/:userId/:fileId",
   readLimiter,
+  validate(getFileSchema),
   throttleRequest("READ"),
   authorizeDataAccess,
-  validate(getFileSchema),
   getFileContents,
 );
 
 router.patch(
   "/rename/:userId/:fileId",
-  writeLimiter,
+  mutateLimiter,
+  validate(renameFileSchema),
   throttleRequest("MUTATE"),
   authorizeDataAccess,
-  validate(renameFileSchema),
   renameFile,
 );
 
 router.patch(
   "/set-access/:userId/:fileId",
-  writeLimiter,
+  mutateLimiter,
+  validate(setAllowAnyoneSchema),
   throttleRequest("MUTATE"),
   authorizeDataAccess,
-  validate(setAllowAnyoneSchema),
   setAllowAnyone,
 );
 
 router.delete(
   "/:userId/:fileId",
-  writeLimiter,
+  mutateLimiter,
   throttleRequest("MUTATE"),
   authorizeDataAccess,
   deleteFile,

@@ -4,10 +4,12 @@ import GoogleLoginButton from "./components/GoogleLoginButton";
 import GithubLoginButton from "./components/GithubLoginButton";
 import { sendLoginOtp, loginWithOtp } from "./api/auth.js";
 import useApiCall from "./hooks/useApiCall.js";
+import useOtpTimer from "./hooks/useOtpTimer.js";
 
 const Login = () => {
   const navigate = useNavigate();
   const { execute, loading, error: serverError, setError: setServerError } = useApiCall();
+  const { secondsLeft, startTimer } = useOtpTimer();
 
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [otp, setOtp] = useState("");
@@ -20,7 +22,7 @@ const Login = () => {
 
   const handleSendOtp = () => execute(
     () => sendLoginOtp(formData.email, formData.password),
-    () => setOtpSent(true),
+    () => { setOtpSent(true); startTimer(); },
   );
 
   const handleVerifyOtpAndLogin = () => execute(
@@ -75,7 +77,7 @@ const Login = () => {
               type="text"
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
-              placeholder="4-digit OTP"
+              placeholder="6-digit OTP"
               required
             />
           </div>
@@ -86,21 +88,21 @@ const Login = () => {
         <button
           type="submit"
           className="bg-blue-600 text-white border-none rounded py-2.5 px-4 w-full cursor-pointer text-base hover:opacity-90 disabled:bg-gray-400 disabled:cursor-not-allowed"
-          disabled={loading}
+          disabled={loading || (!otpSent && secondsLeft > 0)}
         >
           {!otpSent
-            ? loading ? "Sending OTP..." : "Send OTP"
+            ? loading ? "Sending OTP..." : secondsLeft > 0 ? `Send OTP in ${secondsLeft}s` : "Send OTP"
             : loading ? "Verifying..." : "Verify & Login"}
         </button>
 
         {otpSent && (
           <button
             type="button"
-            className="bg-gray-300 text-gray-700 border-none rounded py-2 px-4 cursor-pointer hover:bg-gray-400 mt-2"
+            className="bg-gray-300 text-gray-700 border-none rounded py-2 px-4 cursor-pointer hover:bg-gray-400 mt-2 disabled:bg-gray-200 disabled:cursor-not-allowed"
             onClick={handleSendOtp}
-            disabled={loading}
+            disabled={loading || secondsLeft > 0}
           >
-            Resend OTP
+            {secondsLeft > 0 ? `Resend OTP in ${secondsLeft}s` : "Resend OTP"}
           </button>
         )}
       </form>

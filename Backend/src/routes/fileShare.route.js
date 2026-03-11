@@ -15,7 +15,7 @@ import {
 } from "../validators/fileShare.validator.js";
 import {
   readLimiter,
-  writeLimiter,
+  mutateLimiter,
 } from "../middlewares/rateLimiter.middleware.js";
 import throttleRequest from "../middlewares/throttleRequest.middleware.js";
 
@@ -43,20 +43,20 @@ router.get(
 // me,editor can only share the file
 router.post(
   "/:fileId",
-  writeLimiter,
+  mutateLimiter,
+  validate(shareFileSchema),
   throttleRequest("MUTATE"),
   checkFileAccessAllowed,
-  validate(shareFileSchema),
   shareFile,
 );
 
 // me,editor can only revoke access of the file from other users
 router.delete(
   "/:fileId",
-  writeLimiter,
+  mutateLimiter,
+  validate(revokeFileAccessSchema),
   throttleRequest("MUTATE"),
   checkFileAccessAllowed,
-  validate(revokeFileAccessSchema),
   revokeAccess,
 );
 
@@ -81,20 +81,20 @@ router.get(
 // file_owner,owner can only share the file
 router.post(
   "/:userId/:fileId",
-  writeLimiter,
+  mutateLimiter,
+  validate(shareFileSchema),
   throttleRequest("MUTATE"),
   authorizeDataAccess,
-  validate(shareFileSchema),
   shareFile,
 );
 
 // file_owner,owner can only revoke access of the file from other users
 router.delete(
   "/:userId/:fileId",
-  writeLimiter,
+  mutateLimiter,
+  validate(revokeFileAccessSchema),
   throttleRequest("MUTATE"),
   authorizeDataAccess,
-  validate(revokeFileAccessSchema),
   revokeAccess,
 );
 

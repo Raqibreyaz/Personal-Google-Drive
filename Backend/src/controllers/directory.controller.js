@@ -43,7 +43,11 @@ export const createDirectory = async (req, res, next) => {
     ? await Directory.findOne({ user: userId, _id: parentDirId }).lean()
     : await Directory.findOne({ user: userId, parentDir: null }).lean();
   if (!parentDir)
-    throw new ApiError(404, "Given Parent directory doesn't exist!", DIR_NOT_FOUND);
+    throw new ApiError(
+      404,
+      "Given Parent directory doesn't exist!",
+      DIR_NOT_FOUND,
+    );
 
   // check if a file with that name already exists in that directory
   const directoryAlreadyExist = !!(await Directory.exists({
@@ -71,14 +75,18 @@ export const createDirectory = async (req, res, next) => {
 export const updateDirectoryName = async (req, res, next) => {
   const userId = req.targetUserId || req.session.user._id.toString();
   const dirId = req.params.dirId;
-  const initialDirname = req.body.dirname;
+  const initialDirname = req.body.newDirname;
   const newDirname = dataSanitizer.sanitize(req.body.newDirname);
+
+  console.log(initialDirname);
+  console.log(newDirname);
 
   if (!newDirname || initialDirname?.length !== newDirname?.length)
     throw new ApiError(400, "Invalid Dirname!", INVALID_DIRNAME);
 
   const directory = await Directory.findOne({ _id: dirId, user: userId });
-  if (!directory) throw new ApiError(404, "Directory doesn't exist!", DIR_NOT_FOUND);
+  if (!directory)
+    throw new ApiError(404, "Directory doesn't exist!", DIR_NOT_FOUND);
 
   // check if a directory with that name already exists in that directory
   const directoryAlreadyExist = !!(await Directory.exists({
@@ -103,7 +111,8 @@ export const deleteDirectory = async (req, res, next) => {
   const dirId = req.params.dirId;
 
   const currDir = await Directory.findOne({ _id: dirId, user: userId }).lean();
-  if (!currDir) throw new ApiError(404, "Directory doesn't exist!", DIR_NOT_FOUND);
+  if (!currDir)
+    throw new ApiError(404, "Directory doesn't exist!", DIR_NOT_FOUND);
 
   // remove all the files and sub-dirs of sub-dir
   // remove all the files and sub directories of the directory
