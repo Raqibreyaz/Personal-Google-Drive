@@ -11,6 +11,7 @@ import {
 } from "react-icons/fa";
 import ProfileImage from "./ProfileImage";
 import { sanitizeText } from "../utils/sanitize.js";
+import { getCurrentUser, logoutSelf, logoutAllDevices } from "../api/user.js";
 
 function DirectoryHeader({
   directoryName,
@@ -20,7 +21,6 @@ function DirectoryHeader({
   handleFileSelect,
   disabled = false,
 }) {
-  const BASE_URL = import.meta.env.VITE_BACKEND_URI || "http://localhost:8080";
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [userName, setUserName] = useState("Guest User");
@@ -33,24 +33,21 @@ function DirectoryHeader({
   useEffect(() => {
     async function fetchUser() {
       try {
-        const response = await fetch(`${BASE_URL}/user`, { credentials: "include" });
-        if (response.ok) {
-          const data = await response.json();
-          setUserName(sanitizeText(data.name));
-          setUserEmail(data.email);
-          setUserRole(data.role);
-          setLoggedIn(true);
-        } else if (response.status === 401) {
-          setUserName("Guest User");
-          setUserEmail("guest@example.com");
-          setLoggedIn(false);
-        }
+        const data = await getCurrentUser();
+        setUserName(sanitizeText(data.name));
+        setUserEmail(data.email);
+        setUserRole(data.role);
+        setPicture(data.picture || null);
+        setLoggedIn(true);
       } catch (err) {
-        console.error("Error fetching user info:", err);
+        // AUTH_REQUIRED → interceptor redirects; other errors → show as guest
+        setUserName("Guest User");
+        setUserEmail("guest@example.com");
+        setLoggedIn(false);
       }
     }
     fetchUser();
-  }, [BASE_URL]);
+  }, []);
 
   const handleUserIconClick = () => setShowUserMenu((prev) => !prev);
 
@@ -58,16 +55,14 @@ function DirectoryHeader({
     const confirmed = confirm("Do you really want to logout?");
     if (!confirmed) return;
     try {
-      const response = await fetch(`${BASE_URL}/user/logout`, { method: "POST", credentials: "include" });
-      if (response.ok) {
-        setLoggedIn(false);
-        setUserName("Guest User");
-        setPicture(null);
-        setUserEmail("guest@example.com");
-        navigate("/login");
-      }
+      await logoutSelf();
+      setLoggedIn(false);
+      setUserName("Guest User");
+      setPicture(null);
+      setUserEmail("guest@example.com");
+      navigate("/login");
     } catch (err) {
-      console.error("Logout error:", err);
+      // silently fail — worst case user stays logged in
     } finally {
       setShowUserMenu(false);
     }
@@ -77,16 +72,14 @@ function DirectoryHeader({
     const confirmed = confirm("You are about to logout all sessions!");
     if (!confirmed) return;
     try {
-      const response = await fetch(`${BASE_URL}/user/logout/all`, { method: "POST", credentials: "include" });
-      if (response.ok) {
-        setLoggedIn(false);
-        setUserName("Guest User");
-        setPicture(null);
-        setUserEmail("guest@example.com");
-        navigate("/login");
-      }
+      await logoutAllDevices();
+      setLoggedIn(false);
+      setUserName("Guest User");
+      setPicture(null);
+      setUserEmail("guest@example.com");
+      navigate("/login");
     } catch (err) {
-      console.error("Logout error:", err);
+      // silently fail
     } finally {
       setShowUserMenu(false);
     }

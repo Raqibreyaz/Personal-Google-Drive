@@ -8,6 +8,14 @@ export async function getAllUsers() {
   return apiGet("/user/all");
 }
 
+export async function logoutSelf() {
+  return apiPost("/user/logout");
+}
+
+export async function logoutAllDevices() {
+  return apiPost("/user/logout/all");
+}
+
 export async function logoutUser(userId) {
   return apiPost(`/user/logout/${userId}`);
 }

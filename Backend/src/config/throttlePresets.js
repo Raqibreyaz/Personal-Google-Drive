@@ -31,7 +31,7 @@ const THROTTLE_PRESETS = {
   OTP: { freeRequests: 0, timeGapInSec: 60 },
 
   // Sensitive admin ops — user delete, role change, recover, update-password
-  ADMIN: { freeRequests: 1, timeGapInSec: 10 },
+  ADMIN: { freeRequests: 5, timeGapInSec: 5 },
 
   // Logout single session
   LOGOUT: { freeRequests: 2, timeGapInSec: 3 },

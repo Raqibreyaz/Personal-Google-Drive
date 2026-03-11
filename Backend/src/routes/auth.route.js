@@ -1,6 +1,6 @@
 import express from "express";
-import checkUserAndPassword from "../middlewares/checkUserAndPassword.middleware.js";
 import checkUserNotExist from "../middlewares/checkUserNotExist.middleware.js";
+import verifyUserPassword from "../middlewares/verifyUserPassword.middleware.js";
 import verifyOtp from "../middlewares/verifyOtp.middleware.js";
 import {
   registerUser,
@@ -38,16 +38,18 @@ router.post(
   "/register/send-otp",
   otpLimiter,
   validate(checkUserAndSendOTPSchema),
-  throttleRequest("OTP", { keyGenerator: ipOnlyKeyGenerator }),
   checkUserNotExist,
+  throttleRequest("OTP", { keyGenerator: ipOnlyKeyGenerator }),
   sendOtp,
 );
 router.post(
   "/login/send-otp",
   otpLimiter,
   validate(checkUserWithPasswordAndSendOTPSchema),
+  checkUserExist,
+  allowLocalUsersOnly,
+  verifyUserPassword,
   throttleRequest("OTP", { keyGenerator: ipOnlyKeyGenerator }),
-  checkUserAndPassword,
   sendOtp,
 );
 
@@ -55,9 +57,9 @@ router.post(
   "/update-password/send-otp",
   otpLimiter,
   validate(checkUserAndSendOTPSchema),
-  throttleRequest("OTP", { keyGenerator: ipOnlyKeyGenerator }),
   checkUserExist,
   allowLocalUsersOnly,
+  throttleRequest("OTP", { keyGenerator: ipOnlyKeyGenerator }),
   sendOtp,
 );
 

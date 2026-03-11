@@ -1,6 +1,5 @@
 Yet to be Done:
 - what are the routes that are yet to be used at the frontend?
-- migrating from fetch to axios wherever used
 
 Done:
 - absolute path for 'storage' dir
@@ -25,3 +24,4 @@ Done:
 - name,dirname sanitize at frontend
 - add wait for OTP resend on frontend
 - add pops for confirmation wherever required before performing the action!
+- migrating from fetch to axios wherever used

@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import axios from "axios";
 import User from "../models/user.model.js";
 import Session from "../models/session.model.js";
 import ApiError from "../helpers/apiError.js";
@@ -23,7 +24,11 @@ export const registerUser = async (req, res, next) => {
 
   const { name, password, email } = req.body;
   if (!name || !password || !email)
-    throw new ApiError(400, "Name,Password and Email all are Required!", MISSING_DATA);
+    throw new ApiError(
+      400,
+      "Name,Password and Email all are Required!",
+      MISSING_DATA,
+    );
 
   const sanitizedName = dataSanitizer.sanitize(name);
   if (!sanitizedName || sanitizedName.length !== name.length)
@@ -149,17 +154,17 @@ export const loginWithGithub = async (req, res, next) => {
   // Wrap GitHub API calls with error handling
   let access_token;
   try {
-    const tokenRes = await fetch(
+    const { data: tokenData } = await axios.post(
       `https://github.com/login/oauth/access_token?${params.toString()}`,
-      {
-        method: "POST",
-        headers: { Accept: "application/json" },
-      },
+      undefined,
+      { headers: { Accept: "application/json" } },
     );
-    const tokenData = await tokenRes.json();
+
     access_token = tokenData.access_token;
     if (!access_token)
-      throw new Error(tokenData.error_description || "Failed to get access token");
+      throw new Error(
+        tokenData.error_description || "Failed to get access token",
+      );
   } catch (err) {
     if (err instanceof ApiError) throw err;
     throw new ApiError(502, "GitHub authentication failed", OAUTH_ERROR);
@@ -167,22 +172,23 @@ export const loginWithGithub = async (req, res, next) => {
 
   let githubId, name, avatar_url, primaryEmail;
   try {
-    const userRes = await fetch("https://api.github.com/user", {
+    const { data: userData } = await axios.get("https://api.github.com/user", {
       headers: { Authorization: `Bearer ${access_token}` },
     });
-    if (!userRes.ok) throw new Error("Failed to fetch GitHub user");
-    const userData = await userRes.json();
     githubId = userData.id;
     name = userData.name;
     avatar_url = userData.avatar_url;
 
-    const emailsRes = await fetch("https://api.github.com/user/emails", {
-      headers: { Authorization: `Bearer ${access_token}` },
-    });
-    if (!emailsRes.ok) throw new Error("Failed to fetch GitHub emails");
-    const emails = await emailsRes.json();
+    const { data: emails } = await axios.get(
+      "https://api.github.com/user/emails",
+      {
+        headers: { Authorization: `Bearer ${access_token}` },
+      },
+    );
+
     primaryEmail = emails.find(({ primary }) => primary)?.email;
-    if (!primaryEmail) throw new Error("No primary email found on GitHub account");
+    if (!primaryEmail)
+      throw new Error("No primary email found on GitHub account");
   } catch (err) {
     if (err instanceof ApiError) throw err;
     throw new ApiError(502, "Failed to retrieve GitHub profile", OAUTH_ERROR);
