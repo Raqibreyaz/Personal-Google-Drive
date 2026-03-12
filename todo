@@ -1,27 +1,8 @@
-Yet to be Done:
-- what are the routes that are yet to be used at the frontend?
-
-Done:
-- absolute path for 'storage' dir
-- XSS attack in name,dirname field
-- migrate to sameSite: 'lax'
-- add CSRF token in custom header, when sameSite: 'none'
-- fix broken access control(if exist)
-- add rate limiting
-- custom throttle function with initial allowed requests
-- Google login fix by console
-- use redis for rate-limiting and throttling storage
-- put validate middlware in correct order
-- other provider's users are able to send otp using app's login! and can reset the password!
-- update password feature
-- since multi-device login allowed, then what happens for otp when single account getting logged-in simultaneously
-- delete the uploaded file if any issues occurs before saving the file in DB
-- file uploaded,saved in db,but not present in storage/
-- check where are atomic operations are required
-- Malicious file upload, browser renders html not code
-- improving the scattered throttling inputs logic of every route
-- more robust error handling
-- name,dirname sanitize at frontend
-- add wait for OTP resend on frontend
-- add pops for confirmation wherever required before performing the action!
-- migrating from fetch to axios wherever used
+- Bulk Delete
+- Bulk Download
+- Download as zip for both files and directories
+- Move/copy files/directories from one directory to other
+- sort by name,date,size etc.
+- filter
+- limit max file size allowed
+- import from google drive

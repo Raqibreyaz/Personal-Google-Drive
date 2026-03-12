@@ -5,6 +5,7 @@ function ContextMenu({
   handleCancelUpload,
   handleDeleteFile,
   handleDeleteDirectory,
+  handleShowDetails,
   openRenameModal,
   onShare,
   onManageAccess,
@@ -21,6 +22,9 @@ function ContextMenu({
         </div>
         <div className={itemClass} onClick={() => handleDeleteDirectory(item._id, item.name)}>
           Delete
+        </div>
+        <div className={itemClass} onClick={() => handleShowDetails(item)}>
+          Details
         </div>
       </div>
     );
@@ -50,6 +54,9 @@ function ContextMenu({
           </div>
           <div className={itemClass} onClick={() => handleDeleteFile(item._id, item.name)}>
             Delete
+          </div>
+          <div className={itemClass} onClick={() => handleShowDetails(item)}>
+            Details
           </div>
         </div>
       );

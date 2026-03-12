@@ -22,6 +22,7 @@ function DirectoryItem({
   handleCancelUpload,
   handleDeleteFile,
   handleDeleteDirectory,
+  handleShowDetails,
   openRenameModal,
   onShare,
   onManageAccess,
@@ -91,6 +92,7 @@ function DirectoryItem({
           handleCancelUpload={handleCancelUpload}
           handleDeleteFile={handleDeleteFile}
           handleDeleteDirectory={handleDeleteDirectory}
+          handleShowDetails={handleShowDetails}
           openRenameModal={openRenameModal}
           onShare={onShare}
           onManageAccess={onManageAccess}

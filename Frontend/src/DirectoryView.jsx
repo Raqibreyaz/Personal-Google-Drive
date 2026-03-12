@@ -5,6 +5,7 @@ import CreateDirectoryModal from "./components/CreateDirectoryModal";
 import RenameModal from "./components/RenameModal";
 import ShareModal from "./components/ShareModal";
 import AccessControlModal from "./components/AccessControlModal";
+import DetailsModal from "./components/DetailsModal";
 import DirectoryList from "./components/DirectoryList";
 import { getDirectory, createDirectory, deleteDirectory, renameDirectory } from "./api/directory.js";
 import { deleteFile, renameFile, getFileUrl, uploadFile } from "./api/file.js";
@@ -48,6 +49,9 @@ function DirectoryView() {
 
   const [activeContextMenu, setActiveContextMenu] = useState(null);
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
+
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [detailsItem, setDetailsItem] = useState(null);
 
   const getDirectoryItems = useCallback(() => {
     execute(
@@ -220,6 +224,12 @@ function DirectoryView() {
     else { setActiveContextMenu(id); setContextMenuPos({ x: clickX - 110, y: clickY }); }
   }
 
+  function handleShowDetails(item) {
+    setDetailsItem({ ...item });
+    setShowDetailsModal(true);
+    setActiveContextMenu(null);
+  }
+
   useEffect(() => {
     function handleDocumentClick() { setActiveContextMenu(null); }
     document.addEventListener("click", handleDocumentClick);
@@ -283,6 +293,14 @@ function DirectoryView() {
         />
       )}
 
+      {showDetailsModal && detailsItem && (
+        <DetailsModal
+          item={detailsItem}
+          directoryName={directoryName}
+          onClose={() => { setShowDetailsModal(false); setDetailsItem(null); }}
+        />
+      )}
+
       {combinedItems.length === 0 ? (
         dirNotFound ? (
           <p className="text-center italic mt-10 text-gray-500">
@@ -306,6 +324,7 @@ function DirectoryView() {
           handleCancelUpload={handleCancelUpload}
           handleDeleteFile={handleDeleteFile}
           handleDeleteDirectory={handleDeleteDirectory}
+          handleShowDetails={handleShowDetails}
           openRenameModal={openRenameModal}
           onShare={handleOpenShare}
           onManageAccess={handleOpenAccessControl}
