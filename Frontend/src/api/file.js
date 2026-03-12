@@ -35,12 +35,13 @@ export function getDownloadUrl(fileId) {
 export function uploadFile(dirId, file, { onProgress, onLoad, onError } = {}) {
   const controller = new AbortController();
 
-  const formData = new FormData();
-  formData.append("uploadFile", file);
-
   client
-    .post(`/file/${dirId ?? ""}`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
+    .post(`/file/${dirId ?? ""}`, file, {
+      headers: {
+        "Content-Type": file.type,
+        filename: file.name,
+        filesize: file.size,
+      },
       signal: controller.signal,
       onUploadProgress: (evt) => {
         if (onProgress && evt.total) {
@@ -56,9 +57,7 @@ export function uploadFile(dirId, file, { onProgress, onLoad, onError } = {}) {
       if (err.code === "ERR_CANCELED") return;
 
       const errMsg =
-        err instanceof ApiError
-          ? err.message
-          : "Network error during upload";
+        err instanceof ApiError ? err.message : "Network error during upload";
       if (onError) onError(errMsg);
     });
 

@@ -22,6 +22,7 @@ import {
   mutateLimiter,
 } from "../middlewares/rateLimiter.middleware.js";
 import throttleRequest from "../middlewares/throttleRequest.middleware.js";
+import fileUpload from "../middlewares/limitedFileSizeUploader.middleware.js";
 
 const router = express.Router();
 
@@ -34,7 +35,7 @@ router.post(
   "/{:parentDirId}",
   uploadLimiter,
   throttleRequest("WRITE"),
-  uploader.single("uploadFile"),
+  fileUpload,
   saveFile,
 );
 
@@ -79,7 +80,7 @@ router.post(
   uploadLimiter,
   throttleRequest("WRITE"),
   authorizeDataAccess,
-  uploader.single("uploadFile"),
+  fileUpload,
   saveFile,
 );
 

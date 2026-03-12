@@ -55,7 +55,7 @@ async function getFileAndDirIds(currDirId, dirIds, fileInfos) {
 
   // removing all the files from storage
   for (const { _id: fileId, extname } of files) {
-    const filePath = path.join(appRootPath.path, "storage", fileId + extname);
+    const filePath = path.join(appRootPath.path, "storage", fileId.toString() + extname);
     fileInfos.push({ fileId, filePath });
   }
 

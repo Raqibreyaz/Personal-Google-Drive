@@ -28,7 +28,11 @@ export const getFileContents = async (req, res, next) => {
   );
 
   await access(fullpath).catch(() => {
-    throw new ApiError(404, "File data is missing from storage!", FILE_MISSING_STORAGE);
+    throw new ApiError(
+      404,
+      "File data is missing from storage!",
+      FILE_MISSING_STORAGE,
+    );
   });
 
   // prevent mime sniffing when content-type is not provided
@@ -36,21 +40,66 @@ export const getFileContents = async (req, res, next) => {
 
   // safe types can render inline; everything else is neutralized (prevents stored XSS)
   const SAFE_INLINE_TYPES = new Set([
-    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".ico", ".avif",
-    ".mp4", ".webm", ".mov",
-    ".mp3", ".wav", ".ogg", ".aac", ".m4a", ".flac",
-    ".pdf", ".txt", ".csv",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".webp",
+    ".bmp",
+    ".ico",
+    ".avif",
+    ".mp4",
+    ".webm",
+    ".mov",
+    ".mp3",
+    ".wav",
+    ".ogg",
+    ".aac",
+    ".m4a",
+    ".flac",
+    ".pdf",
+    ".txt",
+    ".csv",
   ]);
 
   // textual types rendered as plain text (visible but scripts can't execute)
   const RENDER_AS_TEXT = new Set([
-    ".html", ".htm", ".svg", ".xml", ".xhtml",
-    ".js", ".mjs", ".cjs", ".jsx", ".ts", ".tsx",
-    ".css", ".scss", ".less",
-    ".json", ".yaml", ".yml", ".toml",
-    ".py", ".java", ".c", ".cpp", ".h", ".go", ".rs", ".rb", ".php",
-    ".sh", ".bat", ".ps1",
-    ".md", ".log", ".ini", ".cfg", ".conf", ".env",
+    ".html",
+    ".htm",
+    ".svg",
+    ".xml",
+    ".xhtml",
+    ".js",
+    ".mjs",
+    ".cjs",
+    ".jsx",
+    ".ts",
+    ".tsx",
+    ".css",
+    ".scss",
+    ".less",
+    ".json",
+    ".yaml",
+    ".yml",
+    ".toml",
+    ".py",
+    ".java",
+    ".c",
+    ".cpp",
+    ".h",
+    ".go",
+    ".rs",
+    ".rb",
+    ".php",
+    ".sh",
+    ".bat",
+    ".ps1",
+    ".md",
+    ".log",
+    ".ini",
+    ".cfg",
+    ".conf",
+    ".env",
   ]);
 
   const ext = file.extname.toLowerCase();
@@ -70,7 +119,11 @@ export const getFileContents = async (req, res, next) => {
 
   res.sendFile(fullpath, (err) => {
     if (err && !res.headersSent)
-      throw new ApiError(500, `File Sending failed: ${err.message}`, FILE_SEND_FAILED);
+      throw new ApiError(
+        500,
+        `File Sending failed: ${err.message}`,
+        FILE_SEND_FAILED,
+      );
   });
 };
 
@@ -87,7 +140,11 @@ export const saveFile = async (req, res, next) => {
       }).lean();
 
   if (!parentDir)
-    throw new ApiError(404, "Given Parent Directory doesn't exist!", DIR_NOT_FOUND);
+    throw new ApiError(
+      404,
+      "Given Parent Directory doesn't exist!",
+      DIR_NOT_FOUND,
+    );
 
   const file = req.file;
   const [fileId, _] = file.filename.split(".");
@@ -173,7 +230,8 @@ export const setAllowAnyone = async (req, res, next) => {
     { $set: { allowAnyoneAccess: permission ? permission : null } },
   );
 
-  if (!result.modifiedCount) throw new ApiError(404, "file not found!", FILE_NOT_FOUND);
+  if (!result.modifiedCount)
+    throw new ApiError(404, "file not found!", FILE_NOT_FOUND);
 
   res.status(200).json({ message: "File permissions saved successfully!" });
 };
