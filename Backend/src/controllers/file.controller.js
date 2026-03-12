@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import fs, { access } from "fs/promises";
 import path from "node:path";
 import appRootPath from "app-root-path";
@@ -6,7 +7,7 @@ import ApiError from "../helpers/apiError.js";
 import Directory from "../models/directory.model.js";
 import File from "../models/file.model.js";
 import FileShare from "../models/fileShare.model.js";
-import mongoose from "mongoose";
+import updateParentSize from "../helpers/updateParentSize.js";
 import {
   FILE_NOT_FOUND,
   FILE_MISSING_STORAGE,
@@ -163,17 +164,30 @@ export const saveFile = async (req, res, next) => {
     );
   }
 
-  // add entry in File
-  await File.insertOne({
-    _id: new ObjectId(fileId),
-    name: file.originalname,
-    size: file.size,
-    parentDir: parentDir._id,
-    extname: fileExt,
-    user: userId,
-  });
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  res.status(201).json({ message: "Got the File!" });
+  try {
+    // add entry in File
+    await File.insertOne(
+      {
+        _id: new ObjectId(fileId),
+        name: file.originalname,
+        size: file.size,
+        parentDir: parentDir._id,
+        extname: fileExt,
+        user: userId,
+      },
+      { session },
+    );
+    await updateParentSize(parentDir._id, file.size, session);
+
+    await session.commitTransaction();
+    res.status(201).json({ message: "Got the File!" });
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  }
 };
 
 export const renameFile = async (req, res, next) => {
@@ -258,6 +272,7 @@ export const deleteFile = async (req, res, next) => {
     // remove from File
     await FileShare.deleteMany({ file: file._id }, { session });
     await File.findByIdAndDelete(file._id, { session });
+    await updateParentSize(file.parentDir, -file.size, session);
 
     await fs.rm(fullpath, { recursive: true, force: true });
 

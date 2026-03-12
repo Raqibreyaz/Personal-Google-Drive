@@ -9,6 +9,7 @@ const fileSchema = new mongoose.Schema(
     },
     size: {
       type: Number,
+      min: 0,
       required: [true, "File size required!"],
     },
     parentDir: {

@@ -9,6 +9,12 @@ import {
 } from "react-icons/fa";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import ContextMenu from "../components/ContextMenu";
+import formatSize from "../utils/formatSize";
+
+function formatDate(dateStr) {
+  if (!dateStr) return "—";
+  return new Date(dateStr).toLocaleString();
+}
 
 function DirectoryItem({
   item,
@@ -51,7 +57,7 @@ function DirectoryItem({
       }
       onContextMenu={(e) => handleContextMenu(e, item._id)}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2" title={`size: ${formatSize(item.size)}\ncreatedAt: ${formatDate(item.createdAt)}`}>
         <div className="flex items-center gap-2 p-2.5">
           {item.isDirectory ? (
             <FaFolder className="text-orange-500 text-xl" />

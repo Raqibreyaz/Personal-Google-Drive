@@ -17,6 +17,11 @@ const directorySchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
+    size: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
   },
   { strict: "throw", timestamps: true },
 );

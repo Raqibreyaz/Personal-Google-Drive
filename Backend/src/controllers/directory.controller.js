@@ -116,7 +116,7 @@ export const deleteDirectory = async (req, res, next) => {
 
   // remove all the files and sub-dirs of sub-dir
   // remove all the files and sub directories of the directory
-  await deleteDirRecursively(currDir._id);
+  await deleteDirRecursively(currDir);
 
   res.json({ message: "Directory deleted!" });
 };

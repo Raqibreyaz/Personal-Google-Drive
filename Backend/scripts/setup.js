@@ -77,6 +77,7 @@ export default async function setupDB() {
       },
       size: {
         bsonType: "int",
+        minimum: 0,
         description: "File size required!",
       },
       parentDir: {
@@ -124,6 +125,10 @@ export default async function setupDB() {
       },
       parentDir: {
         bsonType: ["objectId", "null"],
+      },
+      size: {
+        bsonType: ["int", "null"],
+        minimum: 0,
       },
       createdAt: {
         bsonType: "date",

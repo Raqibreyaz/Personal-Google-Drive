@@ -5,9 +5,14 @@ import File from "../models/file.model.js";
 import FileShare from "../models/fileShare.model.js";
 import appRootPath from "app-root-path";
 import mongoose from "mongoose";
+import updateParentSize from "../helpers/updateParentSize.js";
 
 // take all the file Ids and directory Ids in an array
-export const deleteDirRecursively = async (currDirId) => {
+export const deleteDirRecursively = async ({
+  _id: currDirId,
+  parentDir: parentDirId,
+  size,
+}) => {
   const dirIds = [];
   const fileInfos = [];
 
@@ -23,6 +28,7 @@ export const deleteDirRecursively = async (currDirId) => {
       await FileShare.deleteMany({ file: { $in: fileIds } }, { session });
     }
     await Directory.deleteMany({ _id: { $in: dirIds } }, { session });
+    await updateParentSize(parentDirId, -size, session);
 
     await session.commitTransaction();
   } catch (error) {
@@ -55,7 +61,11 @@ async function getFileAndDirIds(currDirId, dirIds, fileInfos) {
 
   // removing all the files from storage
   for (const { _id: fileId, extname } of files) {
-    const filePath = path.join(appRootPath.path, "storage", fileId.toString() + extname);
+    const filePath = path.join(
+      appRootPath.path,
+      "storage",
+      fileId.toString() + extname,
+    );
     fileInfos.push({ fileId, filePath });
   }
 

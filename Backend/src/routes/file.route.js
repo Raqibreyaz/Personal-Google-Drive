@@ -1,6 +1,5 @@
 import express from "express";
 import validateId from "../middlewares/validateId.middleware.js";
-import uploader from "../middlewares/upload.middleware.js";
 import {
   deleteFile,
   getFileContents,
