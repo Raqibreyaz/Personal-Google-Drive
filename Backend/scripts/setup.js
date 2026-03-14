@@ -129,6 +129,12 @@ export default async function setupDB() {
       parentDir: {
         bsonType: ["objectId", "null"],
       },
+      path: {
+        bsonType: "array",
+        items: {
+          bsonType: "objectId",
+        },
+      },
       size: {
         bsonType: ["int", "null"],
         minimum: 0,

@@ -6,6 +6,7 @@ import {
   deleteDirectory,
   getDirectoryContents,
   updateDirectoryName,
+  countDescendantDirsAndFiles,
 } from "../controllers/directory.controller.js";
 import validate from "../middlewares/validate.middleware.js";
 import {
@@ -31,6 +32,13 @@ router.get(
   readLimiter,
   throttleRequest("READ"),
   getDirectoryContents,
+);
+
+router.get(
+  "/:dirId/descendants/count",
+  readLimiter,
+  throttleRequest("READ"),
+  countDescendantDirsAndFiles,
 );
 
 router.post(

@@ -21,6 +21,10 @@ export const DIR_NOT_FOUND = "DIR_NOT_FOUND";
 export const INVALID_DIRNAME = "INVALID_DIRNAME";
 export const DUPLICATE_DIR = "DUPLICATE_DIR";
 
+// ─── Items (Bulk Operations) ──────────────────────────────────────────────────
+export const INVALID_SELECTION = "INVALID_SELECTION";
+export const DIFFERENT_PARENTS = "DIFFERENT_PARENTS";
+
 // ─── Sharing ─────────────────────────────────────────────────────────────────
 export const SHARE_FAILED = "SHARE_FAILED";
 export const REVOKE_FAILED = "REVOKE_FAILED";

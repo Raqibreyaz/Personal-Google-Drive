@@ -8,6 +8,7 @@ import {
   FaShareAlt,
   FaSignOutAlt,
   FaSignInAlt,
+  FaChevronRight,
 } from "react-icons/fa";
 import ProfileImage from "./ProfileImage";
 import { sanitizeText } from "../utils/sanitize.js";
@@ -15,6 +16,7 @@ import { getCurrentUser, logoutSelf, logoutAllDevices } from "../api/user.js";
 
 function DirectoryHeader({
   directoryName,
+  directoryPath = [],
   onCreateFolderClick,
   onUploadFilesClick,
   fileInputRef,
@@ -107,8 +109,35 @@ function DirectoryHeader({
 
   return (
     <header className="flex flex-wrap justify-between items-center border-b-2 border-gray-300 py-2.5 sticky top-0 z-10 bg-white">
-      <h1 className="m-0 mr-5 text-2xl rounded">{directoryName}</h1>
-      <div className="flex flex-wrap items-center gap-2.5">
+      <div className="flex items-center m-0 mr-5 text-xl sm:text-2xl rounded text-gray-800 font-semibold overflow-x-auto whitespace-nowrap hide-scrollbar flex-1">
+        <span
+          className="cursor-pointer hover:underline text-blue-600 transition-colors"
+          onClick={() => navigate("/")}
+        >
+          My Drive
+        </span>
+        {directoryPath && directoryPath.map((folder) => (
+          <span key={folder._id} className="flex items-center">
+            <FaChevronRight className="mx-2 text-sm text-gray-400" />
+            <span
+              className="cursor-pointer hover:underline text-blue-600 transition-colors truncate max-w-[120px] sm:max-w-[200px]"
+              onClick={() => navigate(`/directory/${folder._id}`)}
+              title={folder.name}
+            >
+              {folder.name}
+            </span>
+          </span>
+        ))}
+        {directoryName !== "My Drive" && (
+          <span className="flex items-center">
+            <FaChevronRight className="mx-2 text-sm text-gray-400" />
+            <span className="text-gray-600 truncate max-w-[150px] sm:max-w-xs block" title={directoryName}>
+              {directoryName}
+            </span>
+          </span>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center gap-2.5 ml-4">
         <button className={iconBtnClass} title="Create Folder" onClick={onCreateFolderClick} disabled={disabled}>
           <FaFolderPlus />
         </button>

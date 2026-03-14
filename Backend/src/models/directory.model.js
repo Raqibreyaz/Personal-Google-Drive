@@ -14,9 +14,15 @@ const directorySchema = new mongoose.Schema(
     },
     parentDir: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Directory",
       default: null,
     },
+    path: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Directory",
+      },
+    ],
     size: {
       type: Number,
       min: 0,

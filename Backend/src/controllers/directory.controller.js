@@ -1,6 +1,6 @@
+import { ObjectId } from "mongodb";
 import ApiError from "../helpers/apiError.js";
 import dataSanitizer from "../helpers/dataSanitizer.js";
-import { deleteDirRecursively } from "../services/directory.service.js";
 import Directory from "../models/directory.model.js";
 import File from "../models/file.model.js";
 import {
@@ -8,6 +8,7 @@ import {
   INVALID_DIRNAME,
   DUPLICATE_DIR,
 } from "../constants/errorCodes.js";
+import { bulkDeleteItemsService } from "../services/item.service.js";
 
 export const getDirectoryContents = async (req, res, next) => {
   const userId = req.targetUserId || req.session.user._id.toString();
@@ -15,17 +16,27 @@ export const getDirectoryContents = async (req, res, next) => {
 
   // find the directory in user's dirsDB or assign user's root directory
   const dir = dirId
-    ? await Directory.findOne({ user: userId, _id: dirId }).lean()
-    : await Directory.findOne({ user: userId, parentDir: null }).lean();
+    ? await Directory.findOne({ user: userId, _id: dirId })
+        .populate("path", "name")
+        .select("-user -__v")
+        .lean()
+    : await Directory.findOne({ user: userId, parentDir: null })
+        .populate("path", "name")
+        .select("-user -__v")
+        .lean();
   if (!dir) throw new ApiError(404, "Directory not found!", DIR_NOT_FOUND);
 
   // get all files where parent is 'dir'
-  const files = await File.find({ parentDir: dir._id }).lean();
+  const files = await File.find({ parentDir: dir._id })
+    .select("-parentDir -user -__v")
+    .lean();
 
   // get all directories in 'dir'(of user only)
   const directories = await Directory.find({
     parentDir: dir._id,
-  }).lean();
+  })
+    .select("-path -parentDir -user -__v")
+    .lean();
 
   res.status(200).json({ ...dir, files, directories });
 };
@@ -62,11 +73,17 @@ export const createDirectory = async (req, res, next) => {
       DUPLICATE_DIR,
     );
 
+  // skipping adding root directory
+  const dirPath = [...parentDir.path];
+  if (!parentDir.name.includes("root")) dirPath.push(parentDir._id);
+
   // add entry of this directory
   await Directory.insertOne({
     name: dirname,
     parentDir: parentDir._id,
     user: userId,
+    size: 0,
+    path: dirPath,
   });
 
   res.status(201).json({ message: "Directory created!" });
@@ -116,7 +133,24 @@ export const deleteDirectory = async (req, res, next) => {
 
   // remove all the files and sub-dirs of sub-dir
   // remove all the files and sub directories of the directory
-  await deleteDirRecursively(currDir);
+  await bulkDeleteItemsService([currDir], []);
 
   res.json({ message: "Directory deleted!" });
+};
+
+export const countDescendantDirsAndFiles = async (req, res, next) => {
+  const userId = req.targetUserId || req.session.user._id.toString();
+  const dirId = new ObjectId(req.params.dirId);
+
+  const descendantDirs = await Directory.find({ path: dirId, user: userId })
+    .select("_id")
+    .lean();
+  const allDirsId = [dirId, ...descendantDirs.map(({ _id }) => _id)];
+
+  const fileCount = await File.countDocuments({
+    parentDir: { $in: allDirsId },
+    user: userId,
+  });
+
+  res.status(200).json({ dirCount: descendantDirs.length, fileCount });
 };

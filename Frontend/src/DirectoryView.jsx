@@ -19,6 +19,7 @@ function DirectoryView() {
   const { execute, error: errorMessage, errorCode, setError: setErrorMessage } = useApiCall();
 
   const [directoryName, setDirectoryName] = useState("My Drive");
+  const [directoryPath, setDirectoryPath] = useState([]);
   const [directoriesList, setDirectoriesList] = useState([]);
   const [filesList, setFilesList] = useState([]);
 
@@ -58,6 +59,7 @@ function DirectoryView() {
       () => getDirectory(dirId),
       (data) => {
         setDirectoryName(dirId ? data.name : "My Drive");
+        setDirectoryPath(dirId && data.path ? data.path : []);
         setDirectoriesList([...data.directories].reverse());
         setFilesList([...data.files].reverse());
       },
@@ -249,6 +251,7 @@ function DirectoryView() {
 
       <DirectoryHeader
         directoryName={directoryName}
+        directoryPath={directoryPath}
         onCreateFolderClick={() => setShowCreateDirModal(true)}
         onUploadFilesClick={() => fileInputRef.current.click()}
         fileInputRef={fileInputRef}
@@ -296,7 +299,8 @@ function DirectoryView() {
       {showDetailsModal && detailsItem && (
         <DetailsModal
           item={detailsItem}
-          directoryName={directoryName}
+          directoryName={dirId ? directoryName : '/'}
+          directoryPath={directoryPath}
           onClose={() => { setShowDetailsModal(false); setDetailsItem(null); }}
         />
       )}

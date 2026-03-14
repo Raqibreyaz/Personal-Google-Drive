@@ -15,3 +15,7 @@ export async function deleteDirectory(dirId) {
 export async function renameDirectory(dirId, newDirname) {
   return apiPatch(`/directory/${dirId}`, { newDirname });
 }
+
+export async function getDirectoryCounts(dirId) {
+  return apiGet(`/directory/${dirId}/descendants/count`);
+}

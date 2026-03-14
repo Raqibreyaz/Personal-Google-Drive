@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { getDirectoryCounts } from "../api/directory";
 import formatSize from '../utils/formatSize'
 
 function formatDate(dateStr) {
@@ -6,20 +7,54 @@ function formatDate(dateStr) {
   return new Date(dateStr).toLocaleString();
 }
 
-function DetailsModal({ item, directoryName, onClose }) {
+function DetailsModal({ item, directoryName, directoryPath, onClose }) {
+  console.log(directoryPath)
   useEffect(() => {
     const handleKeyDown = (e) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
+  const [counts, setCounts] = useState(null);
+  const [loadingCounts, setLoadingCounts] = useState(false);
+
+  useEffect(() => {
+    if (item.isDirectory) {
+      setLoadingCounts(true);
+      getDirectoryCounts(item._id)
+        .then(data => setCounts(data))
+        .catch(err => console.error("Failed to fetch directory counts:", err))
+        .finally(() => setLoadingCounts(false));
+    }
+  }, [item]);
+
+  const pathNotExists = !directoryPath.length
+
+  const currPath = directoryName !== '/' ? `${pathNotExists ? '' : '/'}${directoryPath.map(({ name }) => name).join('/')}/${directoryName}` : ''
+
+  const itemPath = `${currPath}/${item.name}`
+
   const rows = [
     { label: "Name", value: item.name },
-    { label: "Path", value: `/${directoryName}/${item.name}` },
-    { label: "Size", value: item.isDirectory ? "—" : formatSize(item.size) },
-    { label: "Created", value: formatDate(item.createdAt) },
-    { label: "Updated", value: formatDate(item.updatedAt) },
+    { label: "Path", value: itemPath },
+    { label: "Size", value: formatSize(item.size) },
   ];
+
+  if (item.isDirectory) {
+    rows.push({
+      label: "Contents",
+      value: loadingCounts
+        ? "Loading..."
+        : counts
+          ? `${counts.fileCount} Files, ${counts.dirCount} Folders`
+          : "—"
+    });
+  }
+
+  rows.push(
+    { label: "Created", value: formatDate(item.createdAt) },
+    { label: "Updated", value: formatDate(item.updatedAt) }
+  );
 
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-[999]" onClick={onClose}>

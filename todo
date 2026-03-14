@@ -1,8 +1,14 @@
 - Bulk Delete
 - Bulk Download
 - Download as zip for both files and directories
-- Move/copy files/directories from one directory to other
 - sort by name,date,size etc.
 - filter
-- limit max file size allowed
 - import from google drive
+- Move/copy files/directories from one directory to other
+
+DONE:
+- limit max file size allowed
+- file path from root in details popup
+- directory path from root in details popup
+- Breadcrumb UI on current directory
+- file count and folder count(considering descendants) of a directory
