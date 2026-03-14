@@ -27,8 +27,14 @@ function DirectoryHeader({
   const [userEmail, setUserEmail] = useState("guest@example.com");
   const [userRole, setUserRole] = useState("User");
   const [picture, setPicture] = useState(null);
+  const [maxStorageInBytes, setMaxStorageInBytes] = useState(1073741824);
+  const [usedStorageInBytes, setUsedStorageInBytes] = useState(0);
   const userMenuRef = useRef(null);
   const navigate = useNavigate();
+  const usedGB = usedStorageInBytes / 1024 ** 3;
+  const totalGB = maxStorageInBytes / 1024 ** 3;
+
+  // console.log(usedGB, totalGB)
 
   useEffect(() => {
     async function fetchUser() {
@@ -38,6 +44,8 @@ function DirectoryHeader({
         setUserEmail(data.email);
         setUserRole(data.role);
         setPicture(data.picture || null);
+        setMaxStorageInBytes(data.maxStorageInBytes);
+        setUsedStorageInBytes(data.usedStorageInBytes);
         setLoggedIn(true);
       } catch (err) {
         // AUTH_REQUIRED → interceptor redirects; other errors → show as guest
@@ -121,6 +129,17 @@ function DirectoryHeader({
                   <div className="flex flex-col overflow-hidden gap-1 px-4 py-2 cursor-auto">
                     <span className="font-semibold text-gray-800">{userName}</span>
                     <span className="text-[0.85rem] text-gray-500">{userEmail}</span>
+                    <div className="flex flex-col text-xs mr-2 mt-2">
+                      <div className="w-40 h-1 bg-gray-300 rounded-full overflow-hidden mb-1">
+                        <div
+                          className="bg-blue-500 rounded-full h-full"
+                          style={{ width: `${(usedGB / totalGB) * 100}%` }}
+                        ></div>
+                      </div>
+                      <div className="text-xs">
+                        {usedGB.toFixed(2)} GB of {totalGB} GB used
+                      </div>
+                    </div>
                   </div>
                   <div className="border-t border-gray-200" />
                   <div

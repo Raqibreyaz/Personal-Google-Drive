@@ -10,7 +10,7 @@ export default async function setupDB() {
 
   const usersSchema = {
     bsonType: "object",
-    required: ["_id", "name", "email", "storageDir"],
+    required: ["_id", "name", "email", "storageDir", "maxStorageInBytes"],
     properties: {
       _id: {
         bsonType: "objectId",
@@ -33,6 +33,9 @@ export default async function setupDB() {
       role: {
         bsonType: "string",
         enum: Object.values(Role),
+      },
+      maxStorageInBytes: {
+        bsonType: "int",
       },
       isDeleted: {
         bsonType: "bool",

@@ -57,6 +57,10 @@ const userSchema = new mongoose.Schema(
       enum: Object.values(Role),
       default: Role.USER,
     },
+    maxStorageInBytes: {
+      type: Number,
+      default: 1 * 1024 ** 3, //1GB
+    },
     isDeleted: {
       type: Boolean,
       default: false,

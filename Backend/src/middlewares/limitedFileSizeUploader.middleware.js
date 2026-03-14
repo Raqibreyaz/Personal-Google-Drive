@@ -4,27 +4,37 @@ import appRootPath from "app-root-path";
 import { createWriteStream } from "node:fs";
 import ApiError from "../helpers/apiError.js";
 import dataSanitizer from "../helpers/dataSanitizer.js";
-import { INVALID_INPUT, MISSING_DATA } from "../constants/errorCodes.js";
-import { unlink, access } from "node:fs/promises";
+import { INVALID_INPUT } from "../constants/errorCodes.js";
+import { unlink } from "node:fs/promises";
 import { z } from "zod";
+import Directory from "../models/directory.model.js";
 
 const storageDirPath = path.join(appRootPath.path, "storage");
 const MAX_FILE_SIZE_LIMIT = 1600 * 1024 * 1024;
 
-const headersSchema = z.object({
-  filesize: z.coerce
-    .number({ error: "FileSize should be a number" })
-    .min(0, { error: "FileSize cannot be negative" })
-    .max(MAX_FILE_SIZE_LIMIT, { message: "FileSize too large!" }),
-  filename: z
-    .string({ error: "Filename is required!" })
-    .min(1, { error: "Filename cannot be empty!" })
-    .refine((val) => dataSanitizer.sanitize(val) === val, {
-      error: "Invalid Filename!",
-    }),
-});
-
 export default async function fileUpload(req, res, next) {
+  const rootDir = await Directory.findById(req.session.user.storageDir)
+    .select("size")
+    .lean();
+
+  const usedStorageInBytes = rootDir?.size || 0;
+  const maxStorageInBytes = req.session.user.maxStorageInBytes;
+  const availableSpace = Math.max(0, maxStorageInBytes - usedStorageInBytes);
+  const effectiveMaxLimit = Math.min(MAX_FILE_SIZE_LIMIT, availableSpace);
+
+  const headersSchema = z.object({
+    filesize: z.coerce
+      .number({ error: "FileSize should be a number" })
+      .min(0, { error: "FileSize cannot be negative" })
+      .max(effectiveMaxLimit, { error: "FileSize too large!" }),
+    filename: z
+      .string({ error: "Filename is required!" })
+      .min(1, { error: "Filename cannot be empty!" })
+      .refine((val) => dataSanitizer.sanitize(val) === val, {
+        error: "Invalid Filename!",
+      }),
+  });
+
   const result = headersSchema.safeParse(req.headers);
 
   /*
@@ -65,7 +75,7 @@ export default async function fileUpload(req, res, next) {
       originalname: filename,
       size: bytesWritten,
     };
-    next()
+    next();
   });
   writeStream.on("error", (error) => {
     if (!req.destroyed) req.destroy();
@@ -76,7 +86,7 @@ export default async function fileUpload(req, res, next) {
     if (writeStream.destroyed) return;
 
     bytesWritten += chunk.length;
-    if (bytesWritten > MAX_FILE_SIZE_LIMIT) {
+    if (bytesWritten > effectiveMaxLimit) {
       writeStream.destroy();
       unlink(filepath).catch(console.error);
       return req.destroy();

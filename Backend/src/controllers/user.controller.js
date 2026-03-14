@@ -8,17 +8,20 @@ import User from "../models/user.model.js";
 import Session from "../models/session.model.js";
 import ApiError from "../helpers/apiError.js";
 import FileShare from "../models/fileShare.model.js";
-import {
-  SELF_ACTION_DENIED,
-  USER_NOT_FOUND,
-} from "../constants/errorCodes.js";
+import { SELF_ACTION_DENIED, USER_NOT_FOUND } from "../constants/errorCodes.js";
 
-export const getUser = (req, res, next) => {
+export const getUser = async (req, res, next) => {
+  const directory = await Directory.findById(req.session.user.storageDir)
+    .select("-_id size")
+    .lean();
+
   res.status(200).json({
     name: req.session.user.name,
     email: req.session.user.email,
     picture: req.session.user.picture,
     role: req.session.user.role,
+    maxStorageInBytes: req.session.user.maxStorageInBytes,
+    usedStorageInBytes: directory.size,
   });
 };
 
@@ -116,7 +119,8 @@ export const recoverUser = async (req, res, next) => {
     { $set: { isDeleted: false } },
   );
 
-  if (!result.modifiedCount) throw new ApiError(404, "User not found!", USER_NOT_FOUND);
+  if (!result.modifiedCount)
+    throw new ApiError(404, "User not found!", USER_NOT_FOUND);
 
   res.status(200).json({ message: "User recovered successfully!" });
 };
@@ -126,10 +130,15 @@ export const changeUserRole = async (req, res, next) => {
   const { role } = req.body;
 
   if (req.session.user._id.equals(userId))
-    throw new ApiError(400, `You can't change your own role!`, SELF_ACTION_DENIED);
+    throw new ApiError(
+      400,
+      `You can't change your own role!`,
+      SELF_ACTION_DENIED,
+    );
 
   const result = await User.updateOne({ _id: userId }, { $set: { role } });
-  if (!result.modifiedCount) throw new ApiError(404, "User not found!", USER_NOT_FOUND);
+  if (!result.modifiedCount)
+    throw new ApiError(404, "User not found!", USER_NOT_FOUND);
 
   res.status(200).json({ message: "User role changes successfully!" });
 };
