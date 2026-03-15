@@ -1,4 +1,4 @@
-import { client } from "./client.js";
+import { apiDelete } from "./client.js";
 
 /**
  * Delete directories and files in bulk
@@ -6,8 +6,5 @@ import { client } from "./client.js";
  * @param {string[]} selectedFiles - Array of file IDs
  */
 export const bulkDeleteItems = async (selectedDirs = [], selectedFiles = []) => {
-  const response = await client.delete("/item/bulk-delete", {
-    data: { selectedDirs, selectedFiles },
-  });
-  return response.data;
+  return apiDelete("/item/bulk-delete", { selectedDirs, selectedFiles });
 };

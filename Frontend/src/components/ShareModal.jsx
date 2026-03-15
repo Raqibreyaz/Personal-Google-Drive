@@ -1,46 +1,46 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { FaTrash } from "react-icons/fa";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getSharedUsers, shareFile, revokeShare } from "../api/share.js";
-import useApiCall from "../hooks/useApiCall.js";
 
 function ShareModal({ fileId, fileName, onClose }) {
     const [userEmail, setUserEmail] = useState("");
     const [permission, setPermission] = useState("View");
-    const [sharedUsers, setSharedUsers] = useState([]);
     const [successMsg, setSuccessMsg] = useState("");
-    const { execute, loading, error, setError } = useApiCall();
+    const queryClient = useQueryClient();
 
-    async function fetchSharedUsersList() {
-        try {
-            const data = await getSharedUsers(fileId);
-            setSharedUsers(data);
-        } catch (err) {
-            // silently fail — modal still usable
-        }
-    }
+    const { data: sharedUsers = [], isLoading, error } = useQuery({
+        queryKey: ["sharedUsers", fileId],
+        queryFn: () => getSharedUsers(fileId),
+    });
 
-    useEffect(() => { fetchSharedUsersList(); }, [fileId]);
+    const invalidateSharedUsers = () => {
+        queryClient.invalidateQueries({ queryKey: ["sharedUsers", fileId] });
+    };
+
+    const shareMutation = useMutation({
+        mutationFn: () => shareFile(fileId, userEmail, permission),
+        onSuccess: () => {
+            setSuccessMsg(`Shared with ${userEmail}!`);
+            setUserEmail("");
+            invalidateSharedUsers();
+        },
+    });
+
+    const revokeMutation = useMutation({
+        mutationFn: (email) => revokeShare(fileId, email),
+        onSuccess: invalidateSharedUsers,
+    });
 
     function handleShare(e) {
         e.preventDefault();
         setSuccessMsg("");
-        execute(
-            () => shareFile(fileId, userEmail, permission),
-            () => {
-                setSuccessMsg(`Shared with ${userEmail}!`);
-                setUserEmail("");
-                fetchSharedUsersList();
-            },
-        );
+        shareMutation.mutate();
     }
 
     function handleRevoke(email) {
-        const confirmed = confirm(`Revoke access for ${email}?`);
-        if (!confirmed) return;
-        execute(
-            () => revokeShare(fileId, email),
-            () => fetchSharedUsersList(),
-        );
+        if (!confirm(`Revoke access for ${email}?`)) return;
+        revokeMutation.mutate(email);
     }
 
     return (
@@ -69,14 +69,18 @@ function ShareModal({ fileId, fileName, onClose }) {
                         <button
                             className="bg-blue-600 text-white border-none rounded py-2 px-4 cursor-pointer hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                             type="submit"
-                            disabled={loading}
+                            disabled={shareMutation.isPending}
                         >
-                            {loading ? "Sharing..." : "Share"}
+                            {shareMutation.isPending ? "Sharing..." : "Share"}
                         </button>
                     </div>
                 </form>
 
-                {error && <p className="text-red-700 text-[0.85rem] mt-2">{error}</p>}
+                {(error || shareMutation.error || revokeMutation.error) && (
+                    <p className="text-red-700 text-[0.85rem] mt-2">
+                        {error?.message || shareMutation.error?.message || revokeMutation.error?.message}
+                    </p>
+                )}
                 {successMsg && <p className="text-green-700 text-[0.85rem] mt-2">{successMsg}</p>}
 
                 {sharedUsers.length > 0 && (

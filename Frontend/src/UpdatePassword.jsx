@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useMutation } from "@tanstack/react-query";
 import { sendUpdatePasswordOtp, updateUserPassword } from "./api/auth.js";
-import useApiCall from "./hooks/useApiCall.js";
 import useOtpTimer from "./hooks/useOtpTimer.js";
 
 const UpdatePassword = () => {
@@ -10,31 +10,38 @@ const UpdatePassword = () => {
   const [newPassword, setNewPassword] = useState("");
   const [otpMsg, setOtpMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [customError, setCustomError] = useState("");
 
-  const { execute: executeOtp, loading: otpLoading, error: serverError, setError: setServerError } = useApiCall();
-  const { execute: executeSubmit, loading: submitLoading } = useApiCall();
   const { secondsLeft, startTimer } = useOtpTimer();
 
+  const otpMutation = useMutation({
+    mutationFn: () => sendUpdatePasswordOtp(email),
+    onSuccess: () => {
+      setOtpMsg("OTP sent to your email!");
+      setTimeout(() => setOtpMsg(""), 5000);
+      startTimer();
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: () => updateUserPassword(email, otp, newPassword),
+    onSuccess: () => setSuccessMsg("Password updated successfully!"),
+  });
+
   const handleSendOtp = () => {
-    if (!email) { setServerError("Please enter your email first."); return; }
-    executeOtp(
-      () => sendUpdatePasswordOtp(email),
-      () => {
-        setOtpMsg("OTP sent to your email!");
-        setTimeout(() => setOtpMsg(""), 5000);
-        startTimer();
-      },
-    );
+    if (!email) { setCustomError("Please enter your email first."); return; }
+    setCustomError("");
+    otpMutation.mutate();
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    executeSubmit(
-      () => updateUserPassword(email, otp, newPassword),
-      () => setSuccessMsg("Password updated successfully!"),
-    );
+    updateMutation.mutate();
   };
 
+  const serverError = otpMutation.error?.message || updateMutation.error?.message || customError;
+  const otpLoading = otpMutation.isPending;
+  const submitLoading = updateMutation.isPending;
   const hasError = Boolean(serverError);
 
   return (
@@ -50,7 +57,12 @@ const UpdatePassword = () => {
               className={`flex-1 p-2 box-border border rounded ${hasError ? "border-red-500" : "border-gray-300"}`}
               type="email"
               value={email}
-              onChange={(e) => { setServerError(""); setEmail(e.target.value); }}
+              onChange={(e) => { 
+                setCustomError("");
+                otpMutation.reset();
+                updateMutation.reset();
+                setEmail(e.target.value); 
+              }}
               placeholder="Enter your email"
               required
             />
@@ -73,7 +85,12 @@ const UpdatePassword = () => {
             className={`w-full p-2 box-border border rounded ${hasError ? "border-red-500" : "border-gray-300"}`}
             type="text"
             value={otp}
-            onChange={(e) => { setServerError(""); setOtp(e.target.value); }}
+            onChange={(e) => { 
+                setCustomError("");
+                otpMutation.reset();
+                updateMutation.reset();
+                setOtp(e.target.value); 
+            }}
             placeholder="6-digit OTP"
             required
           />
@@ -86,7 +103,12 @@ const UpdatePassword = () => {
             className={`w-full p-2 box-border border rounded ${hasError ? "border-red-500" : "border-gray-300"}`}
             type="password"
             value={newPassword}
-            onChange={(e) => { setServerError(""); setNewPassword(e.target.value); }}
+            onChange={(e) => { 
+                setCustomError("");
+                otpMutation.reset();
+                updateMutation.reset();
+                setNewPassword(e.target.value); 
+            }}
             placeholder="6-10 characters"
             minLength={6}
             maxLength={10}

@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import DirectoryHeader from "./components/DirectoryHeader";
 import CreateDirectoryModal from "./components/CreateDirectoryModal";
 import RenameModal from "./components/RenameModal";
@@ -12,23 +12,30 @@ import { getDirectory, createDirectory, deleteDirectory, renameDirectory } from 
 import { deleteFile, renameFile, getFileUrl, uploadFile } from "./api/file.js";
 import { bulkDeleteItems } from "./api/item.js";
 import { BASE_URL } from "./api/client.js";
-import useApiCall from "./hooks/useApiCall.js";
 import { sanitizeText } from "./utils/sanitize.js";
-import { Trash2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 
 function DirectoryView() {
   const { dirId } = useParams();
   const navigate = useNavigate();
-  const { execute, error: errorMessage, errorCode, setError: setErrorMessage } = useApiCall();
+  const queryClient = useQueryClient();
 
-  const [directoryName, setDirectoryName] = useState("My Drive");
-  const [directoryPath, setDirectoryPath] = useState([]);
-  const [directoriesList, setDirectoriesList] = useState([]);
-  const [filesList, setFilesList] = useState([]);
+  const { data: directoryData, isLoading, error: queryError } = useQuery({
+    queryKey: ["directory", dirId || "root"],
+    queryFn: () => getDirectory(dirId),
+    retry: false,
+  });
 
+  const [dirNotFound, setDirNotFound] = useState(false);
+
+  useEffect(() => {
+    if (queryError?.errorCode === "DIR_NOT_FOUND") setDirNotFound(true);
+    else setDirNotFound(false);
+  }, [queryError]);
+
+  const [localFiles, setLocalFiles] = useState([]); // For managing files during upload
+  const [localError, setLocalError] = useState(""); // For transient errors (e.g. upload)
   const [showCreateDirModal, setShowCreateDirModal] = useState(false);
-
-  const dirNotFound = errorCode === "DIR_NOT_FOUND";
   const [newDirname, setNewDirname] = useState("New Folder");
 
   const [showRenameModal, setShowRenameModal] = useState(false);
@@ -59,23 +66,53 @@ function DirectoryView() {
 
   const [selectedItems, setSelectedItems] = useState({ dirs: [], files: [] });
 
-  const getDirectoryItems = useCallback(() => {
-    execute(
-      () => getDirectory(dirId),
-      (data) => {
-        setDirectoryName(dirId ? data.name : "My Drive");
-        setDirectoryPath(dirId && data.path ? data.path : []);
-        setDirectoriesList([...data.directories].reverse());
-        setFilesList([...data.files].reverse());
-      },
-    );
-  }, [dirId, execute]);
-
+  // Reset selection on navigation
   useEffect(() => {
-    getDirectoryItems();
-    setActiveContextMenu(null);
     setSelectedItems({ dirs: [], files: [] });
-  }, [getDirectoryItems]);
+    setActiveContextMenu(null);
+  }, [dirId]);
+
+  const invalidateDirectory = () => {
+    queryClient.invalidateQueries({ queryKey: ["directory", dirId || "root"] });
+  };
+
+  const invalidateUser = () => {
+    queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+  };
+
+  const createDirMutation = useMutation({
+    mutationFn: (dirname) => createDirectory(dirId, dirname),
+    onSuccess: () => {
+      invalidateDirectory();
+      invalidateUser();
+    },
+  });
+
+  const renameMutation = useMutation({
+    mutationFn: ({ type, id, name }) =>
+      type === "file" ? renameFile(id, name) : renameDirectory(id, name),
+    onSuccess: () => {
+      invalidateDirectory();
+      invalidateUser(); // Rename might affect path-based logic or counts
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: ({ type, id }) =>
+      type === "file" ? deleteFile(id) : deleteDirectory(id),
+    onSuccess: () => {
+      invalidateDirectory();
+      invalidateUser();
+    },
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: ({ dirs, files }) => bulkDeleteItems(dirs, files),
+    onSuccess: () => {
+      invalidateDirectory();
+      invalidateUser();
+    },
+  });
 
 
   function getFileIcon(filename) {
@@ -101,10 +138,10 @@ function DirectoryView() {
 
     const newItems = selectedFiles.map((file) => {
       const tempId = `temp-${Date.now()}-${Math.random()}`;
-      return { file, name: file.name, _id: tempId, isUploading: false };
+      return { file, name: file.name, _id: tempId, isUploading: false, isDirectory: false };
     });
 
-    setFilesList((prev) => [...newItems, ...prev]);
+    setLocalFiles((prev) => [...newItems, ...prev]);
     newItems.forEach((item) => {
       setProgressMap((prev) => ({ ...prev, [item._id]: 0 }));
     });
@@ -113,7 +150,7 @@ function DirectoryView() {
 
     if (!isUploading) {
       setIsUploading(true);
-      processUploadQueue([...uploadQueue, ...newItems.reverse()]);
+      processUploadQueue([...uploadQueue, ...newItems]);
     }
   }
 
@@ -121,12 +158,14 @@ function DirectoryView() {
     if (queue.length === 0) {
       setIsUploading(false);
       setUploadQueue([]);
-      setTimeout(() => { getDirectoryItems(); }, 1000);
+      setLocalFiles([]); // Clear local files after all uploads are done
+      invalidateDirectory();
+      invalidateUser();
       return;
     }
 
     const [currentItem, ...restQueue] = queue;
-    setFilesList((prev) =>
+    setLocalFiles((prev) =>
       prev.map((f) => f._id === currentItem._id ? { ...f, isUploading: true } : f),
     );
 
@@ -136,9 +175,9 @@ function DirectoryView() {
       },
       onLoad: () => { processUploadQueue(restQueue); },
       onError: (errMsg) => {
-        setFilesList((prev) => prev.filter((f) => f._id !== currentItem._id));
+        setLocalFiles((prev) => prev.filter((f) => f._id !== currentItem._id));
         setProgressMap((prev) => { const { [currentItem._id]: _, ...rest } = prev; return rest; });
-        setErrorMessage(errMsg);
+        setLocalError(errMsg);
         processUploadQueue(restQueue);
       },
     });
@@ -149,7 +188,7 @@ function DirectoryView() {
     const abortFn = uploadAbortMap[tempId];
     if (abortFn) abortFn();
     setUploadQueue((prev) => prev.filter((item) => item._id !== tempId));
-    setFilesList((prev) => prev.filter((f) => f._id !== tempId));
+    setLocalFiles((prev) => prev.filter((f) => f._id !== tempId));
     setProgressMap((prev) => { const { [tempId]: _, ...rest } = prev; return rest; });
     setUploadAbortMap((prev) => { const copy = { ...prev }; delete copy[tempId]; return copy; });
   }
@@ -157,19 +196,13 @@ function DirectoryView() {
   function handleDeleteFile(id, name) {
     const confirmed = confirm(`Delete this File: ${name}?`);
     if (!confirmed) return;
-    execute(
-      () => deleteFile(id),
-      () => getDirectoryItems(),
-    );
+    deleteMutation.mutate({ type: "file", id });
   }
 
   function handleDeleteDirectory(id, name) {
     const confirmed = confirm(`Delete this Directory: ${name}?`);
     if (!confirmed) return;
-    execute(
-      () => deleteDirectory(id),
-      () => getDirectoryItems(),
-    );
+    deleteMutation.mutate({ type: "directory", id });
   }
 
   function handleToggleSelect(id, isDirectory) {
@@ -186,14 +219,14 @@ function DirectoryView() {
 
   function handleToggleSelectAll() {
     const totalSelected = selectedItems.dirs.length + selectedItems.files.length;
-    const totalItems = directoriesList.length + filesList.length;
+    const totalItems = combinedItems.length;
 
     if (totalSelected === totalItems) {
       setSelectedItems({ dirs: [], files: [] });
     } else {
       setSelectedItems({
-        dirs: directoriesList.map((d) => d._id),
-        files: filesList.map((f) => f._id),
+        dirs: combinedItems.filter(i => i.isDirectory).map((d) => d._id),
+        files: combinedItems.filter(i => !i.isDirectory).map((f) => f._id),
       });
     }
   }
@@ -205,25 +238,24 @@ function DirectoryView() {
     const confirmed = confirm(`Are you sure you want to delete ${totalCount} selected items?`);
     if (!confirmed) return;
 
-    execute(
-      () => bulkDeleteItems(selectedItems.dirs, selectedItems.files),
-      () => {
-        setSelectedItems({ dirs: [], files: [] });
-        getDirectoryItems();
-      },
+    bulkDeleteMutation.mutate(
+      { dirs: selectedItems.dirs, files: selectedItems.files },
+      {
+        onSuccess: () => {
+          setSelectedItems({ dirs: [], files: [] });
+        }
+      }
     );
   }
 
   function handleCreateDirectory(e) {
     e.preventDefault();
-    execute(
-      () => createDirectory(dirId, sanitizeText(newDirname)),
-      () => {
+    createDirMutation.mutate(sanitizeText(newDirname), {
+      onSuccess: () => {
         setNewDirname("New Folder");
         setShowCreateDirModal(false);
-        getDirectoryItems();
-      },
-    );
+      }
+    });
   }
 
   function openRenameModal(type, id, currentName) {
@@ -236,17 +268,16 @@ function DirectoryView() {
   function handleRenameSubmit(e) {
     e.preventDefault();
     const sanitizedValue = sanitizeText(renameValue);
-    execute(
-      () => renameType === "file"
-        ? renameFile(renameId, sanitizedValue)
-        : renameDirectory(renameId, sanitizedValue),
-      () => {
-        setShowRenameModal(false);
-        setRenameValue("");
-        setRenameType(null);
-        setRenameId(null);
-        getDirectoryItems();
-      },
+    renameMutation.mutate(
+      { type: renameType, id: renameId, name: sanitizedValue },
+      {
+        onSuccess: () => {
+          setShowRenameModal(false);
+          setRenameValue("");
+          setRenameType(null);
+          setRenameId(null);
+        }
+      }
     );
   }
 
@@ -287,9 +318,22 @@ function DirectoryView() {
   }, []);
 
   const combinedItems = [
-    ...directoriesList.map((d) => ({ ...d, isDirectory: true })),
-    ...filesList.map((f) => ({ ...f, isDirectory: false })),
+    ...localFiles,
+    ...(directoryData ? [
+      ...directoryData.directories.map((d) => ({ ...d, isDirectory: true })),
+      ...directoryData.files.map((f) => ({ ...f, isDirectory: false })),
+    ].reverse() : []),
   ];
+
+  const errorMessage = localError ||
+    queryError?.message ||
+    createDirMutation.error?.message ||
+    renameMutation.error?.message ||
+    deleteMutation.error?.message ||
+    bulkDeleteMutation.error?.message;
+
+  const directoryName = dirId ? directoryData?.name : "My Drive";
+  const directoryPath = dirId && directoryData?.path ? directoryData.path : [];
 
   return (
     <div className="px-2.5 max-w-[1000px] mx-auto">
@@ -297,14 +341,13 @@ function DirectoryView() {
         <div className="text-red-500 mb-2">{errorMessage}</div>
       )}
 
-      {(directoriesList.length > 0 || filesList.length > 0) && (
+      {combinedItems.length > 0 && (
         <div className="flex items-center gap-2 mb-4 px-2 py-1 bg-gray-50 rounded-md border border-gray-200 w-fit">
           <input
             type="checkbox"
             checked={
-              (directoriesList.length + filesList.length > 0) &&
-              (selectedItems.dirs.length + selectedItems.files.length ===
-                directoriesList.length + filesList.length)
+              combinedItems.length > 0 &&
+              selectedItems.dirs.length + selectedItems.files.length === combinedItems.length
             }
             onChange={handleToggleSelectAll}
             className="w-4 h-4 cursor-pointer accent-blue-600"
@@ -355,8 +398,11 @@ function DirectoryView() {
           fileId={accessFileId}
           fileName={accessFileName}
           currentAccess={accessCurrentPermission}
+          dirId={dirId}
           onClose={() => setShowAccessModal(false)}
-          onAccessChanged={() => getDirectoryItems()}
+          onAccessChanged={(newAccess) => {
+            setAccessCurrentPermission(newAccess);
+          }}
         />
       )}
 
@@ -369,7 +415,11 @@ function DirectoryView() {
         />
       )}
 
-      {combinedItems.length === 0 ? (
+      {isLoading ? (
+        <div className="flex justify-center mt-10">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      ) : combinedItems.length === 0 ? (
         dirNotFound ? (
           <p className="text-center italic mt-10 text-gray-500">
             Directory not found or you do not have access to it!

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     FaFileAlt,
     FaArrowLeft,
@@ -11,15 +11,30 @@ import RenameModal from "./components/RenameModal";
 import ShareModal from "./components/ShareModal";
 import { getSharedWithMe } from "./api/share.js";
 import { deleteFile, renameFile, getFileUrl, getDownloadUrl } from "./api/file.js";
-import useApiCall from "./hooks/useApiCall.js";
 import { sanitizeText } from "./utils/sanitize.js";
 
 export default function SharedWithMePage() {
     const navigate = useNavigate();
-    const { execute, error, setError } = useApiCall();
+    const queryClient = useQueryClient();
 
-    const [sharedFiles, setSharedFiles] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { data: sharedFiles = [], isLoading, error } = useQuery({
+        queryKey: ["sharedWithMe"],
+        queryFn: getSharedWithMe,
+    });
+
+    const invalidateShared = () => {
+        queryClient.invalidateQueries({ queryKey: ["sharedWithMe"] });
+    };
+
+    const deleteMutation = useMutation({
+        mutationFn: (fileId) => deleteFile(fileId),
+        onSuccess: invalidateShared,
+    });
+
+    const renameMutation = useMutation({
+        mutationFn: ({ id, name }) => renameFile(id, name),
+        onSuccess: invalidateShared,
+    });
 
     const [activeContextMenu, setActiveContextMenu] = useState(null);
     const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
@@ -31,20 +46,6 @@ export default function SharedWithMePage() {
     const [showShareModal, setShowShareModal] = useState(false);
     const [shareFileId, setShareFileId] = useState(null);
     const [shareFileName, setShareFileName] = useState("");
-
-    async function fetchSharedFiles() {
-        try {
-            const data = await getSharedWithMe();
-            setSharedFiles(data);
-        } catch (err) {
-            // 401 auto-redirects via interceptor
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    useEffect(() => { fetchSharedFiles(); }, []);
 
     useEffect(() => {
         function handleDocumentClick() { setActiveContextMenu(null); }
@@ -74,10 +75,7 @@ export default function SharedWithMePage() {
     function handleDeleteFile(fileId) {
         const confirmed = confirm("Delete this file?");
         if (!confirmed) return;
-        execute(
-            () => deleteFile(fileId),
-            () => setSharedFiles((prev) => prev.filter((entry) => entry.file?._id !== fileId)),
-        );
+        deleteMutation.mutate(fileId);
         setActiveContextMenu(null);
     }
 
@@ -90,9 +88,15 @@ export default function SharedWithMePage() {
 
     function handleRenameSubmit(e) {
         e.preventDefault();
-        execute(
-            () => renameFile(renameFileId, sanitizeText(renameValue)),
-            () => { setShowRenameModal(false); setRenameValue(""); setRenameFileId(null); fetchSharedFiles(); },
+        renameMutation.mutate(
+            { id: renameFileId, name: sanitizeText(renameValue) },
+            {
+                onSuccess: () => {
+                    setShowRenameModal(false);
+                    setRenameValue("");
+                    setRenameFileId(null);
+                }
+            }
         );
     }
 
@@ -114,7 +118,11 @@ export default function SharedWithMePage() {
                 <h1 className="m-0 text-3xl">Shared with Me</h1>
             </header>
 
-            {error && <div className="text-red-500 mb-2">{error}</div>}
+            {(error || deleteMutation.error || renameMutation.error) && (
+                <div className="text-red-500 mb-2">
+                    {error?.message || deleteMutation.error?.message || renameMutation.error?.message}
+                </div>
+            )}
 
             {showRenameModal && (
                 <RenameModal renameType="file" renameValue={renameValue} setRenameValue={setRenameValue} onClose={() => setShowRenameModal(false)} onRenameSubmit={handleRenameSubmit} />
@@ -124,7 +132,7 @@ export default function SharedWithMePage() {
                 <ShareModal fileId={shareFileId} fileName={shareFileName} onClose={() => setShowShareModal(false)} />
             )}
 
-            {loading ? (
+            {isLoading ? (
                 <p className="text-center text-gray-500 italic mt-10">Loading...</p>
             ) : sharedFiles.length === 0 ? (
                 <p className="text-center text-gray-500 italic mt-10">No files have been shared with you yet.</p>

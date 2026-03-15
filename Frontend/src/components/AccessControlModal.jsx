@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FaCopy, FaCheck } from "react-icons/fa";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { setFileAccess, getFileUrl } from "../api/file.js";
-import useApiCall from "../hooks/useApiCall.js";
 
 function AccessControlModal({
     fileId,
@@ -9,21 +9,26 @@ function AccessControlModal({
     currentAccess,
     onClose,
     onAccessChanged,
+    dirId,
 }) {
     const [permission, setPermission] = useState(currentAccess || "");
     const [copied, setCopied] = useState(false);
-    const { execute, loading, error } = useApiCall();
+    const queryClient = useQueryClient();
+
+    const accessMutation = useMutation({
+        mutationFn: () => setFileAccess(fileId, permission || null),
+        onSuccess: () => {
+            if (onAccessChanged) onAccessChanged(permission || null);
+            // Invalidate directory to refresh counts/details if needed
+            queryClient.invalidateQueries({ queryKey: ["directory", dirId || "root"] });
+            onClose();
+        },
+    });
 
     const fileLink = getFileUrl(fileId);
 
     function handleSave() {
-        execute(
-            () => setFileAccess(fileId, permission || null),
-            () => {
-                if (onAccessChanged) onAccessChanged(permission || null);
-                onClose();
-            },
-        );
+        accessMutation.mutate();
     }
 
     function handleCopyLink() {
@@ -70,15 +75,15 @@ function AccessControlModal({
                     </div>
                 )}
 
-                {error && <p className="text-red-700 text-[0.85rem] mt-2">{error}</p>}
+                {accessMutation.error && <p className="text-red-700 text-[0.85rem] mt-2">{accessMutation.error.message}</p>}
 
                 <div className="flex justify-end gap-2.5 mt-4">
                     <button
                         className="bg-blue-600 text-white border-none rounded py-2 px-4 cursor-pointer hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                         onClick={handleSave}
-                        disabled={loading}
+                        disabled={accessMutation.isPending}
                     >
-                        {loading ? "Saving..." : "Save"}
+                        {accessMutation.isPending ? "Saving..." : "Save"}
                     </button>
                     <button className="bg-gray-300 text-gray-700 border-none rounded py-2 px-4 cursor-pointer hover:bg-gray-400" onClick={onClose}>
                         Cancel

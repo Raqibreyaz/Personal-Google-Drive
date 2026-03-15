@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   FaFolderPlus,
   FaUpload,
@@ -24,75 +25,58 @@ function DirectoryHeader({
   disabled = false,
 }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [userName, setUserName] = useState("Guest User");
-  const [userEmail, setUserEmail] = useState("guest@example.com");
-  const [userRole, setUserRole] = useState("User");
-  const [picture, setPicture] = useState(null);
-  const [maxStorageInBytes, setMaxStorageInBytes] = useState(1073741824);
-  const [usedStorageInBytes, setUsedStorageInBytes] = useState(0);
   const userMenuRef = useRef(null);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const { data: userData, error: userError } = useQuery({
+    queryKey: ["currentUser"],
+    queryFn: getCurrentUser,
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  const loggedIn = !!userData;
+  const userName = userData ? sanitizeText(userData.name) : "Guest User";
+  const userEmail = userData?.email || "guest@example.com";
+  const userRole = userData?.role || "User";
+  const picture = userData?.picture || null;
+  const maxStorageInBytes = userData?.maxStorageInBytes || 1073741824;
+  const usedStorageInBytes = userData?.usedStorageInBytes || 0;
+
   const usedGB = usedStorageInBytes / 1024 ** 3;
   const totalGB = maxStorageInBytes / 1024 ** 3;
 
-  // console.log(usedGB, totalGB)
+  const logoutMutation = useMutation({
+    mutationFn: logoutSelf,
+    onSuccess: () => {
+      queryClient.setQueryData(["currentUser"], null);
+      navigate("/login");
+    },
+  });
 
-  useEffect(() => {
-    async function fetchUser() {
-      try {
-        const data = await getCurrentUser();
-        setUserName(sanitizeText(data.name));
-        setUserEmail(data.email);
-        setUserRole(data.role);
-        setPicture(data.picture || null);
-        setMaxStorageInBytes(data.maxStorageInBytes);
-        setUsedStorageInBytes(data.usedStorageInBytes);
-        setLoggedIn(true);
-      } catch (err) {
-        // AUTH_REQUIRED → interceptor redirects; other errors → show as guest
-        setUserName("Guest User");
-        setUserEmail("guest@example.com");
-        setLoggedIn(false);
-      }
-    }
-    fetchUser();
-  }, []);
+  const logoutAllMutation = useMutation({
+    mutationFn: logoutAllDevices,
+    onSuccess: () => {
+      queryClient.setQueryData(["currentUser"], null);
+      navigate("/login");
+    },
+  });
 
   const handleUserIconClick = () => setShowUserMenu((prev) => !prev);
 
-  const handleLogout = async () => {
-    const confirmed = confirm("Do you really want to logout?");
-    if (!confirmed) return;
-    try {
-      await logoutSelf();
-      setLoggedIn(false);
-      setUserName("Guest User");
-      setPicture(null);
-      setUserEmail("guest@example.com");
-      navigate("/login");
-    } catch (err) {
-      // silently fail — worst case user stays logged in
-    } finally {
-      setShowUserMenu(false);
+  const handleLogout = () => {
+    if (confirm("Do you really want to logout?")) {
+      logoutMutation.mutate();
     }
+    setShowUserMenu(false);
   };
 
-  const handleLogoutAll = async () => {
-    const confirmed = confirm("You are about to logout all sessions!");
-    if (!confirmed) return;
-    try {
-      await logoutAllDevices();
-      setLoggedIn(false);
-      setUserName("Guest User");
-      setPicture(null);
-      setUserEmail("guest@example.com");
-      navigate("/login");
-    } catch (err) {
-      // silently fail
-    } finally {
-      setShowUserMenu(false);
+  const handleLogoutAll = () => {
+    if (confirm("You are about to logout all sessions!")) {
+      logoutAllMutation.mutate();
     }
+    setShowUserMenu(false);
   };
 
   useEffect(() => {

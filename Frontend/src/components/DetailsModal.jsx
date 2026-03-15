@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getDirectoryCounts } from "../api/directory";
 import formatSize from '../utils/formatSize'
 
@@ -8,25 +9,17 @@ function formatDate(dateStr) {
 }
 
 function DetailsModal({ item, directoryName, directoryPath, onClose }) {
-  console.log(directoryPath)
   useEffect(() => {
     const handleKeyDown = (e) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  const [counts, setCounts] = useState(null);
-  const [loadingCounts, setLoadingCounts] = useState(false);
-
-  useEffect(() => {
-    if (item.isDirectory) {
-      setLoadingCounts(true);
-      getDirectoryCounts(item._id)
-        .then(data => setCounts(data))
-        .catch(err => console.error("Failed to fetch directory counts:", err))
-        .finally(() => setLoadingCounts(false));
-    }
-  }, [item]);
+  const { data: counts, isLoading: loadingCounts } = useQuery({
+    queryKey: ["directoryCounts", item._id],
+    queryFn: () => getDirectoryCounts(item._id),
+    enabled: item.isDirectory,
+  });
 
   const pathNotExists = !directoryPath.length
 

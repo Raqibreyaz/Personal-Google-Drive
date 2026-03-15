@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FaArrowLeft } from "react-icons/fa";
 import {
   getCurrentUser,
@@ -10,17 +11,59 @@ import {
   recoverUser as apiRecoverUser,
   changeUserRole as apiChangeUserRole,
 } from "./api/user.js";
-import useApiCall from "./hooks/useApiCall.js";
 
 const ROLES = ["Owner", "Admin", "Manager", "User"];
 const ROLE_LEVEL = { Owner: 0, Admin: 1, Manager: 2, User: 3 };
 
 export default function UsersPage() {
   const navigate = useNavigate();
-  const { execute, error, setError } = useApiCall();
+  const queryClient = useQueryClient();
 
-  const [currentUser, setCurrentUser] = useState(null);
-  const [users, setUsers] = useState([]);
+  const { data: currentUser } = useQuery({
+    queryKey: ["currentUser"],
+    queryFn: getCurrentUser,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (currentUser && currentUser.role === "User") {
+      navigate("/");
+    }
+  }, [currentUser, navigate]);
+
+  const { data: users = [], isLoading, error } = useQuery({
+    queryKey: ["users"],
+    queryFn: getAllUsers,
+  });
+
+  const invalidateUsers = () => {
+    queryClient.invalidateQueries({ queryKey: ["users"] });
+  };
+
+  const logoutMutation = useMutation({
+    mutationFn: (userId) => apiLogoutUser(userId),
+    onSuccess: invalidateUsers,
+  });
+
+  const softDeleteMutation = useMutation({
+    mutationFn: (userId) => apiSoftDeleteUser(userId),
+    onSuccess: invalidateUsers,
+  });
+
+  const hardDeleteMutation = useMutation({
+    mutationFn: (userId) => apiHardDeleteUser(userId),
+    onSuccess: invalidateUsers,
+  });
+
+  const recoverMutation = useMutation({
+    mutationFn: (userId) => apiRecoverUser(userId),
+    onSuccess: invalidateUsers,
+  });
+
+  const changeRoleMutation = useMutation({
+    mutationFn: ({ userId, newRole }) => apiChangeUserRole(userId, newRole),
+    onSuccess: invalidateUsers,
+  });
 
   function canActOn(targetRole) {
     if (!currentUser) return false;
@@ -33,64 +76,30 @@ export default function UsersPage() {
   }
 
   const logoutUser = (userId) => {
-    const confirmed = confirm("You are about to logout this user!");
-    if (!confirmed) return;
-    execute(
-      () => apiLogoutUser(userId),
-      () => setUsers((prev) => prev.map((user) => user._id === userId ? { ...user, isLoggedIn: false } : user)),
-    );
+    if (!confirm("You are about to logout this user!")) return;
+    logoutMutation.mutate(userId);
   };
 
   const softDeleteUser = (userId) => {
-    const confirmed = confirm("Soft-delete this user? Their account will be deactivated but can be recovered.");
-    if (!confirmed) return;
-    execute(
-      () => apiSoftDeleteUser(userId),
-      () => setUsers((prev) => prev.map((user) => user._id === userId ? { ...user, isDeleted: true } : user)),
-    );
+    if (!confirm("Soft-delete this user? Their account will be deactivated but can be recovered.")) return;
+    softDeleteMutation.mutate(userId);
   };
 
   const hardDeleteUser = (userId) => {
-    const confirmed = confirm("⚠️ PERMANENTLY delete this user and ALL their data? This cannot be undone!");
-    if (!confirmed) return;
-    execute(
-      () => apiHardDeleteUser(userId),
-      () => setUsers((prev) => prev.filter((user) => user._id !== userId)),
-    );
+    if (!confirm("⚠️ PERMANENTLY delete this user and ALL their data? This cannot be undone!")) return;
+    hardDeleteMutation.mutate(userId);
   };
 
   const recoverUser = (userId) => {
-    const confirmed = confirm("Recover this user?");
-    if (!confirmed) return;
-    execute(
-      () => apiRecoverUser(userId),
-      () => setUsers((prev) => prev.map((user) => user._id === userId ? { ...user, isDeleted: false } : user)),
-    );
+    if (!confirm("Recover this user?")) return;
+    recoverMutation.mutate(userId);
   };
 
   const changeRole = (userId, newRole) => {
-    const confirmed = confirm(`Change this user's role to ${newRole}?`);
-    if (!confirmed) return;
-    execute(
-      () => apiChangeUserRole(userId, newRole),
-      () => setUsers((prev) => prev.map((user) => user._id === userId ? { ...user, role: newRole } : user)),
-    );
+    if (!confirm(`Change this user's role to ${newRole}?`)) return;
+    changeRoleMutation.mutate({ userId, newRole });
   };
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const userData = await getCurrentUser();
-        if (userData.role !== "User") setCurrentUser(userData);
-        else navigate("/");
-        const usersData = await getAllUsers();
-        setUsers(usersData);
-      } catch (err) {
-        // 401 is handled by interceptor (auto-redirect to /login)
-        setError(err.message);
-      }
-    })();
-  }, []);
 
   const assignableRoles = getAssignableRoles();
   const isOwner = currentUser?.role === "Owner";
@@ -112,8 +121,15 @@ export default function UsersPage() {
         </div>
       </header>
 
-      {error && (
-        <div className="bg-red-50 text-red-700 py-2.5 px-4 rounded-md mb-4 text-[0.9rem]">{error}</div>
+      {(error || logoutMutation.error || softDeleteMutation.error || hardDeleteMutation.error || recoverMutation.error || changeRoleMutation.error) && (
+        <div className="bg-red-50 text-red-700 py-2.5 px-4 rounded-md mb-4 text-[0.9rem]">
+          {error?.message || 
+           logoutMutation.error?.message || 
+           softDeleteMutation.error?.message || 
+           hardDeleteMutation.error?.message || 
+           recoverMutation.error?.message || 
+           changeRoleMutation.error?.message}
+        </div>
       )}
 
       <table className="w-full border-collapse">
@@ -127,7 +143,9 @@ export default function UsersPage() {
           </tr>
         </thead>
         <tbody>
-          {users.map((user) => {
+          {isLoading ? (
+            <tr><td colSpan={isAdminOrOwner ? 5 : 4} className="text-center p-10 text-gray-500 italic">Loading...</td></tr>
+          ) : users.map((user) => {
             if (user.email === currentUser?.email) return null;
             const isDeleted = user.isDeleted;
             if (isDeleted && !isOwner) return null;

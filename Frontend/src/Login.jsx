@@ -1,34 +1,39 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useMutation } from "@tanstack/react-query";
 import GoogleLoginButton from "./components/GoogleLoginButton";
 import GithubLoginButton from "./components/GithubLoginButton";
 import { sendLoginOtp, loginWithOtp } from "./api/auth.js";
-import useApiCall from "./hooks/useApiCall.js";
 import useOtpTimer from "./hooks/useOtpTimer.js";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { execute, loading, error: serverError, setError: setServerError } = useApiCall();
   const { secondsLeft, startTimer } = useOtpTimer();
 
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
 
+  const otpMutation = useMutation({
+    mutationFn: () => sendLoginOtp(formData.email, formData.password),
+    onSuccess: () => {
+      setOtpSent(true);
+      startTimer();
+    },
+  });
+
+  const loginMutation = useMutation({
+    mutationFn: () => loginWithOtp(formData.email, otp),
+    onSuccess: () => navigate("/"),
+  });
+
   const handleChange = (e) => {
-    if (serverError) setServerError("");
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSendOtp = () => execute(
-    () => sendLoginOtp(formData.email, formData.password),
-    () => { setOtpSent(true); startTimer(); },
-  );
+  const handleSendOtp = () => otpMutation.mutate();
 
-  const handleVerifyOtpAndLogin = () => execute(
-    () => loginWithOtp(formData.email, otp),
-    () => navigate("/"),
-  );
+  const handleVerifyOtpAndLogin = () => loginMutation.mutate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -36,6 +41,8 @@ const Login = () => {
     else handleVerifyOtpAndLogin();
   };
 
+  const serverError = otpMutation.error?.message || loginMutation.error?.message;
+  const loading = otpMutation.isPending || loginMutation.isPending;
   const hasError = Boolean(serverError);
 
   return (
@@ -83,7 +90,7 @@ const Login = () => {
           </div>
         )}
 
-        {serverError && <p className="text-red-500 text-[0.7rem] mt-0.5 whitespace-nowrap">{serverError}</p>}
+        {serverError && <p className="text-red-500 text-[0.70rem] mt-0.5 whitespace-nowrap">{serverError}</p>}
 
         <button
           type="submit"

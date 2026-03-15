@@ -1,35 +1,40 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useMutation } from "@tanstack/react-query";
 import GoogleLoginButton from "./components/GoogleLoginButton";
 import GithubLoginButton from "./components/GithubLoginButton";
 import { sendRegisterOtp, registerWithOtp } from "./api/auth.js";
-import useApiCall from "./hooks/useApiCall.js";
 import useOtpTimer from "./hooks/useOtpTimer.js";
 import { sanitizeText } from "./utils/sanitize.js";
 
 const Register = () => {
   const navigate = useNavigate();
-  const { execute, loading, error: serverError, setError: setServerError } = useApiCall();
   const { secondsLeft, startTimer } = useOtpTimer();
 
   const [formData, setFormData] = useState({ name: "", email: "", password: "" });
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
 
+  const otpMutation = useMutation({
+    mutationFn: () => sendRegisterOtp(formData.email),
+    onSuccess: () => {
+      setOtpSent(true);
+      startTimer();
+    },
+  });
+
+  const registerMutation = useMutation({
+    mutationFn: () => registerWithOtp({ ...formData, name: sanitizeText(formData.name) }, otp),
+    onSuccess: () => navigate("/"),
+  });
+
   const handleChange = (e) => {
-    if (serverError) setServerError("");
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSendOtp = () => execute(
-    () => sendRegisterOtp(formData.email),
-    () => { setOtpSent(true); startTimer(); },
-  );
+  const handleSendOtp = () => otpMutation.mutate();
 
-  const handleVerifyOtpAndRegister = () => execute(
-    () => registerWithOtp({ ...formData, name: sanitizeText(formData.name) }, otp),
-    () => navigate("/"),
-  );
+  const handleVerifyOtpAndRegister = () => registerMutation.mutate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -37,6 +42,8 @@ const Register = () => {
     else handleVerifyOtpAndRegister();
   };
 
+  const serverError = otpMutation.error?.message || registerMutation.error?.message;
+  const loading = otpMutation.isPending || registerMutation.isPending;
   const hasError = Boolean(serverError);
   const inputClass = `w-full p-2 box-border border rounded ${hasError ? "border-red-500" : "border-gray-300"}`;
 

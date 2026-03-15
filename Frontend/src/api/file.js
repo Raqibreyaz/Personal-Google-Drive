@@ -1,16 +1,10 @@
 import { apiDelete, apiPatch, BASE_URL, client, ApiError } from "./client.js";
 
-export async function deleteFile(fileId) {
-  return apiDelete(`/file/${fileId}`);
-}
+export const deleteFile = (fileId) => apiDelete(`/file/${fileId}`);
 
-export async function renameFile(fileId, newFilename) {
-  return apiPatch(`/file/rename/${fileId}`, { newFilename });
-}
+export const renameFile = (fileId, newFilename) => apiPatch(`/file/rename/${fileId}`, { newFilename });
 
-export async function setFileAccess(fileId, permission) {
-  return apiPatch(`/file/set-access/${fileId}`, { permission });
-}
+export const setFileAccess = (fileId, permission) => apiPatch(`/file/set-access/${fileId}`, { permission });
 
 export function getFileUrl(fileId) {
   return `${BASE_URL}/file/${fileId}`;
