@@ -33,6 +33,8 @@ function DirectoryItem({
   onShare,
   onManageAccess,
   BACKEND_URI,
+  isSelected,
+  onToggleSelect,
 }) {
   function renderFileIcon(iconString) {
     switch (iconString) {
@@ -49,7 +51,11 @@ function DirectoryItem({
 
   return (
     <div
-      className="flex flex-col relative gap-1 border border-gray-300 rounded bg-gray-50 cursor-pointer hover:bg-gray-100"
+      className={`flex flex-col relative gap-1 border rounded cursor-pointer transition-all duration-200 ${
+        isSelected 
+          ? "border-blue-500 bg-blue-50 shadow-sm" 
+          : "border-gray-200 bg-gray-50 hover:bg-white hover:border-blue-300 hover:shadow-md"
+      }`}
       onClick={() =>
         !(activeContextMenu || isUploading)
           ? handleRowClick(item.isDirectory ? "directory" : "file", item._id)
@@ -58,13 +64,27 @@ function DirectoryItem({
       onContextMenu={(e) => handleContextMenu(e, item._id)}
     >
       <div className="flex items-center gap-2" title={`size: ${formatSize(item.size)}\ncreatedAt: ${formatDate(item.createdAt)}`}>
-        <div className="flex items-center gap-2 p-2.5">
+        <div className="flex items-center gap-3 p-2.5 flex-1 min-w-0">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={(e) => {
+              e.stopPropagation();
+              onToggleSelect();
+            }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-4 h-4 cursor-pointer accent-blue-600 shrink-0"
+          />
           {item.isDirectory ? (
-            <FaFolder className="text-orange-500 text-xl" />
+            <FaFolder className="text-orange-500 text-xl shrink-0" />
           ) : (
-            renderFileIcon(getFileIcon(item.name))
+            <div className="text-blue-500 text-xl shrink-0">
+              {renderFileIcon(getFileIcon(item.name))}
+            </div>
           )}
-          <span>{item.name}</span>
+          <span className={`truncate text-sm font-medium ${isSelected ? "text-blue-900" : "text-gray-700"}`}>
+            {item.name}
+          </span>
         </div>
 
         <div

@@ -7,11 +7,14 @@ import ShareModal from "./components/ShareModal";
 import AccessControlModal from "./components/AccessControlModal";
 import DetailsModal from "./components/DetailsModal";
 import DirectoryList from "./components/DirectoryList";
+import FloatingActionBar from "./components/FloatingActionBar";
 import { getDirectory, createDirectory, deleteDirectory, renameDirectory } from "./api/directory.js";
 import { deleteFile, renameFile, getFileUrl, uploadFile } from "./api/file.js";
+import { bulkDeleteItems } from "./api/item.js";
 import { BASE_URL } from "./api/client.js";
 import useApiCall from "./hooks/useApiCall.js";
 import { sanitizeText } from "./utils/sanitize.js";
+import { Trash2 } from "lucide-react";
 
 function DirectoryView() {
   const { dirId } = useParams();
@@ -54,6 +57,8 @@ function DirectoryView() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [detailsItem, setDetailsItem] = useState(null);
 
+  const [selectedItems, setSelectedItems] = useState({ dirs: [], files: [] });
+
   const getDirectoryItems = useCallback(() => {
     execute(
       () => getDirectory(dirId),
@@ -69,6 +74,7 @@ function DirectoryView() {
   useEffect(() => {
     getDirectoryItems();
     setActiveContextMenu(null);
+    setSelectedItems({ dirs: [], files: [] });
   }, [getDirectoryItems]);
 
 
@@ -166,6 +172,48 @@ function DirectoryView() {
     );
   }
 
+  function handleToggleSelect(id, isDirectory) {
+    setSelectedItems((prev) => {
+      const key = isDirectory ? "dirs" : "files";
+      const isSelected = prev[key].includes(id);
+      if (isSelected) {
+        return { ...prev, [key]: prev[key].filter((i) => i !== id) };
+      } else {
+        return { ...prev, [key]: [...prev[key], id] };
+      }
+    });
+  }
+
+  function handleToggleSelectAll() {
+    const totalSelected = selectedItems.dirs.length + selectedItems.files.length;
+    const totalItems = directoriesList.length + filesList.length;
+
+    if (totalSelected === totalItems) {
+      setSelectedItems({ dirs: [], files: [] });
+    } else {
+      setSelectedItems({
+        dirs: directoriesList.map((d) => d._id),
+        files: filesList.map((f) => f._id),
+      });
+    }
+  }
+
+  function handleBulkDelete() {
+    const totalCount = selectedItems.dirs.length + selectedItems.files.length;
+    if (totalCount === 0) return;
+
+    const confirmed = confirm(`Are you sure you want to delete ${totalCount} selected items?`);
+    if (!confirmed) return;
+
+    execute(
+      () => bulkDeleteItems(selectedItems.dirs, selectedItems.files),
+      () => {
+        setSelectedItems({ dirs: [], files: [] });
+        getDirectoryItems();
+      },
+    );
+  }
+
   function handleCreateDirectory(e) {
     e.preventDefault();
     execute(
@@ -247,6 +295,22 @@ function DirectoryView() {
     <div className="px-2.5 max-w-[1000px] mx-auto">
       {errorMessage && !dirNotFound && (
         <div className="text-red-500 mb-2">{errorMessage}</div>
+      )}
+
+      {(directoriesList.length > 0 || filesList.length > 0) && (
+        <div className="flex items-center gap-2 mb-4 px-2 py-1 bg-gray-50 rounded-md border border-gray-200 w-fit">
+          <input
+            type="checkbox"
+            checked={
+              (directoriesList.length + filesList.length > 0) &&
+              (selectedItems.dirs.length + selectedItems.files.length ===
+                directoriesList.length + filesList.length)
+            }
+            onChange={handleToggleSelectAll}
+            className="w-4 h-4 cursor-pointer accent-blue-600"
+          />
+          <span className="text-sm text-gray-600 font-medium select-none">Select All</span>
+        </div>
       )}
 
       <DirectoryHeader
@@ -333,8 +397,16 @@ function DirectoryView() {
           onShare={handleOpenShare}
           onManageAccess={handleOpenAccessControl}
           BACKEND_URI={BASE_URL}
+          selectedItems={selectedItems}
+          handleToggleSelect={handleToggleSelect}
         />
       )}
+
+      <FloatingActionBar
+        selectedCount={selectedItems.dirs.length + selectedItems.files.length}
+        onClear={() => setSelectedItems({ dirs: [], files: [] })}
+        onDelete={handleBulkDelete}
+      />
     </div>
   );
 }

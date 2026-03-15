@@ -116,7 +116,7 @@ function DirectoryHeader({
         >
           My Drive
         </span>
-        {directoryPath && directoryPath.map((folder) => (
+        {directoryPath && directoryPath.slice(1).map((folder) => (
           <span key={folder._id} className="flex items-center">
             <FaChevronRight className="mx-2 text-sm text-gray-400" />
             <span

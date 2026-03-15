@@ -30,7 +30,7 @@ function DetailsModal({ item, directoryName, directoryPath, onClose }) {
 
   const pathNotExists = !directoryPath.length
 
-  const currPath = directoryName !== '/' ? `${pathNotExists ? '' : '/'}${directoryPath.map(({ name }) => name).join('/')}/${directoryName}` : ''
+  const currPath = directoryName !== '/' ? `${pathNotExists ? '' : '/'}${directoryPath.slice(1).map(({ name }) => name).join('/')}/${directoryName}` : ''
 
   const itemPath = `${currPath}/${item.name}`
 

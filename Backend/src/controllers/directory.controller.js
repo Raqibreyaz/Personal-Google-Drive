@@ -73,9 +73,7 @@ export const createDirectory = async (req, res, next) => {
       DUPLICATE_DIR,
     );
 
-  // skipping adding root directory
-  const dirPath = [...parentDir.path];
-  if (!parentDir.name.includes("root")) dirPath.push(parentDir._id);
+  const dirPath = [...parentDir.path, parentDir._id];
 
   // add entry of this directory
   await Directory.insertOne({

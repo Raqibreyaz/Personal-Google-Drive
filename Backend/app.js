@@ -7,6 +7,7 @@ import directoryRoutes from "./src/routes/directory.route.js";
 import userRoutes from "./src/routes/user.route.js";
 import authRoutes from "./src/routes/auth.route.js";
 import fileShareRoutes from "./src/routes/fileShare.route.js";
+import itemRoutes from "./src/routes/item.route.js";
 import checkAuthentication from "./src/middlewares/authenticate.middleware.js";
 import {
   cleanupUploadedFile,
@@ -36,6 +37,7 @@ app.use("/directory", checkAuthentication, directoryRoutes);
 app.use("/file", checkAuthentication, fileRoutes);
 app.use("/share", checkAuthentication, fileShareRoutes);
 app.use("/user", checkAuthentication, userRoutes);
+app.use("/item", checkAuthentication, itemRoutes);
 app.use("/auth", authRoutes);
 
 // clean up uploaded file on ANY error (authorization, validation, DB, etc.)
