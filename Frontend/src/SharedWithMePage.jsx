@@ -1,17 +1,16 @@
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-    FaFileAlt,
-    FaArrowLeft,
-    FaEye,
-    FaEdit,
-} from "react-icons/fa";
+import { FaArrowLeft, FaEye, FaEdit } from "react-icons/fa";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import RenameModal from "./components/RenameModal";
 import ShareModal from "./components/ShareModal";
+import FileIcon from "./components/common/FileIcon";
 import { getSharedWithMe } from "./api/share.js";
 import { deleteFile, renameFile, getFileUrl, getDownloadUrl } from "./api/file.js";
 import { sanitizeText } from "./utils/sanitize.js";
+import formatSize from "./utils/formatSize";
+import useModals from "./hooks/useModals";
+import useContextMenu from "./hooks/useContextMenu";
 
 export default function SharedWithMePage() {
     const navigate = useNavigate();
@@ -33,79 +32,38 @@ export default function SharedWithMePage() {
 
     const renameMutation = useMutation({
         mutationFn: ({ id, name }) => renameFile(id, name),
-        onSuccess: invalidateShared,
+        onSuccess: () => {
+            invalidateShared();
+            closeRename();
+        }
     });
 
-    const [activeContextMenu, setActiveContextMenu] = useState(null);
-    const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
+    const {
+        activeContextMenu, contextMenuPos, handleContextMenu
+    } = useContextMenu();
 
-    const [showRenameModal, setShowRenameModal] = useState(false);
-    const [renameFileId, setRenameFileId] = useState(null);
-    const [renameValue, setRenameValue] = useState("");
+    const {
+        showRename, showShare, modalData, openRename, closeRename, openShare, closeShare, setModalData
+    } = useModals();
 
-    const [showShareModal, setShowShareModal] = useState(false);
-    const [shareFileId, setShareFileId] = useState(null);
-    const [shareFileName, setShareFileName] = useState("");
-
-    useEffect(() => {
-        function handleDocumentClick() { setActiveContextMenu(null); }
-        document.addEventListener("click", handleDocumentClick);
-        return () => document.removeEventListener("click", handleDocumentClick);
-    }, []);
-
-    function formatSize(bytes) {
-        if (!bytes) return "—";
-        if (bytes < 1024) return `${bytes} B`;
-        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-    }
-
-    function handleFileClick(fileId) {
+    const handleFileClick = (fileId) => {
         if (activeContextMenu) return;
         window.open(getFileUrl(fileId), "_blank");
-    }
+    };
 
-    function handleContextMenu(e, fileId) {
-        e.stopPropagation();
+    const handleDeleteFile = (fileId) => {
+        if (confirm("Delete this file?")) {
+            deleteMutation.mutate(fileId);
+        }
+    };
+
+    const handleRenameSubmit = (e) => {
         e.preventDefault();
-        if (activeContextMenu === fileId) setActiveContextMenu(null);
-        else { setActiveContextMenu(fileId); setContextMenuPos({ x: e.clientX - 110, y: e.clientY }); }
-    }
-
-    function handleDeleteFile(fileId) {
-        const confirmed = confirm("Delete this file?");
-        if (!confirmed) return;
-        deleteMutation.mutate(fileId);
-        setActiveContextMenu(null);
-    }
-
-    function handleOpenRename(fileId, fileName) {
-        setRenameFileId(fileId);
-        setRenameValue(fileName);
-        setShowRenameModal(true);
-        setActiveContextMenu(null);
-    }
-
-    function handleRenameSubmit(e) {
-        e.preventDefault();
-        renameMutation.mutate(
-            { id: renameFileId, name: sanitizeText(renameValue) },
-            {
-                onSuccess: () => {
-                    setShowRenameModal(false);
-                    setRenameValue("");
-                    setRenameFileId(null);
-                }
-            }
-        );
-    }
-
-    function handleOpenShare(fileId, fileName) {
-        setShareFileId(fileId);
-        setShareFileName(fileName);
-        setShowShareModal(true);
-        setActiveContextMenu(null);
-    }
+        renameMutation.mutate({
+            id: modalData.id,
+            name: sanitizeText(modalData.name)
+        });
+    };
 
     const menuItemClass = "px-5 py-2 cursor-pointer whitespace-nowrap text-gray-700 hover:bg-gray-100";
 
@@ -124,12 +82,22 @@ export default function SharedWithMePage() {
                 </div>
             )}
 
-            {showRenameModal && (
-                <RenameModal renameType="file" renameValue={renameValue} setRenameValue={setRenameValue} onClose={() => setShowRenameModal(false)} onRenameSubmit={handleRenameSubmit} />
+            {showRename && (
+                <RenameModal
+                    renameType="file"
+                    renameValue={modalData.name}
+                    setRenameValue={(name) => setModalData(prev => ({ ...prev, name }))}
+                    onClose={closeRename}
+                    onRenameSubmit={handleRenameSubmit}
+                />
             )}
 
-            {showShareModal && (
-                <ShareModal fileId={shareFileId} fileName={shareFileName} onClose={() => setShowShareModal(false)} />
+            {showShare && (
+                <ShareModal
+                    fileId={modalData.id}
+                    fileName={modalData.name}
+                    onClose={closeShare}
+                />
             )}
 
             {isLoading ? (
@@ -151,7 +119,7 @@ export default function SharedWithMePage() {
                                 onContextMenu={(e) => handleContextMenu(e, fileId)}
                             >
                                 <div className="flex items-center gap-3">
-                                    <FaFileAlt className="text-xl text-blue-600" />
+                                    <FileIcon filename={fileName} isDirectory={false} className="text-xl shrink-0" />
                                     <div className="flex flex-col">
                                         <span className="font-medium text-gray-800">{fileName}</span>
                                         <span className="text-[0.8rem] text-gray-500">{formatSize(entry.file?.size)}</span>
@@ -171,15 +139,15 @@ export default function SharedWithMePage() {
 
                                 {activeContextMenu === fileId && (
                                     <div className="fixed bg-white shadow-md rounded z-[999] py-1" style={{ top: contextMenuPos.y, left: contextMenuPos.x }}>
-                                        <div className={menuItemClass} onClick={(e) => { e.stopPropagation(); window.location.href = getDownloadUrl(fileId); }}>
+                                        <div className={menuItemClass} onClick={(e) => { e.stopPropagation(); window.open(getDownloadUrl(fileId), "_blank"); }}>
                                             Download
                                         </div>
                                         {isEditor && (
                                             <>
-                                                <div className={menuItemClass} onClick={(e) => { e.stopPropagation(); handleOpenRename(fileId, fileName); }}>
+                                                <div className={menuItemClass} onClick={(e) => { e.stopPropagation(); openRename("file", fileId, fileName); }}>
                                                     Rename
                                                 </div>
-                                                <div className={menuItemClass} onClick={(e) => { e.stopPropagation(); handleOpenShare(fileId, fileName); }}>
+                                                <div className={menuItemClass} onClick={(e) => { e.stopPropagation(); openShare(fileId, fileName); }}>
                                                     Share
                                                 </div>
                                                 <div className={menuItemClass} onClick={(e) => { e.stopPropagation(); handleDeleteFile(fileId); }}>

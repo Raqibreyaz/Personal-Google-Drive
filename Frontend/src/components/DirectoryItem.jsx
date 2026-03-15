@@ -1,20 +1,8 @@
-import {
-  FaFolder,
-  FaFilePdf,
-  FaFileImage,
-  FaFileVideo,
-  FaFileArchive,
-  FaFileCode,
-  FaFileAlt,
-} from "react-icons/fa";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import ContextMenu from "../components/ContextMenu";
 import formatSize from "../utils/formatSize";
-
-function formatDate(dateStr) {
-  if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleString();
-}
+import { formatDate } from "../utils/date";
+import FileIcon from "./common/FileIcon";
 
 function DirectoryItem({
   item,
@@ -22,7 +10,6 @@ function DirectoryItem({
   activeContextMenu,
   contextMenuPos,
   handleContextMenu,
-  getFileIcon,
   isUploading,
   uploadProgress,
   handleCancelUpload,
@@ -36,17 +23,6 @@ function DirectoryItem({
   isSelected,
   onToggleSelect,
 }) {
-  function renderFileIcon(iconString) {
-    switch (iconString) {
-      case "pdf": return <FaFilePdf />;
-      case "image": return <FaFileImage />;
-      case "video": return <FaFileVideo />;
-      case "archive": return <FaFileArchive />;
-      case "code": return <FaFileCode />;
-      case "alt": default: return <FaFileAlt />;
-    }
-  }
-
   const isUploadingItem = item._id.startsWith("temp-");
 
   return (
@@ -75,13 +51,11 @@ function DirectoryItem({
             onClick={(e) => e.stopPropagation()}
             className="w-4 h-4 cursor-pointer accent-blue-600 shrink-0"
           />
-          {item.isDirectory ? (
-            <FaFolder className="text-orange-500 text-xl shrink-0" />
-          ) : (
-            <div className="text-blue-500 text-xl shrink-0">
-              {renderFileIcon(getFileIcon(item.name))}
-            </div>
-          )}
+          <FileIcon 
+            filename={item.name} 
+            isDirectory={item.isDirectory} 
+            className="text-xl shrink-0" 
+          />
           <span className={`truncate text-sm font-medium ${isSelected ? "text-blue-900" : "text-gray-700"}`}>
             {item.name}
           </span>
