@@ -12,7 +12,7 @@ function DirectoryItem({
   handleContextMenu,
   isUploading,
   uploadProgress,
-  handleCancelUpload,
+  cancelUpload,
   handleDeleteFile,
   handleDeleteDirectory,
   handleShowDetails,
@@ -89,7 +89,7 @@ function DirectoryItem({
           item={item}
           contextMenuPos={contextMenuPos}
           isUploadingItem={isUploadingItem}
-          handleCancelUpload={handleCancelUpload}
+          cancelUpload={cancelUpload}
           handleDeleteFile={handleDeleteFile}
           handleDeleteDirectory={handleDeleteDirectory}
           handleShowDetails={handleShowDetails}

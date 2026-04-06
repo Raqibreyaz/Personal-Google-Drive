@@ -4,7 +4,7 @@ function ContextMenu({
   item,
   contextMenuPos,
   isUploadingItem,
-  handleCancelUpload,
+  cancelUpload,
   handleDeleteFile,
   handleDeleteDirectory,
   handleShowDetails,
@@ -34,7 +34,7 @@ function ContextMenu({
 
     if (isUploadingItem && item.isUploading) {
       return (
-        <div className={itemClass} onClick={() => handleCancelUpload(item._id)}>
+        <div className={itemClass} onClick={cancelUpload}>
           Cancel Upload
         </div>
       );

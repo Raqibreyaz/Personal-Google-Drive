@@ -10,7 +10,7 @@ import DirectoryList from "./components/DirectoryList";
 import FloatingActionBar from "./components/FloatingActionBar";
 import SelectAllControl from "./components/common/SelectAllControl";
 import { getDirectory, createDirectory, deleteDirectory, renameDirectory } from "./api/directory.js";
-import { deleteFile, renameFile, uploadFile } from "./api/file.js";
+import { deleteFile, renameFile } from "./api/file.js";
 import { bulkDeleteItems } from "./api/item.js";
 import { BASE_URL } from "./api/client.js";
 import { sanitizeText } from "./utils/sanitize.js";
@@ -45,20 +45,20 @@ function DirectoryView() {
   };
 
   const {
-    localFiles, localError, setLocalError, isUploading, progressMap,
-    handleFileSelect, handleCancelUpload
+    uploadingFile, uploadError, isUploading, progress,
+    handleFileSelect, cancelUpload
   } = useUpload(dirId, () => {
     invalidateDirectory();
     invalidateUser();
   });
 
   const combinedItems = useMemo(() => [
-    ...localFiles,
+    ...(uploadingFile ? [uploadingFile] : []),
     ...(directoryData ? [
       ...directoryData.directories.map((d) => ({ ...d, isDirectory: true })),
       ...directoryData.files.map((f) => ({ ...f, isDirectory: false })),
     ].reverse() : []),
-  ], [localFiles, directoryData]);
+  ], [uploadingFile, directoryData]);
 
   const {
     selectedItems, selectedCount, toggleSelect, toggleSelectAll, clearSelection
@@ -146,7 +146,7 @@ function DirectoryView() {
     });
   };
 
-  const errorMessage = localError ||
+  const errorMessage = uploadError ||
     queryError?.message ||
     createDirMutation.error?.message ||
     renameMutation.error?.message ||
@@ -243,8 +243,8 @@ function DirectoryView() {
           contextMenuPos={contextMenuPos}
           handleContextMenu={handleContextMenu}
           isUploading={isUploading}
-          progressMap={progressMap}
-          handleCancelUpload={handleCancelUpload}
+          uploadProgress={progress}
+          cancelUpload={cancelUpload}
           handleDeleteFile={(id, name) => handleDeleteItem("file", id, name)}
           handleDeleteDirectory={(id, name) => handleDeleteItem("directory", id, name)}
           handleShowDetails={openDetails}

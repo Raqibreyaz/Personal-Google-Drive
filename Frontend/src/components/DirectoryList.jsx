@@ -7,8 +7,8 @@ function DirectoryList({
   contextMenuPos,
   handleContextMenu,
   isUploading,
-  progressMap,
-  handleCancelUpload,
+  uploadProgress,
+  cancelUpload,
   handleDeleteFile,
   handleDeleteDirectory,
   handleShowDetails,
@@ -22,7 +22,6 @@ function DirectoryList({
   return (
     <div className="flex flex-col gap-2.5 mt-5">
       {items.map((item) => {
-        const uploadProgress = progressMap[item._id] || 0;
         const isSelected = item.isDirectory
           ? selectedItems.dirs.includes(item._id)
           : selectedItems.files.includes(item._id);
@@ -37,7 +36,7 @@ function DirectoryList({
             handleContextMenu={handleContextMenu}
             isUploading={isUploading}
             uploadProgress={uploadProgress}
-            handleCancelUpload={handleCancelUpload}
+            cancelUpload={cancelUpload}
             handleDeleteFile={handleDeleteFile}
             handleDeleteDirectory={handleDeleteDirectory}
             handleShowDetails={handleShowDetails}

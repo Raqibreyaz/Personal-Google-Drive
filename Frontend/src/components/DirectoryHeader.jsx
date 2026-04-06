@@ -125,10 +125,10 @@ function DirectoryHeader({
         <button className={iconBtnClass} title="Create Folder" onClick={onCreateFolderClick} disabled={disabled}>
           <FaFolderPlus />
         </button>
-        <button className={iconBtnClass} title="Upload Files" onClick={onUploadFilesClick} disabled={disabled}>
+        <button className={iconBtnClass} title="Upload File" onClick={onUploadFilesClick} disabled={disabled}>
           <FaUpload />
         </button>
-        <input ref={fileInputRef} id="file-upload" type="file" style={{ display: "none" }} multiple onChange={handleFileSelect} />
+        <input ref={fileInputRef} id="file-upload" type="file" style={{ display: "none" }} onChange={handleFileSelect} />
 
         <div className="relative" ref={userMenuRef}>
           <button className={iconBtnClass} title="User Menu" onClick={handleUserIconClick} disabled={disabled}>
