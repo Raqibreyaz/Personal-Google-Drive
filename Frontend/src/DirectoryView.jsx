@@ -10,9 +10,8 @@ import DirectoryList from "./components/DirectoryList";
 import FloatingActionBar from "./components/FloatingActionBar";
 import SelectAllControl from "./components/common/SelectAllControl";
 import { getDirectory, createDirectory, deleteDirectory, renameDirectory } from "./api/directory.js";
-import { deleteFile, renameFile } from "./api/file.js";
+import { deleteFile, renameFile, getFileUrl } from "./api/file.js";
 import { bulkDeleteItems } from "./api/item.js";
-import { BASE_URL } from "./api/client.js";
 import { sanitizeText } from "./utils/sanitize.js";
 import { useState, useEffect, useRef, useMemo } from "react";
 import useModals from "./hooks/useModals";
@@ -116,7 +115,7 @@ function DirectoryView() {
   // Handlers
   const handleRowClick = (type, id) => {
     if (type === "directory") navigate(`/directory/${id}`);
-    else window.location.href = `${BASE_URL}/file/${id}`;
+    else window.location.href = getFileUrl(id);
   };
 
   const handleDeleteItem = (type, id, name) => {
@@ -251,7 +250,6 @@ function DirectoryView() {
           openRenameModal={openRename}
           onShare={openShare}
           onManageAccess={openAccess}
-          BACKEND_URI={BASE_URL}
           selectedItems={selectedItems}
           handleToggleSelect={toggleSelect}
         />

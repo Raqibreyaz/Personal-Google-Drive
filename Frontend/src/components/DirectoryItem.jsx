@@ -19,7 +19,6 @@ function DirectoryItem({
   openRenameModal,
   onShare,
   onManageAccess,
-  BACKEND_URI,
   isSelected,
   onToggleSelect,
 }) {
@@ -96,7 +95,6 @@ function DirectoryItem({
           openRenameModal={openRenameModal}
           onShare={onShare}
           onManageAccess={onManageAccess}
-          BACKEND_URI={BACKEND_URI}
         />
       )}
     </div>

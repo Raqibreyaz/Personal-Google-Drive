@@ -15,7 +15,6 @@ function DirectoryList({
   openRenameModal,
   onShare,
   onManageAccess,
-  BACKEND_URI,
   selectedItems,
   handleToggleSelect,
 }) {
@@ -43,7 +42,6 @@ function DirectoryList({
             openRenameModal={openRenameModal}
             onShare={onShare}
             onManageAccess={onManageAccess}
-            BACKEND_URI={BACKEND_URI}
             isSelected={isSelected}
             onToggleSelect={() => handleToggleSelect(item._id, item.isDirectory)}
           />

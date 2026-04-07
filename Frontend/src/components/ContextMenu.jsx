@@ -1,4 +1,4 @@
-import { BASE_URL } from "../api/client";
+import { getFileUrl } from "../api/file";
 
 function ContextMenu({
   item,
@@ -42,7 +42,7 @@ function ContextMenu({
 
     return (
       <>
-        <div className={itemClass} onClick={() => (window.open(`${BASE_URL}/file/${item._id}?action=download`, "_blank"))}>
+        <div className={itemClass} onClick={() => window.open(getFileUrl(item._id) + "?action=download", "_blank")}>
           Download
         </div>
         <div className={itemClass} onClick={() => openRenameModal("file", item._id, item.name)}>
@@ -71,4 +71,4 @@ function ContextMenu({
   );
 }
 
-export default ContextMenu;
+export default ContextMenu;

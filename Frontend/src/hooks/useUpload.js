@@ -8,38 +8,50 @@ export default function useUpload(dirId, onUploadSuccess) {
   const [isUploading, setIsUploading] = useState(false);
   const abortRef = useRef(null);
 
-  const handleFileSelect = useCallback((e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = "";
+  const handleFileSelect = useCallback(
+    (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      e.target.value = "";
 
-    const tempId = `temp-${Date.now()}-${Math.random()}`;
-    const tempItem = { file, name: file.name, _id: tempId, isUploading: true, isDirectory: false };
+      console.log("going to upload file", file.name, "into", dirId);
+      // return;
 
-    setUploadingFile(tempItem);
-    setProgress(0);
-    setIsUploading(true);
-    setUploadError("");
+      const tempId = `temp-${Date.now()}-${Math.random()}`;
+      const tempItem = {
+        file,
+        name: file.name,
+        _id: tempId,
+        isUploading: true,
+        isDirectory: false,
+      };
 
-    const { abort } = uploadFile(dirId, file, {
-      onProgress: (p) => setProgress(p),
-      onLoad: () => {
-        setUploadingFile(null);
-        setIsUploading(false);
-        setProgress(0);
-        abortRef.current = null;
-        if (onUploadSuccess) onUploadSuccess();
-      },
-      onError: (errMsg) => {
-        setUploadingFile(null);
-        setIsUploading(false);
-        setProgress(0);
-        abortRef.current = null;
-        setUploadError(errMsg);
-      },
-    });
-    abortRef.current = abort;
-  }, [dirId, onUploadSuccess]);
+      setUploadingFile(tempItem);
+      setProgress(0);
+      setIsUploading(true);
+      setUploadError("");
+
+      const { abort } = uploadFile(dirId, file, {
+        onProgress: (p) => setProgress(p),
+        onLoad: () => {
+          setUploadingFile(null);
+          setIsUploading(false);
+          setProgress(0);
+          abortRef.current = null;
+          if (onUploadSuccess) onUploadSuccess();
+        },
+        onError: (errMsg) => {
+          setUploadingFile(null);
+          setIsUploading(false);
+          setProgress(0);
+          abortRef.current = null;
+          setUploadError(errMsg);
+        },
+      });
+      abortRef.current = abort;
+    },
+    [dirId, onUploadSuccess],
+  );
 
   const cancelUpload = useCallback(() => {
     if (abortRef.current) abortRef.current();

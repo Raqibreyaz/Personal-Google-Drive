@@ -9,10 +9,7 @@ import authRoutes from "./src/routes/auth.route.js";
 import fileShareRoutes from "./src/routes/fileShare.route.js";
 import itemRoutes from "./src/routes/item.route.js";
 import checkAuthentication from "./src/middlewares/authenticate.middleware.js";
-import {
-  cleanupUploadedFile,
-  globalErrorHandler,
-} from "./src/middlewares/errorHandler.middleware.js";
+import { globalErrorHandler } from "./src/middlewares/errorHandler.middleware.js";
 
 const app = express();
 
@@ -39,9 +36,6 @@ app.use("/share", checkAuthentication, fileShareRoutes);
 app.use("/user", checkAuthentication, userRoutes);
 app.use("/item", checkAuthentication, itemRoutes);
 app.use("/auth", authRoutes);
-
-// clean up uploaded file on ANY error (authorization, validation, DB, etc.)
-app.use(cleanupUploadedFile);
 
 // global error handler — consistent { error, errorCode } response
 app.use(globalErrorHandler);

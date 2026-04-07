@@ -1,6 +1,4 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-import appRootPath from "app-root-path";
+import { deleteObject } from "./aws.service.js";
 import mongoose from "mongoose";
 import Directory from "../models/directory.model.js";
 import File from "../models/file.model.js";
@@ -25,12 +23,8 @@ export const bulkDeleteItemsService = async (selectedDirs, selectedFiles) => {
 
   // Add specifically selected files to deletion task
   for (const { _id: fileId, extname } of selectedFiles) {
-    const filePath = path.join(
-      appRootPath.path,
-      "storage",
-      fileId.toString() + extname
-    );
-    fileInfos.push({ fileId, filePath });
+    const objectKey = fileId.toString() + extname;
+    fileInfos.push({ fileId, objectKey });
   }
 
   // Calculate total size to be decreased
@@ -51,7 +45,7 @@ export const bulkDeleteItemsService = async (selectedDirs, selectedFiles) => {
       await File.deleteMany({ _id: { $in: fileIds } }, { session });
       await FileShare.deleteMany({ file: { $in: fileIds } }, { session });
     }
-    
+
     if (dirIds.length) {
       await Directory.deleteMany({ _id: { $in: dirIds } }, { session });
     }
@@ -68,8 +62,8 @@ export const bulkDeleteItemsService = async (selectedDirs, selectedFiles) => {
     session.endSession();
   }
 
-  // Disk cleanup AFTER commit (orphan files are harmless)
-  for (const { filePath } of fileInfos) {
-    await fs.rm(filePath, { force: true }).catch(() => {});
+  // S3 cleanup AFTER commit (orphan files are harmless)
+  for (const { objectKey } of fileInfos) {
+    await deleteObject(objectKey).catch(() => {});
   }
 };

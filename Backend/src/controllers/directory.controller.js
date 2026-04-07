@@ -27,7 +27,10 @@ export const getDirectoryContents = async (req, res, next) => {
   if (!dir) throw new ApiError(404, "Directory not found!", DIR_NOT_FOUND);
 
   // get all files where parent is 'dir'
-  const files = await File.find({ parentDir: dir._id })
+  const files = await File.find({
+    parentDir: dir._id,
+    isUploading: { $ne: true },
+  })
     .select("-parentDir -user -__v")
     .lean();
 

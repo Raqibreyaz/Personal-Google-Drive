@@ -32,7 +32,7 @@ router.param("parentDirId", validateId);
 
 /* for [data_owner, viewer, editor] only */
 router.post(
-  "/initiate/{:parentDirID}",
+  "/initiate/{:parentDirId}",
   uploadLimiter,
   validate(initiateFileUploadSchema),
   throttleRequest("WRITE"),
@@ -82,7 +82,7 @@ router.delete(
 
 /* for [data_owner, app_owner, admin] only */
 router.post(
-  "/initiate/:userId/{:parentDirID}",
+  "/initiate/:userId/{:parentDirId}",
   uploadLimiter,
   validate(initiateFileUploadSchema),
   throttleRequest("WRITE"),

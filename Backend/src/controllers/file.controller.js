@@ -1,8 +1,6 @@
 import mongoose from "mongoose";
 import dataSanitizer from "../helpers/dataSanitizer.js";
-import fs, { access } from "fs/promises";
 import path from "node:path";
-import appRootPath from "app-root-path";
 import { ObjectId } from "mongodb";
 import ApiError from "../helpers/apiError.js";
 import Directory from "../models/directory.model.js";
@@ -20,9 +18,14 @@ import {
 import {
   createObjectPresignedUrl,
   deleteObject,
+  getObjectPresignedUrl,
   getObjectSize,
   renameObject,
 } from "../services/aws.service.js";
+import {
+  SAFE_INLINE_TYPES,
+  RENDER_AS_TEXT,
+} from "../constants/fileRenderConstants.js";
 
 export const getFileContents = async (req, res, next) => {
   const fileId = req.params.fileId;
@@ -30,110 +33,31 @@ export const getFileContents = async (req, res, next) => {
   const file = req.fileDoc ? req.fileDoc : await File.findById(fileId).lean();
   if (!file) throw new ApiError(404, "File not found!", FILE_NOT_FOUND);
 
-  const fullpath = path.join(
-    appRootPath.path,
-    "storage/",
-    fileId + file.extname,
-  );
-
-  await access(fullpath).catch(() => {
-    throw new ApiError(
-      404,
-      "File data is missing from storage!",
-      FILE_MISSING_STORAGE,
-    );
-  });
-
   // prevent mime sniffing when content-type is not provided
   res.set("X-Content-Type-Options", "nosniff");
 
-  // safe types can render inline; everything else is neutralized (prevents stored XSS)
-  const SAFE_INLINE_TYPES = new Set([
-    ".png",
-    ".jpg",
-    ".jpeg",
-    ".gif",
-    ".webp",
-    ".bmp",
-    ".ico",
-    ".avif",
-    ".mp4",
-    ".webm",
-    ".mov",
-    ".mp3",
-    ".wav",
-    ".ogg",
-    ".aac",
-    ".m4a",
-    ".flac",
-    ".pdf",
-    ".txt",
-    ".csv",
-  ]);
+  let renderAsText = false;
+  let toDownload = req.query.action === "download";
 
-  // textual types rendered as plain text (visible but scripts can't execute)
-  const RENDER_AS_TEXT = new Set([
-    ".html",
-    ".htm",
-    ".svg",
-    ".xml",
-    ".xhtml",
-    ".js",
-    ".mjs",
-    ".cjs",
-    ".jsx",
-    ".ts",
-    ".tsx",
-    ".css",
-    ".scss",
-    ".less",
-    ".json",
-    ".yaml",
-    ".yml",
-    ".toml",
-    ".py",
-    ".java",
-    ".c",
-    ".cpp",
-    ".h",
-    ".go",
-    ".rs",
-    ".rb",
-    ".php",
-    ".sh",
-    ".bat",
-    ".ps1",
-    ".md",
-    ".log",
-    ".ini",
-    ".cfg",
-    ".conf",
-    ".env",
-  ]);
-
-  const ext = file.extname.toLowerCase();
-  if (SAFE_INLINE_TYPES.has(ext)) {
-    res.set("Content-Disposition", `inline; filename="${file.name}"`);
-  } else if (RENDER_AS_TEXT.has(ext)) {
-    res.set("Content-Type", "text/plain; charset=utf-8");
-    res.set("Content-Disposition", `inline; filename="${file.name}"`);
-  } else {
-    // unknown/binary types — force download
-    res.set("Content-Disposition", `attachment; filename="${file.name}"`);
+  if (!toDownload) {
+    const ext = file.extname.toLowerCase();
+    if (SAFE_INLINE_TYPES.has(ext)) {
+    } else if (RENDER_AS_TEXT.has(ext)) {
+      renderAsText = true;
+    } else {
+      // unknown/binary types — force download
+      toDownload = true;
+    }
   }
 
-  if (req.query.action === "download") {
-    return res.download(fullpath, file.name);
-  }
+  const fileUrl = await getObjectPresignedUrl(
+    fileId + file.extname,
+    file.name,
+    toDownload,
+    renderAsText,
+  );
 
-  res.sendFile(fullpath, (err) => {
-    if (err && !res.headersSent)
-      throw new ApiError(
-        500,
-        `File Sending failed: ${err.message}`,
-        FILE_SEND_FAILED,
-      );
-  });
+  res.redirect(302, fileUrl);
 };
 
 export const initiateFileUpload = async (req, res, next) => {
@@ -280,7 +204,9 @@ export const renameFile = async (req, res, next) => {
   }
 
   // updating filename in DB
-  await File.findByIdAndUpdate(file._id, { $set: { name: newFilename } });
+  await File.findByIdAndUpdate(file._id, {
+    $set: { name: newFilename, extname: newExt },
+  });
 
   // renaming when extension differs
   if (oldExt != newExt) {
@@ -288,7 +214,9 @@ export const renameFile = async (req, res, next) => {
       await renameObject(fileId + oldExt, fileId + newExt);
     } catch (error) {
       // rollback changes
-      await File.findByIdAndUpdate(file._id, { $set: { name: file.name } });
+      await File.findByIdAndUpdate(file._id, {
+        $set: { name: file.name, extname: oldExt },
+      });
       throw error;
     }
   }

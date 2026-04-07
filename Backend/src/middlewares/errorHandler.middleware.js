@@ -5,17 +5,6 @@ import ApiError from "../helpers/apiError.js";
 import { INVALID_INPUT, VALIDATION_FAILED, UNKNOWN_ERROR } from "../constants/errorCodes.js";
 
 /**
- * Clean up uploaded file on ANY error (authorization, validation, DB, etc.)
- */
-export function cleanupUploadedFile(err, req, res, next) {
-  if (req.file) {
-    const fullpath = path.join(appRootPath.path, "storage", req.file.filename);
-    fs.rm(fullpath, { force: true }).catch(() => {});
-  }
-  next(err);
-}
-
-/**
  * Global error handler — catches all errors and sends a consistent JSON response.
  * Shape: { error: "message", errorCode: "CODE" }
  */

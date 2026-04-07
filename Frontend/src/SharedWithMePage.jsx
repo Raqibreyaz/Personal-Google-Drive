@@ -6,7 +6,7 @@ import RenameModal from "./components/RenameModal";
 import ShareModal from "./components/ShareModal";
 import FileIcon from "./components/common/FileIcon";
 import { getSharedWithMe } from "./api/share.js";
-import { deleteFile, renameFile, getFileUrl, getDownloadUrl } from "./api/file.js";
+import { deleteFile, renameFile, getFileUrl } from "./api/file.js";
 import { sanitizeText } from "./utils/sanitize.js";
 import formatSize from "./utils/formatSize";
 import useModals from "./hooks/useModals";
@@ -139,7 +139,7 @@ export default function SharedWithMePage() {
 
                                 {activeContextMenu === fileId && (
                                     <div className="fixed bg-white shadow-md rounded z-[999] py-1" style={{ top: contextMenuPos.y, left: contextMenuPos.x }}>
-                                        <div className={menuItemClass} onClick={(e) => { e.stopPropagation(); window.open(getDownloadUrl(fileId), "_blank"); }}>
+                                        <div className={menuItemClass} onClick={(e) => { e.stopPropagation(); window.open(getFileUrl(fileId), "_blank"); }}>
                                             Download
                                         </div>
                                         {isEditor && (
