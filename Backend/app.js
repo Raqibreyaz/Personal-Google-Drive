@@ -13,6 +13,8 @@ import planRoutes from "./src/routes/plan.route.js";
 import checkAuthentication from "./src/middlewares/authenticate.middleware.js";
 import { globalErrorHandler } from "./src/middlewares/errorHandler.middleware.js";
 
+import "./src/services/taskScheduler.service.js";
+
 const app = express();
 
 // add database access

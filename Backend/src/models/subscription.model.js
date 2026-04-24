@@ -5,13 +5,15 @@ const schema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
+    unique: true,
   },
-  plan: {
+  planId: {
     type: String,
     required: true,
   },
   razorpaySubscriptionId: {
     type: String,
+    unique: true,
     required: true,
   },
   billingCycle: {
@@ -40,6 +42,10 @@ const schema = new mongoose.Schema({
   cancelAtPeriodEnd: {
     type: Boolean,
     default: false,
+  },
+  graceEndsAt: {
+    type: Date,
+    default: null,
   },
 });
 

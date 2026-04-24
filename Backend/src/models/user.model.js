@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import Role from "../constants/role.js";
 import Provider from "../constants/provider.js";
+import { PLANS } from "../config/plans.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -59,10 +60,10 @@ const userSchema = new mongoose.Schema(
     },
     maxStorageInBytes: {
       type: Number,
-      default: 1 * 1024 ** 3, //1GB
+      default: PLANS.free.storageQuotaBytes,
     },
-    subscriptionId: {
-      type: String,
+    subscription: {
+      type: mongoose.Schema.Types.ObjectId,
       default: null,
     },
     isDeleted: {

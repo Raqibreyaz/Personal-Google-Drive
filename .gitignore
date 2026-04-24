@@ -24,8 +24,8 @@ dist-ssr
 *.sw?
 storage
 *DB.json
-*logs.txt
+logs.txt
 .env
 *.resolved
 *.pem
-razorpay-integration-upload-design-doc.md
+Events-Flow.md

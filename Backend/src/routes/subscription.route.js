@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  cancelSubscription,
   createSubscription,
   getSubscription,
   razorpayWebhook,
@@ -11,6 +12,8 @@ const router = express.Router();
 router.post("/", checkAuthentication, createSubscription);
 
 router.get("/", checkAuthentication, getSubscription);
+
+router.put("/:id/cancel", checkAuthentication, cancelSubscription);
 
 router.post("/events", razorpayWebhook);
 

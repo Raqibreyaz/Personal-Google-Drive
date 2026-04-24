@@ -39,7 +39,6 @@ export default async function sendOtpService(email) {
     to: email,
     subject: "Storage App OTP",
     html,
-    attachments,
   });
   console.log(info.messageId);
 

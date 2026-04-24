@@ -1,0 +1,13 @@
+features:
+  - feature: show file or directory path from root directory in details popup
+  - how:
+
+  - feature: show recursive count of directories and files, a directory has
+  - how:
+
+issues:
+  - issue: multer was not checking for file upload limit size while file upload in progress, it checks after getting whole file
+  - fix:
+
+  - issue: loading razorpay checkout script from the very start increases load time
+  - fix: loaded the script dynamically when user visits plans page + added id so to avoid duplicate addition

@@ -7,6 +7,7 @@ import Directory from "../models/directory.model.js";
 import User from "../models/user.model.js";
 import File from "../models/file.model.js";
 import FileShare from "../models/fileShare.model.js";
+import Subscription from "../models/subscription.model.js";
 import updateParentSize from "../helpers/updateParentSize.js";
 import {
   FILE_NOT_FOUND,
@@ -26,6 +27,7 @@ import {
   SAFE_INLINE_TYPES,
   RENDER_AS_TEXT,
 } from "../constants/fileRenderConstants.js";
+import { PLANS } from "../config/plans.js";
 
 export const getFileContents = async (req, res, next) => {
   const fileId = req.params.fileId;
@@ -73,12 +75,37 @@ export const initiateFileUpload = async (req, res, next) => {
 
   const user = await User.findById(userId).lean();
   const rootDir = await Directory.findById(user.storageDir).lean();
+  let effectiveQuota = user.maxStorageInBytes;
+
+  const subscription = await Subscription.findOne({ user: userId }).lean();
+  if (subscription.razorpaySubscriptionId && subscription.status !== "active") {
+    if (["paused", "past_due", "in_grace"].includes(subscription.status))
+      throw new ApiError(
+        403,
+        "Upload not allowed due to inactive subscription!",
+      );
+
+    const graceExpired =
+      subscription.graceEndsAt && subscription.graceEndsAt <= new Date();
+
+    if (
+      subscription.status === "awaiting_activation" ||
+      (subscription.status === "cancelled" && graceExpired)
+    ) {
+      effectiveQuota = PLANS.free.storageQuotaBytes;
+    }
+  }
 
   const usedStorageInBytes = rootDir?.size || 0;
-  const maxStorageInBytes = user.maxStorageInBytes;
+  const maxStorageInBytes = effectiveQuota;
   const availableSpace = Math.max(0, maxStorageInBytes - usedStorageInBytes);
   const effectiveMaxLimit = Math.min(MAX_FILE_SIZE_LIMIT, availableSpace);
 
+  if (usedStorageInBytes > maxStorageInBytes)
+    throw new ApiError(
+      400,
+      "Storage Quota Over used, delete files to continue!",
+    );
   if (effectiveMaxLimit < fileSize) {
     throw new ApiError(413, "File Too Large!", "FILE_SIZE_LIMIT_EXCEEDED");
   }
@@ -93,9 +120,14 @@ export const initiateFileUpload = async (req, res, next) => {
   const fileExt = path.extname(fileName);
 
   // get the parentDir or assign the root directory
-  const parentDir = parentDirId
-    ? await Directory.findOne({ _id: parentDirId, user: userId }).lean()
-    : rootDir;
+  let parentDir = rootDir;
+  if (parentDirId)
+    parentDir = await Directory.findOne({
+      _id: parentDirId,
+      user: userId,
+    }).lean();
+
+  // throw when given directory doesn't exist
   if (!parentDir)
     throw new ApiError(
       404,
