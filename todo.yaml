@@ -1,5 +1,7 @@
 TODO:
-  - upgrading/downgrading plan
+  - write notes on plan upgrade/downgrade using razorpay
+  - adding user's dashboard to manage subscription states,user profiles,invoices etc
+  - align the frontend with the changes done in backend for subscriptions
   - return free plan subscription from /get-subscription when no subscription happened yet
   - import from google drive
   - directory sharing functionality with the help of path property
@@ -15,7 +17,6 @@ LATER:
   - ErrorCode fixing in Error Responses
   - Move/copy files/directories from one directory to other
   - fix downloading and filenaming problem
-  - allow upload when consumed space comes under free plan but wait... data can be lost on cron job? no, we are not deleting user's files yet
   - put user's files to glacier storage for low cost where needed
   - handle case where user has paused subscription from too long
 
@@ -54,3 +55,9 @@ DONE:
       - downgraded the user to free plan after the grace period expiry
   - past_due & in_grace:
       - alert the user and start retry/grace logic
+  - upgrading/downgrading plan
+  - what happens when by any means upgrading payment remains pending so webhook will receive pending event right? so it will update the subscription to pending, but i think should it re request for the subscription updation instead? no upgrading is a separate logic and this will not usually possible
+  - we are not using scheduled subscription updation right now
+  - what is the current_start,current_end,billingCycle should be in this subscription updation case? take it from webhook event
+  - what status does the subscription updation returns? the existing status of the subscription
+  - dont allow user to downgrade if consumed space is more than the plan's capacity space

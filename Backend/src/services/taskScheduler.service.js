@@ -1,7 +1,7 @@
 /*
 in_grace, cancelled-with-grace
 - both gets a grace period, so on expiry of that, we will demote the user to free plan + notify the user on demotion through email
-- before grace expiry , warn users by notifying through emaial
+- before grace expiry , warn users by notifying through email
 */
 
 import cron from "node-cron";

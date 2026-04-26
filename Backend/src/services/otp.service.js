@@ -1,17 +1,6 @@
-import nodemailer from "nodemailer";
 import crypto from "crypto";
 import OTP from "../models/otp.model.js";
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    type: "OAuth2",
-    user: process.env.NODEMAILER_EMAIL,
-    refreshToken: process.env.NODEMAILER_REFRESH_TOKEN,
-    clientId: process.env.NODEMAILER_CLIENT_ID,
-    clientSecret: process.env.NODEMAILER_CLIENT_SECRET,
-  },
-});
+import sendEmail from "./email.service.js";
 
 export default async function sendOtpService(email) {
   const otp = crypto.randomInt(100000, 999999);
@@ -34,13 +23,7 @@ export default async function sendOtpService(email) {
     </div>
   `;
 
-  const info = await transporter.sendMail({
-    from: `Storage App ${process.env.NODEMAILER_EMAIL}`,
-    to: email,
-    subject: "Storage App OTP",
-    html,
-  });
-  console.log(info.messageId);
+  const messageId = await sendEmail(email, "Storage App OTP", html);
 
-  return { success: true, message: "OTP sent successfully!" };
+  return { success: true, message: "OTP sent successfully!", messageId };
 }

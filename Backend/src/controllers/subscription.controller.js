@@ -6,8 +6,10 @@ import {
 } from "../config/plans.js";
 import Subscription from "../models/subscription.model.js";
 import User from "../models/user.model.js";
+import Directory from "../models/directory.model.js";
 import ApiError from "../helpers/apiError.js";
 import WebhookEvent from "../models/webhookEvent.model.js";
+import formatSize from "../helpers/formatSize.js";
 
 const rzp = new Razorpay({
   key_id: process.env.RZP_KEY_ID,
@@ -47,7 +49,7 @@ export const createSubscription = async (req, res) => {
     });
 
     razorpaySubscriptionId = razorpaySubscription.id;
-  } else if (fetchedSubscription.status !== "created")
+  } else if (fetchedSubscription.status !== "awaiting_activation")
     throw new ApiError(400, "you are already subscribed!");
 
   res.json({
@@ -119,6 +121,47 @@ export const cancelSubscription = async (req, res) => {
   });
 };
 
+export const updateSubscription = async (req, res) => {
+  const rootDirId = req.session.user.storageDir;
+  const { planKey } = req.body;
+  const plan = getPlanByKey(planKey);
+
+  const storedSubscriptionId = req.session.user.subscription;
+  if (!storedSubscriptionId)
+    throw new ApiError(400, "No subscription exist to be updated!");
+
+  const storedSubscription =
+    await Subscription.findById(storedSubscriptionId).lean();
+
+  if (storedSubscription.status !== "active")
+    throw new ApiError(400, "Current Subscription must be active to update!");
+
+  if (storedSubscription.planId === plan.razorpayPlanId)
+    throw new ApiError(400, "Subscription already active on the chosen plan!");
+
+  // user can't downgrade if consumed space is more than chosen plans capacity
+  const { size: consumedSpace } = await Directory.findById(rootDirId).lean();
+  if (plan.storageQuotaBytes < consumedSpace)
+    throw new ApiError(
+      400,
+      `${formatSize(consumedSpace - plan.storageQuotaBytes)} need to be deleted to downgrade`,
+    );
+
+  const result = await rzp.subscriptions.update(
+    storedSubscription.razorpaySubscriptionId,
+    {
+      plan_id: plan.razorpayPlanId,
+      customer_notify: true,
+      schedule_change_at: "now",
+    },
+  );
+
+  res.json({
+    message: "Plan updated successfully.",
+    status: result.status,
+  });
+};
+
 export const razorpayWebhook = async (req, res) => {
   const signature = req.headers["x-razorpay-signature"];
   const eventId = req.headers["x-razorpay-event-id"];
@@ -129,143 +172,179 @@ export const razorpayWebhook = async (req, res) => {
     return res.sendStatus(200);
 
   const bodyString = JSON.stringify(req.body);
+
+  // send bad status if event is not from razorpay
   if (
-    Razorpay.validateWebhookSignature(
+    !Razorpay.validateWebhookSignature(
       bodyString,
       signature,
       process.env.RZP_WEBHOOK_SECRET,
     )
-  ) {
-    const subscriptionEntity = req.body.payload.subscription.entity;
-    const eventType = req.body.event;
-    const status = subscriptionEntity.status;
-    const razorpaySubscriptionId = subscriptionEntity.id;
-    const planId = subscriptionEntity.plan_id;
-    const currentPeriodStart = subscriptionEntity.current_start;
-    const currentPeriodEnd = subscriptionEntity.current_end;
+  )
+    return res.sendStatus(400);
 
-    const plan = getPlanByRazorpayPlanId(planId);
-    const storedSubscription = await Subscription.findOne({
-      razorpaySubscriptionId,
-    }).lean();
+  const subscriptionEntity = req.body.payload.subscription.entity;
+  const eventType = req.body.event;
+  const status = subscriptionEntity.status;
+  const razorpaySubscriptionId = subscriptionEntity.id;
+  const planId = subscriptionEntity.plan_id;
 
-    await WebhookEvent.insertOne({
-      eventId,
-      eventType,
-      planId,
-      rawPayload: req.body,
-      razorpaySubscriptionId,
-      receivedAt: new Date(),
-      provider: "razorpay",
-      processingStatus: "pending",
-    });
+  const currentPeriodStart = subscriptionEntity.current_start
+    ? new Date(subscriptionEntity.current_start * 1000)
+    : null;
+  const currentPeriodEnd = subscriptionEntity.current_end
+    ? new Date(subscriptionEntity.current_end * 1000)
+    : null;
 
-    console.log("************");
-    console.log("event occured:");
-    console.log(planId);
-    console.log(plan.planKey);
-    console.log(eventType);
-    console.log(razorpaySubscriptionId);
-    console.log("************");
+  const plan = getPlanByRazorpayPlanId(planId);
+  const {
+    user: userId,
+    _id: storedSubscriptionId,
+    currentPeriodEnd: storedSubscriptionPeriodEnd,
+    planId: storedPlanId,
+  } = await Subscription.findOne({
+    razorpaySubscriptionId,
+  }).lean();
 
-    switch (eventType) {
-      case "subscription.activated":
+  await WebhookEvent.insertOne({
+    eventId,
+    eventType,
+    planId,
+    rawPayload: req.body,
+    razorpaySubscriptionId,
+    receivedAt: new Date(),
+    provider: "razorpay",
+    processingStatus: "pending",
+  });
+
+  console.log("************");
+  console.log("event occured:");
+  console.log(planId);
+  console.log(plan.planKey);
+  console.log(eventType);
+  console.log(razorpaySubscriptionId);
+  console.log("************");
+
+  switch (eventType) {
+    case "subscription.activated":
+      await Subscription.updateOne(
+        { razorpaySubscriptionId },
+        {
+          $set: {
+            status: "active",
+            currentPeriodStart,
+            currentPeriodEnd,
+          },
+        },
+      );
+      await User.updateOne(
+        { _id: userId },
+        {
+          $set: {
+            maxStorageInBytes: plan.storageQuotaBytes,
+            subscription: storedSubscriptionId,
+          },
+        },
+      );
+      break;
+
+    case "subscription.charged":
+      // update start/end dates on subscription renewal
+      await Subscription.updateOne(
+        { razorpaySubscriptionId },
+        {
+          $set: {
+            status: "active",
+            currentPeriodStart,
+            currentPeriodEnd,
+          },
+        },
+      );
+      break;
+
+    case "subscription.pending":
+      await Subscription.updateOne(
+        { razorpaySubscriptionId },
+        {
+          $set: { status: "past_due" },
+        },
+      );
+      break;
+
+    case "subscription.halted":
+      const threeDaysLater = Date.now() + 1000 * 3 * 86400;
+      await Subscription.updateOne(
+        { razorpaySubscriptionId },
+        {
+          $set: { status: "in_grace", graceEndsAt: new Date(threeDaysLater) },
+        },
+      );
+      break;
+
+    case "subscription.paused":
+      await Subscription.updateOne(
+        { razorpaySubscriptionId },
+        {
+          $set: { status: "paused" },
+        },
+      );
+      break;
+
+    case "subscription.resumed":
+      await Subscription.updateOne(
+        { razorpaySubscriptionId },
+        {
+          $set: { status: "active" },
+        },
+      );
+      break;
+
+    case "subscription.cancelled":
+      await Subscription.updateOne(
+        { razorpaySubscriptionId },
+        {
+          $set: {
+            status: "cancelled",
+            cancelAtPeriodEnd: true,
+            graceEndsAt: storedSubscriptionPeriodEnd,
+          },
+        },
+      );
+      break;
+
+    case "subscription.updated":
+      if (status === "active" && planId !== storedPlanId) {
         await Subscription.updateOne(
           { razorpaySubscriptionId },
           {
             $set: {
-              status: "active",
-              currentPeriodStart: new Date(currentPeriodStart * 1000),
-              currentPeriodEnd: new Date(currentPeriodEnd * 1000),
+              planId,
+              currentPeriodStart,
+              currentPeriodEnd,
+              billingCycle: plan.billingCycle,
             },
           },
         );
         await User.updateOne(
-          { _id: storedSubscription.user },
+          { _id: userId },
           {
             $set: {
               maxStorageInBytes: plan.storageQuotaBytes,
-              subscription: storedSubscription._id,
+              subscription: storedSubscriptionId,
             },
           },
         );
-        break;
+      }
+      break;
 
-      case "subscription.charged":
-        // update start/end dates on subscription renewal
-        await Subscription.updateOne(
-          { razorpaySubscriptionId },
-          {
-            $set: {
-              status: "active",
-              currentPeriodStart: new Date(currentPeriodStart * 1000),
-              currentPeriodEnd: new Date(currentPeriodEnd * 1000),
-            },
-          },
-        );
-        break;
-
-      case "subscription.pending":
-        await Subscription.updateOne(
-          { razorpaySubscriptionId },
-          {
-            $set: { status: "past_due" },
-          },
-        );
-        break;
-
-      case "subscription.halted":
-        const threeDaysLater = Date.now() + 1000 * 3 * 86400;
-        await Subscription.updateOne(
-          { razorpaySubscriptionId },
-          {
-            $set: { status: "in_grace", graceEndsAt: new Date(threeDaysLater) },
-          },
-        );
-        break;
-
-      case "subscription.paused":
-        await Subscription.updateOne(
-          { razorpaySubscriptionId },
-          {
-            $set: { status: "paused" },
-          },
-        );
-        break;
-
-      case "subscription.resumed":
-        await Subscription.updateOne(
-          { razorpaySubscriptionId },
-          {
-            $set: { status: "active" },
-          },
-        );
-        break;
-
-      case "subscription.cancelled":
-        await Subscription.updateOne(
-          { razorpaySubscriptionId },
-          {
-            $set: {
-              status: "cancelled",
-              cancelAtPeriodEnd: true,
-              graceEndsAt: storedSubscription.currentPeriodEnd,
-            },
-          },
-        );
-        break;
-
-      default:
-        break;
-    }
-
-    await WebhookEvent.updateOne(
-      { eventId },
-      { $set: { processingStatus: "processed" } },
-    );
-
-    return res.sendStatus(200);
+    default:
+      break;
   }
 
-  res.sendStatus(400);
+  await WebhookEvent.updateOne(
+    { eventId },
+    { $set: { processingStatus: "processed" } },
+  );
+
+  return res.sendStatus(200);
 };
