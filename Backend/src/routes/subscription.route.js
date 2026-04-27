@@ -4,6 +4,7 @@ import {
   createSubscription,
   getSubscription,
   razorpayWebhook,
+  updateSubscription,
 } from "../controllers/subscription.controller.js";
 import checkAuthentication from "../middlewares/authenticate.middleware.js";
 
@@ -13,7 +14,9 @@ router.post("/", checkAuthentication, createSubscription);
 
 router.get("/", checkAuthentication, getSubscription);
 
-router.put("/:id/cancel", checkAuthentication, cancelSubscription);
+router.put("/cancel", checkAuthentication, cancelSubscription);
+
+router.put("/update", checkAuthentication, updateSubscription);
 
 router.post("/events", razorpayWebhook);
 

@@ -1,13 +1,96 @@
 features:
   - feature: show file or directory path from root directory in details popup
-  - how:
+  - how: store ObjectIds based path of every directory from root dir to that directory
 
   - feature: show recursive count of directories and files, a directory has
+  - how: count the directories and files the directory contains, only when user opens the details page of the directory, for fast lookup, the path property helps in lookup, like count every directory and file whose path contains current directory, it will mean that those directory/files are child of current directory
+
+  - feature: multiple files and folder deletion
+  - how: send the selected files and directories ids to backend separately which will delete them recursively
+
+  - feature: uploading files directly to s3 from frontend
+  - how: used presigned url with checks like file content-type + file-size so that user cant fake uploading a different file + size in place of what request to upload
+
+  - feature: streaming files from s3 to frontend directly
+  - how: we can serve it from our backend too but it will add a headache as the flow would become frontend-backend-s3, which increases bandwidth also, so used a presigned url with short term expiry which directly serves anyone requests it
+
+  - feature: adding paid subscription based storage access feature
+  - how: 
+    - made 3 plans 'basic(2TB)' 'standard(5TB)' 'pro(10TB)'
+    - every plan will have 2 versions 'monthly' 'yearly'
+    - added plans with pricing in the razorpay dashboard
+    - instead of DB, stored all 3 plans as a js object with planId as environment variable
+
+  - feature: history required for webhook events, like which event occured when and what they contained etc. and most importantly knowing when the event got failed to be processed or if it already occured earlier
+  - how: stored entire events in the DB, helps in omitting duplicate events, processing events which were left unprocessed
+
+  - feature: user cant know will cancelling subscription refunds any money 
+  - how: added explicit warning before cancellation so that user will choose on its responsibility
+
+  - feature: when there is no plan subscribed by the user then assign free plan
+  - how: gave 100MB free storage
+
+  - feature: handling all important events of the subscription
+  - how: 
+    - 1.subscription.activated, used to update the user's maxStorageBytes and subscriptionId
+    - 2.subscription.charged, used to update current_start,current_end for each billing cycle
+    - 3.subscription.pending, failed-retrying payment goes to due state, so updates status to 'past_due' and file upload gets blocked
+    - 4.subscription.halted, completely failed payments goes to grace period, so updates status to 'in_grace' and file upload gets blocked
+    - 5.subscription.paused, just pauses the subscription until manually and file upload gets blocked
+    - 6.subscription.resumed, resumes the paused subscription and file upload gets active again
+    - 7.subscription.updated, upgrades/downgrades the subscription
+    - 8.subscription.cancelled, provides 2 ways to cancel, one is to schedule cancellation which will cancel at the billing cycle's end and all things will work without any interruption, another one is cancelling immediately + instant partial free plan demotion
+
+  - feature: upgrade/downgrade plan
   - how:
+    - 'what subscription to be updated' 'to what plan the subscription to be updated' this is only what matters first
+    - razorpay only allows states 'authenticated' 'active'
+    - only cards payment_method based subscription is allowed by razorpay
+
+  - grace period just means, time left to be demoted to free plan limits
+  - on basis of current scenario of the app, it is not required to user scheduled updation of subscription
 
 issues:
   - issue: multer was not checking for file upload limit size while file upload in progress, it checks after getting whole file
-  - fix:
+  - fix: used custom file upload logic, received whole file using streams + added chunk level condition to discard file if exceeds size limit
+
+  - issue: AppPassword based gmail sign-in is not secure
+  - fix: using OAuth2.0, create a project on google cloud console, use it's client id and client secret + create a refresh token by adding redirect URI(https://developers.google.com/oauthplayground) and visiting that site
+
+  - issue: cloudfront serving files event which are already deleted
+  - fix: invalidate the cloudfront cache for that particular deleted object so that up to date cache data should be delivered
+
+  - issue: by default all files goes to standard tiering which is expensive, we need to save cost on different usage behavior
+  - fix:  used intelligent tiering, which will move the s3 objects to relevant tiers on basis of their usage like read,write etc.
 
   - issue: loading razorpay checkout script from the very start increases load time
   - fix: loaded the script dynamically when user visits plans page + added id so to avoid duplicate addition
+
+  - issue: when to create a new subscription on request?
+  - fix: when user doesnt have a plan(on a free plan) or plan is cancelled completely, means even gracePeriod goes over or cancelAtPeriodEnd=false
+
+  - issue: user can upload files even when it's subscription is not active like 'paused' 'in_grace' 'past_due'
+  - fix: dont allow user by adding checks of subscription states while cancelled and awaiting_activation will have edge cases to allow
+
+  - issue: on cancellation, UI become inconsistent when grace period expires or plan immediatedly got cancelled
+  -fix: we had to allow user to subscribe to a plan then, so added a check if cancellation was immediately happened or if the cancellation's grace period is expired then allow user to subscribe to a plan user wants (cancelAtPeriodEnd != true || graceEndsAt <= Date())
+
+  - issue: how to handle the grace expired subscriptions like cancelled,in_grace
+  - how: added a cron job to do 2 things:
+    - update user's maxStorageBytes on expiration + update in_grace to cancelled
+    - notify users through email whose grace period going to expire in next 24 hours
+
+  - issue: Razorpay doesnt allow upgrading/downgrading subscription when payment_mode is UPI
+  - fix: disabled subscription updation in this case + added a tip before subscribing, that choose card payment when user wants to update subscription later + also shown payment_method at the dashboard, user used to pay while subscribing
+
+  - issue: user should not be allowed to downgrade if consumed space is more than the plan's capacity space
+  - fix: added a check before updating subscription and notifying user to delete exact difference size of files to downgrade then
+
+  - issue: actions can go waste like updating subscriptions etc. so while requesting updation it can cause buggy behavior as subscription will be updated in DB but not in razorpay
+  - fix: made webhook as the source of truth, so razorpay itself notifies us to confidently update DB now
+
+  - issue: subscription.updated event returns multiple statuses
+  - fix: we need only successful case to consider updating the subscription in the DB, so only considered 'active' status.
+
+  - issue: manually giving current_start,current_end is buggy and not exact time
+  - fix: so used webhook's provided current_start,current_end to show current plan's billing cycle starting and ending

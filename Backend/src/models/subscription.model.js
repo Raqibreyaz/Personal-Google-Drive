@@ -33,6 +33,10 @@ const schema = new mongoose.Schema({
     ],
     required: true,
   },
+  paymentMethod: {
+    type: String,
+    default: null,
+  },
   currentPeriodStart: {
     type: Date,
   },

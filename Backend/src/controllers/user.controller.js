@@ -20,6 +20,7 @@ export const getUser = async (req, res, next) => {
     role: req.session.user.role,
     maxStorageInBytes: req.session.user.maxStorageInBytes,
     usedStorageInBytes: directory.size,
+    authProvider: req.session.user.authProvider,
   });
 };
 

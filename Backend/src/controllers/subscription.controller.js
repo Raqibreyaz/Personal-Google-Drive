@@ -3,6 +3,8 @@ import {
   getPlanByKey,
   getPlanByRazorpayPlanId,
   getTotalBillingCycles,
+  PLAN_KEYS,
+  PLANS,
 } from "../config/plans.js";
 import Subscription from "../models/subscription.model.js";
 import User from "../models/user.model.js";
@@ -28,8 +30,14 @@ export const createSubscription = async (req, res) => {
     : null;
 
   let razorpaySubscriptionId = null;
+  const createNewSubscription =
+    !fetchedSubscription ||
+    (fetchedSubscription.status === "cancelled" &&
+      (!fetchedSubscription.cancelAtPeriodEnd ||
+        fetchedSubscription.graceEndsAt <= new Date()));
+
   // TODO: Make these both Ops atomic
-  if (!fetchedSubscription) {
+  if (createNewSubscription) {
     const razorpaySubscription = await rzp.subscriptions.create({
       plan_id: plan.razorpayPlanId,
       customer_notify: true,
@@ -40,17 +48,26 @@ export const createSubscription = async (req, res) => {
         customerEmail: user.email,
       },
     });
-    await Subscription.insertOne({
-      razorpaySubscriptionId: razorpaySubscription.id,
-      user: user._id,
-      billingCycle: plan.billingCycle,
-      status: "awaiting_activation",
-      planId: plan.razorpayPlanId,
-    });
+
+    await Subscription.updateOne(
+      { user: user._id },
+      {
+        $set: {
+          razorpaySubscriptionId: razorpaySubscription.id,
+          billingCycle: plan.billingCycle,
+          status: "awaiting_activation",
+          planId: plan.razorpayPlanId,
+          cancelAtPeriodEnd: false,
+          graceEndsAt: null,
+        },
+      },
+      { upsert: true },
+    );
 
     razorpaySubscriptionId = razorpaySubscription.id;
-  } else if (fetchedSubscription.status !== "awaiting_activation")
+  } else {
     throw new ApiError(400, "you are already subscribed!");
+  }
 
   res.json({
     apiKey: process.env.RZP_KEY_ID,
@@ -68,13 +85,23 @@ export const createSubscription = async (req, res) => {
       plan: plan.planKey,
       userName: user.name,
     },
+    message: "To upgrade/dowgrade subscription later, pay only with cards!",
   });
 };
 
 export const getSubscription = async (req, res) => {
   const subscriptionId = req.session.user.subscription;
-  if (!subscriptionId)
-    return res.json({ message: "success!", subscription: null });
+  if (!subscriptionId) {
+    const freePlan = getPlanByKey(PLAN_KEYS.FREE);
+    return res.json({
+      message: "success!",
+      subscription: {
+        planKey: freePlan.planKey,
+        planName: freePlan.displayName,
+        storageQuotaBytes: freePlan.storageQuotaBytes,
+      },
+    });
+  }
 
   const subscription = await Subscription.findById(subscriptionId)
     .select("-user")
@@ -94,6 +121,9 @@ export const getSubscription = async (req, res) => {
     nextBillingDate: subscription.currentPeriodEnd,
     cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
     storageQuotaBytes: plan.storageQuotaBytes,
+    paymentMethod: subscription.paymentMethod,
+    graceEndsAt: subscription.graceEndsAt,
+    priceInPaise: plan.priceInPaise
   };
 
   res.json({
@@ -107,17 +137,31 @@ export const cancelSubscription = async (req, res) => {
   if (!subscriptionId)
     throw new ApiError(400, "User doesn't have any subscription yet!");
 
-  const subscription = await Subscription.findByIdAndUpdate(subscriptionId, {
-    $set: {
-      cancelAtPeriodEnd: true,
-      status: "cancelled",
-    },
-  }).lean();
+  const cancelAtPeriodEnd = !!req.body?.cancelAtPeriodEnd;
 
-  await rzp.subscriptions.cancel(subscription.razorpaySubscriptionId, true);
+  const subscription = await Subscription.findById(subscriptionId).lean();
+
+  // on immediate cancellation, give a grace expiry of 3 days
+  const graceEndsAt = cancelAtPeriodEnd
+    ? subscription.currentPeriodEnd
+    : new Date(Date.now() + 3 * 86400 * 1000);
+
+  await rzp.subscriptions.cancel(
+    subscription.razorpaySubscriptionId,
+    cancelAtPeriodEnd,
+  );
+
+  await Subscription.updateOne(
+    { _id: subscriptionId },
+    {
+      $set: { cancelAtPeriodEnd, status: "cancelled", graceEndsAt },
+    },
+  ).lean();
 
   res.json({
-    message: "subscription will be cancelled on current period's end!",
+    message: cancelAtPeriodEnd
+      ? "subscription will be cancelled on current period's end!"
+      : "subscription cancelled!",
   });
 };
 
@@ -138,6 +182,12 @@ export const updateSubscription = async (req, res) => {
 
   if (storedSubscription.planId === plan.razorpayPlanId)
     throw new ApiError(400, "Subscription already active on the chosen plan!");
+
+  if (storedSubscription.paymentMethod !== "card")
+    throw new ApiError(
+      400,
+      "Subscription can't be updated on non-card payments!",
+    );
 
   // user can't downgrade if consumed space is more than chosen plans capacity
   const { size: consumedSpace } = await Directory.findById(rootDirId).lean();
@@ -188,6 +238,7 @@ export const razorpayWebhook = async (req, res) => {
   const status = subscriptionEntity.status;
   const razorpaySubscriptionId = subscriptionEntity.id;
   const planId = subscriptionEntity.plan_id;
+  const paymentMethod = subscriptionEntity.payment_method;
 
   const currentPeriodStart = subscriptionEntity.current_start
     ? new Date(subscriptionEntity.current_start * 1000)
@@ -234,6 +285,7 @@ export const razorpayWebhook = async (req, res) => {
             status: "active",
             currentPeriodStart,
             currentPeriodEnd,
+            paymentMethod,
           },
         },
       );
@@ -299,19 +351,6 @@ export const razorpayWebhook = async (req, res) => {
       );
       break;
 
-    case "subscription.cancelled":
-      await Subscription.updateOne(
-        { razorpaySubscriptionId },
-        {
-          $set: {
-            status: "cancelled",
-            cancelAtPeriodEnd: true,
-            graceEndsAt: storedSubscriptionPeriodEnd,
-          },
-        },
-      );
-      break;
-
     case "subscription.updated":
       if (status === "active" && planId !== storedPlanId) {
         await Subscription.updateOne(
@@ -335,6 +374,9 @@ export const razorpayWebhook = async (req, res) => {
           },
         );
       }
+      break;
+
+    case "subscription.cancelled":
       break;
 
     default:

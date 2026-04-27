@@ -1,5 +1,9 @@
 import ApiError from "../helpers/apiError.js";
-import { INVALID_INPUT, VALIDATION_FAILED, UNKNOWN_ERROR } from "../constants/errorCodes.js";
+import {
+  INVALID_INPUT,
+  VALIDATION_FAILED,
+  UNKNOWN_ERROR,
+} from "../constants/errorCodes.js";
 
 /**
  * Global error handler — catches all errors and sends a consistent JSON response.
@@ -33,9 +37,32 @@ export function globalErrorHandler(err, req, res, next) {
 
   // ── MongoDB: duplicate key (code 11000) ───────────────────────────────
   if (err.code === 11000) {
-    const field = Object.keys(err.keyValue)[0];
+    const field =
+      Object.keys(err.keyValue || {})[0] ||
+      Object.keys(err.keyPattern || {})[0] ||
+      "field";
+
+    const collectionMatch = err.errmsg?.match(
+      /collection:\s+([^.]+\.)?([^\s]+)/,
+    );
+    const rawCollection = collectionMatch?.[2] || "record";
+
+    const singularMap = {
+      directories: "directory",
+      files: "directory",
+      fileshares: "fileshare document",
+      otps: "otp",
+      sessions: "sessions",
+      subscriptions: "subscription",
+      users: "user",
+      webhookevents: "webhookevent",
+    };
+
+    const entity =
+      singularMap[rawCollection] || rawCollection.replace(/s$/, "");
+
     return res.status(409).json({
-      error: `A user with this ${field} already exists!`,
+      error: `A ${entity} with this ${field} already exists!`,
       errorCode: INVALID_INPUT,
     });
   }

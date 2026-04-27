@@ -85,13 +85,12 @@ export const initiateFileUpload = async (req, res, next) => {
         "Upload not allowed due to inactive subscription!",
       );
 
-    const graceExpired =
-      subscription.graceEndsAt && subscription.graceEndsAt <= new Date();
+    const shouldAllowOnCancel =
+      subscription.status === "cancelled" &&
+      subscription.cancelAtPeriodEnd &&
+      subscription.graceEndsAt > new Date();
 
-    if (
-      subscription.status === "awaiting_activation" ||
-      (subscription.status === "cancelled" && graceExpired)
-    ) {
+    if (subscription.status === "awaiting_activation" || !shouldAllowOnCancel) {
       effectiveQuota = PLANS.free.storageQuotaBytes;
     }
   }

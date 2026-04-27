@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     FaArrowLeft,
     FaCheck,
@@ -9,8 +9,11 @@ import {
     FaBolt,
     FaInfinity,
     FaCrown,
+    FaArrowUp,
+    FaArrowDown,
+    FaCreditCard,
 } from "react-icons/fa";
-import { createSubscription, getPlans } from "./api/plan.js";
+import { createSubscription, getPlans, getSubscription, updateSubscription } from "./api/plan.js";
 
 const PLAN_FEATURES = {
     Free: [
@@ -129,12 +132,15 @@ function PlanCardSkeleton() {
 }
 
 // ─── Plan Card ──────────────────────────────────────────────────────────────
-function PlanCard({ plan, isYearly, isPopular }) {
+function PlanCard({ plan, isYearly, isPopular, currentSubscription, onPostPayment }) {
+    console.log('plan', plan)
+    console.log('subscription', currentSubscription)
     const name = plan.displayName;
     const colors = PLAN_COLORS[name] || PLAN_COLORS.Free;
     const Icon = PLAN_ICONS[name] || FaCloud;
     const features = PLAN_FEATURES[name] || [];
     const isFree = !!plan.variants?.free;
+    const navigate = useNavigate();
 
     const activeVariant = isFree
         ? plan.variants.free
@@ -145,10 +151,71 @@ function PlanCard({ plan, isYearly, isPopular }) {
     const price = activeVariant?.priceInPaise ?? 0;
     const savingsPercent = getYearlySavings(plan);
 
+    const currentPlanKey = currentSubscription?.planKey;
+    
+    const isGraceExpired = currentSubscription?.graceEndsAt && new Date(currentSubscription.graceEndsAt) <= new Date();
+    const isEffectivelyFree = 
+        !currentSubscription?.status || 
+        (currentSubscription.status === "cancelled" && (!currentSubscription.cancelAtPeriodEnd || isGraceExpired));
+
+    const isCurrentPlan = currentPlanKey && activeVariant?.planKey === currentPlanKey && !isEffectivelyFree;
+    const hasActiveSubscription =
+        currentSubscription?.status === "active" && currentPlanKey !== "free" && !isEffectivelyFree;
+    const isNonCard = currentSubscription?.paymentMethod && currentSubscription.paymentMethod !== "card";
+    const isPendingCancellation = currentSubscription?.status === "cancelled" && !isEffectivelyFree;
+
+    // Determine button label and action
+    const getButtonConfig = () => {
+        if (isCurrentPlan) {
+            return { label: "Current Plan", disabled: true, action: null, variant: "current" };
+        }
+        if (isPendingCancellation) {
+            return { label: "Unavailable", disabled: true, action: null, variant: "disabled" };
+        }
+        if (isFree) {
+            if (hasActiveSubscription) {
+                return { label: "Free Plan", disabled: true, action: null, variant: "disabled" };
+            }
+            return { label: "Get Started", disabled: false, action: "navigate", variant: "default" };
+        }
+        if (hasActiveSubscription) {
+            if (isNonCard) {
+                return {
+                    label: "Can't Change (Non-card)",
+                    disabled: true,
+                    action: null,
+                    variant: "disabled",
+                };
+            }
+            // Compare storage to decide upgrade vs downgrade
+            const currentStorage = currentSubscription.storageQuotaBytes || 0;
+            const isUpgrade = plan.storageBytes > currentStorage || activeVariant.priceInPaise > currentSubscription.priceInPaise;
+            return {
+                label: isUpgrade ? "Upgrade" : "Downgrade",
+                disabled: false,
+                action: "update",
+                variant: isUpgrade ? "upgrade" : "downgrade",
+            };
+        }
+        return { label: "Subscribe", disabled: false, action: "subscribe", variant: "default" };
+    };
+
+    const buttonConfig = getButtonConfig();
+
     const subscriptionMutation = useMutation({
         mutationKey: ["subscribe"],
         mutationFn: createSubscription,
     });
+
+    const updateMutation = useMutation({
+        mutationKey: ["updateSubscription"],
+        mutationFn: updateSubscription,
+        onSuccess: () => {
+            onPostPayment?.();
+            navigate("/dashboard");
+        },
+    });
+
     const onSubscribe = async () => {
         if (!window.Razorpay) {
             alert("Razorpay SDK is still loading. Please try again in a moment.");
@@ -164,12 +231,12 @@ function PlanCard({ plan, isYearly, isPopular }) {
             "key": apiKey,
             "subscription_id": subscriptionId,
             "name": businessName,
-            // "description": "",
-            // "image": "/your_logo.jpg",
             "handler": function (response) {
-                console.log(response.razorpay_payment_id),
-                    console.log(response.razorpay_subscription_id),
-                    console.log(response.razorpay_signature);
+                console.log(response.razorpay_payment_id);
+                console.log(response.razorpay_subscription_id);
+                console.log(response.razorpay_signature);
+                onPostPayment?.();
+                navigate("/dashboard");
             },
             "prefill": prefill,
             "notes": notes,
@@ -178,15 +245,43 @@ function PlanCard({ plan, isYearly, isPopular }) {
 
         const rzp = new window.Razorpay(options)
         rzp.open()
-    }
+    };
+
+    const handleButtonClick = () => {
+        if (buttonConfig.action === "subscribe") {
+            onSubscribe();
+        } else if (buttonConfig.action === "update") {
+            if (confirm(`Are you sure you want to ${buttonConfig.label.toLowerCase()} to the ${name} plan?`)) {
+                updateMutation.mutate(activeVariant.planKey);
+            }
+        } else if (buttonConfig.action === "navigate") {
+            navigate("/");
+        }
+    };
+
+    const isButtonLoading = subscriptionMutation.isPending || updateMutation.isPending;
 
     return (
         <div
-            className={`relative bg-white rounded-2xl border ${isPopular ? `${colors.border} ring-2 ${colors.ring}` : "border-gray-200"} 
-        p-6 flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group`}
+            className={`relative bg-white rounded-2xl border ${isCurrentPlan
+                ? `${colors.border} ring-2 ring-emerald-300`
+                : isPopular
+                    ? `${colors.border} ring-2 ${colors.ring}`
+                    : "border-gray-200"
+                } p-6 flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group`}
         >
-            {/* Popular badge */}
-            {isPopular && (
+            {/* Current Plan badge */}
+            {isCurrentPlan && (
+                <div
+                    className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-100 text-emerald-700 text-xs font-bold
+                        px-4 py-1 rounded-full uppercase tracking-wider whitespace-nowrap"
+                >
+                    ✓ Current Plan
+                </div>
+            )}
+
+            {/* Popular badge (only if not current) */}
+            {isPopular && !isCurrentPlan && (
                 <div
                     className={`absolute -top-3 left-1/2 -translate-x-1/2 ${colors.badge} text-xs font-bold 
             px-4 py-1 rounded-full uppercase tracking-wider whitespace-nowrap`}
@@ -230,15 +325,32 @@ function PlanCard({ plan, isYearly, isPopular }) {
 
             {/* CTA Button */}
             <button
-                className={`w-full py-2.5 px-4 rounded-xl text-white font-semibold text-sm ${colors.btn} 
-          transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md mb-6`}
-
-                onClick={() => {
-                    onSubscribe()
-                }}
+                className={`w-full py-2.5 px-4 rounded-xl font-semibold text-sm transition-all duration-200 shadow-sm mb-6 flex items-center justify-center gap-2 ${isCurrentPlan
+                    ? "bg-emerald-100 text-emerald-700 cursor-default"
+                    : buttonConfig.disabled
+                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        : `text-white ${colors.btn} cursor-pointer hover:shadow-md`
+                    }`}
+                onClick={handleButtonClick}
+                disabled={buttonConfig.disabled || isButtonLoading}
             >
-                {isFree ? "Get Started" : "Subscribe"}
+                {isButtonLoading ? (
+                    "Processing..."
+                ) : (
+                    <>
+                        {buttonConfig.variant === "upgrade" && <FaArrowUp className="text-xs" />}
+                        {buttonConfig.variant === "downgrade" && <FaArrowDown className="text-xs" />}
+                        {buttonConfig.label}
+                    </>
+                )}
             </button>
+
+            {/* Update error */}
+            {updateMutation.isError && (
+                <div className="mb-4 text-xs text-red-600 bg-red-50 p-2 rounded-lg">
+                    {updateMutation.error?.message || "Failed to update plan."}
+                </div>
+            )}
 
             {/* Feature list */}
             <div className="border-t border-gray-100 pt-5">
@@ -262,6 +374,7 @@ function PlanCard({ plan, isYearly, isPopular }) {
 const Plans = () => {
     const [isYearly, setIsYearly] = useState(false);
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     const {
         data: plansData,
@@ -273,7 +386,26 @@ const Plans = () => {
         staleTime: 10 * 60 * 1000,
     });
 
+    const {
+        data: subscriptionData,
+    } = useQuery({
+        queryKey: ["subscription"],
+        queryFn: getSubscription,
+        staleTime: 2 * 60 * 1000,
+    });
+
     const plans = plansData?.plans ?? [];
+    const currentSubscription = subscriptionData?.subscription ?? null;
+
+    const isGraceExpired = currentSubscription?.graceEndsAt && new Date(currentSubscription.graceEndsAt) <= new Date();
+    const isEffectivelyFree = 
+        !currentSubscription?.status || 
+        (currentSubscription.status === "cancelled" && (!currentSubscription.cancelAtPeriodEnd || isGraceExpired));
+
+    const handlePostPayment = () => {
+        queryClient.invalidateQueries({ queryKey: ["subscription"] });
+        queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+    };
 
     useEffect(() => {
         let script = document.querySelector("#checkout-script")
@@ -342,10 +474,45 @@ const Plans = () => {
                         </span>
                     )}
                 </div>
+
+                {/* Card payment tip */}
+                <p className="mt-4 text-xs text-gray-400 flex items-center justify-center gap-1.5">
+                    <FaCreditCard className="text-gray-400" />
+                    Pay with a card to enable plan upgrades/downgrades later.
+                </p>
             </section>
 
             {/* Plans Grid */}
             <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-20">
+                {/* Current plan info banner */}
+                {currentSubscription && currentSubscription.planKey !== "free" && !isEffectivelyFree && (
+                    <div className="bg-violet-50 border border-violet-200 rounded-xl px-5 py-3 mb-6 flex items-center justify-between max-w-2xl mx-auto">
+                        <p className="text-sm text-violet-800">
+                            You're on the <span className="font-bold">{currentSubscription.planName}</span> plan
+                            {currentSubscription.status === "cancelled" && currentSubscription.cancelAtPeriodEnd && (
+                                <span className="text-amber-700"> (cancels at period end)</span>
+                            )}
+                        </p>
+                        <button
+                            className="text-xs font-semibold text-violet-600 hover:underline cursor-pointer bg-transparent border-none"
+                            onClick={() => navigate("/dashboard")}
+                        >
+                            Manage →
+                        </button>
+                    </div>
+                )}
+
+                {/* Non-card limitation banner */}
+                {currentSubscription && currentSubscription.paymentMethod && currentSubscription.paymentMethod !== "card" && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 mb-6 flex items-center gap-3 max-w-2xl mx-auto">
+                        <FaCreditCard className="text-amber-500 shrink-0" />
+                        <p className="text-xs text-amber-800 leading-relaxed">
+                            <span className="font-semibold">Plan changes unavailable:</span> Your subscription was paid via a non-card method.
+                            To upgrade or downgrade, cancel your current plan and re-subscribe with a card.
+                        </p>
+                    </div>
+                )}
+
                 {error && (
                     <div className="bg-red-50 text-red-700 py-3 px-5 rounded-xl mb-6 text-sm text-center max-w-md mx-auto">
                         {error.message || "Failed to load plans. Please try again."}
@@ -361,6 +528,8 @@ const Plans = () => {
                                 plan={plan}
                                 isYearly={isYearly}
                                 isPopular={plan.displayName === "Standard"}
+                                currentSubscription={currentSubscription}
+                                onPostPayment={handlePostPayment}
                             />
                         ))}
                 </div>

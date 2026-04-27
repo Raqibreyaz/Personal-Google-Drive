@@ -11,6 +11,7 @@ import {
   FaSignInAlt,
   FaChevronRight,
   FaCrown,
+  FaTachometerAlt,
 } from "react-icons/fa";
 import ProfileImage from "./ProfileImage";
 import { sanitizeText } from "../utils/sanitize.js";
@@ -160,6 +161,13 @@ function DirectoryHeader({
                     </div>
                   </div>
                   <div className="border-t border-gray-200" />
+                  <div
+                    className="flex overflow-hidden gap-1 px-4 py-2 cursor-pointer text-gray-700 text-[0.95rem] whitespace-nowrap hover:bg-gray-100"
+                    onClick={() => { navigate("/dashboard"); setShowUserMenu(false); }}
+                  >
+                    <FaTachometerAlt className="text-base text-violet-500" />
+                    <span>My Account</span>
+                  </div>
                   <div
                     className="flex overflow-hidden gap-1 px-4 py-2 cursor-pointer text-gray-700 text-[0.95rem] whitespace-nowrap hover:bg-gray-100"
                     onClick={() => { navigate("/plans"); setShowUserMenu(false); }}

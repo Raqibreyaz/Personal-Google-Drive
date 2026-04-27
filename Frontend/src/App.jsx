@@ -9,6 +9,7 @@ import UsersPage from "./UsersPage";
 import SharedWithMePage from "./SharedWithMePage";
 import UpdatePassword from "./UpdatePassword";
 import Plans from "./Plans";
+import Dashboard from "./Dashboard";
 
 const router = createBrowserRouter([
   {
@@ -46,6 +47,10 @@ const router = createBrowserRouter([
   {
     path: "/plans",
     element: <Plans />,
+  },
+  {
+    path: "/dashboard",
+    element: <Dashboard />,
   },
 ]);
 

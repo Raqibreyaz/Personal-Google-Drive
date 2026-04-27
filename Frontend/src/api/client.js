@@ -63,6 +63,10 @@ export async function apiPatch(endpoint, body) {
   return client.patch(endpoint, body);
 }
 
+export async function apiPut(endpoint, body) {
+  return client.put(endpoint, body);
+}
+
 export async function apiDelete(endpoint, body) {
   return client.delete(endpoint, { data: body });
 }
