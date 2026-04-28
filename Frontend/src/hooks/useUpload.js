@@ -13,10 +13,7 @@ export default function useUpload(dirId, onUploadSuccess) {
       const file = e.target.files?.[0];
       if (!file) return;
       e.target.value = "";
-
-      console.log("going to upload file", file.name, "into", dirId);
-      // return;
-
+      
       const tempId = `temp-${Date.now()}-${Math.random()}`;
       const tempItem = {
         file,

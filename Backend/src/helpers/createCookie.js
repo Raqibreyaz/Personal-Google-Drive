@@ -11,4 +11,5 @@ export default function createCookie(res, sessionId) {
     maxAge: expiryAgeInSec * 1000,
     secure: true,
   });
+  console.log("cookie assigned to user:");
 }

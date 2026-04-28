@@ -133,8 +133,6 @@ function PlanCardSkeleton() {
 
 // ─── Plan Card ──────────────────────────────────────────────────────────────
 function PlanCard({ plan, isYearly, isPopular, currentSubscription, onPostPayment }) {
-    console.log('plan', plan)
-    console.log('subscription', currentSubscription)
     const name = plan.displayName;
     const colors = PLAN_COLORS[name] || PLAN_COLORS.Free;
     const Icon = PLAN_ICONS[name] || FaCloud;
@@ -232,9 +230,9 @@ function PlanCard({ plan, isYearly, isPopular, currentSubscription, onPostPaymen
             "subscription_id": subscriptionId,
             "name": businessName,
             "handler": function (response) {
-                console.log(response.razorpay_payment_id);
-                console.log(response.razorpay_subscription_id);
-                console.log(response.razorpay_signature);
+                // console.log(response.razorpay_payment_id);
+                // console.log(response.razorpay_subscription_id);
+                // console.log(response.razorpay_signature);
                 onPostPayment?.();
                 navigate("/dashboard");
             },

@@ -76,7 +76,7 @@ export function globalErrorHandler(err, req, res, next) {
   }
 
   // ── Unknown / programmer error — don't leak details ───────────────────
-  console.error(err);
+  console.log(err);
   res.status(500).json({
     error: "Something went wrong!",
     errorCode: UNKNOWN_ERROR,
