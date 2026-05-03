@@ -1,4 +1,7 @@
 TODO:
+  - due to cross site requests, vulnerable to CSRF attack
+  - otp input goes hidden on page refresh, login and signup page
+  - adding landing page
   - adding invoices feature in the dashboard
   - import from google drive
   - directory sharing functionality with the help of path property

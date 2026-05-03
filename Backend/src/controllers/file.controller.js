@@ -78,7 +78,7 @@ export const initiateFileUpload = async (req, res, next) => {
   let effectiveQuota = user.maxStorageInBytes;
 
   const subscription = await Subscription.findOne({ user: userId }).lean();
-  if (subscription.razorpaySubscriptionId && subscription.status !== "active") {
+  if (subscription?.razorpaySubscriptionId && subscription.status !== "active") {
     if (["paused", "past_due", "in_grace"].includes(subscription.status))
       throw new ApiError(
         403,
