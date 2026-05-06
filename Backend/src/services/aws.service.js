@@ -38,25 +38,6 @@ const toCfPath = (p) =>
 const encodeObjectKeyForUrl = (key) =>
   String(key).split("/").map(encodeURIComponent).join("/");
 
-const invalidateCloudFrontPaths = async (paths) => {
-  const cacheInvalidationCommand = new CreateInvalidationCommand({
-    DistributionId: cloudFrontId,
-    InvalidationBatch: {
-      Paths: {
-        Quantity: paths.length,
-        Items: paths.map(toCfPath),
-      },
-      CallerReference: `temp-${Date.now()}`,
-    },
-  });
-
-  const {
-    $metadata: { httpStatusCode },
-  } = await cloudFrontClient.send(cacheInvalidationCommand);
-
-  return 200 <= httpStatusCode && httpStatusCode < 300;
-};
-
 // presigned url to create object
 export const createObjectPresignedUrl = async (
   objectName,
@@ -99,7 +80,7 @@ export const deleteObject = async (objectKey) => {
 
   await s3Client.send(deleteObjectCommand);
 
-  return await invalidateCloudFrontPaths([objectKey]);
+  return true
 };
 
 // delete the given objects and invalidate cache
@@ -118,7 +99,7 @@ export const deleteObjects = async (objectKeys) => {
     );
   }
 
-  return await invalidateCloudFrontPaths(objectKeys.map((k) => k.Key));
+  return true
 };
 
 // rename an object with copy+delete ops and invalidate cache

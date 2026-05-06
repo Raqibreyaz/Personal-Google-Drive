@@ -19,3 +19,6 @@ LATER:
   - fix downloading and filenaming problem
   - put user's files to glacier storage for low cost where needed
   - handle case where user has paused subscription from too long
+
+DONE:
+  - instead of cache invalidation of cloudfront, use other mechanism for better practice -> removed invalidation logic completely
