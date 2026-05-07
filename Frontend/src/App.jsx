@@ -1,5 +1,6 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import DirectoryView from "./DirectoryView";
 import Register from "./Register";
@@ -63,9 +64,11 @@ function App() {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "<client_id>";
   return (
     <ErrorBoundary>
-      <GoogleOAuthProvider clientId={clientId}>
-        <RouterProvider router={router} />
-      </GoogleOAuthProvider>
+      <ThemeProvider>
+        <GoogleOAuthProvider clientId={clientId}>
+          <RouterProvider router={router} />
+        </GoogleOAuthProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

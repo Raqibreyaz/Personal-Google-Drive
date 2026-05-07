@@ -23,9 +23,9 @@ export default function FAQ() {
   const [open, setOpen] = useState(null);
 
   return (
-    <section id="faq" className="bg-gray-950 py-20 border-t border-white/5">
+    <section id="faq" className="bg-white dark:bg-gray-950 py-20 border-t border-gray-200 dark:border-white/5 transition-colors">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-12">
+        <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white text-center mb-12 transition-colors">
           Frequently asked questions
         </h2>
 
@@ -33,14 +33,14 @@ export default function FAQ() {
           {faqs.map((item, i) => (
             <div
               key={i}
-              className="bg-gray-900 border border-white/5 rounded-xl overflow-hidden"
+              className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-white/5 rounded-xl overflow-hidden transition-colors"
             >
               <button
                 id={`faq-btn-${i}`}
                 aria-expanded={open === i}
                 aria-controls={`faq-panel-${i}`}
                 onClick={() => setOpen(open === i ? null : i)}
-                className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left text-white font-medium hover:bg-white/5 transition-colors"
+                className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left text-gray-900 dark:text-white font-medium hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
               >
                 <span>{item.q}</span>
                 <svg
@@ -58,7 +58,7 @@ export default function FAQ() {
                   id={`faq-panel-${i}`}
                   role="region"
                   aria-labelledby={`faq-btn-${i}`}
-                  className="px-5 pb-5 text-gray-400 text-sm leading-relaxed border-t border-white/5 pt-3"
+                  className="px-5 pb-5 text-gray-600 dark:text-gray-400 text-sm leading-relaxed border-t border-gray-200 dark:border-white/5 pt-3 transition-colors"
                 >
                   {item.a}
                 </div>

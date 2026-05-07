@@ -51,23 +51,23 @@ function DetailsModal({ item, directoryName, directoryPath, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-[999]" onClick={onClose}>
-      <div className="bg-white p-5 w-[90%] max-w-[420px] rounded shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <h2 className="mt-0 mb-4 text-lg font-semibold text-gray-800">
+      <div className="bg-white dark:bg-gray-800 p-5 w-[90%] max-w-[420px] rounded shadow-xl transition-colors" onClick={(e) => e.stopPropagation()}>
+        <h2 className="mt-0 mb-4 text-lg font-semibold text-gray-800 dark:text-gray-100">
           {item.isDirectory ? "Folder" : "File"} Details
         </h2>
         <table className="w-full text-sm">
           <tbody>
             {rows.map(({ label, value }) => (
-              <tr key={label} className="border-b border-gray-100 last:border-0">
-                <td className="py-2.5 pr-4 text-gray-500 font-medium whitespace-nowrap align-top">{label}</td>
-                <td className="py-2.5 text-gray-800 break-all">{value}</td>
+              <tr key={label} className="border-b border-gray-100 dark:border-gray-700 last:border-0">
+                <td className="py-2.5 pr-4 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap align-top">{label}</td>
+                <td className="py-2.5 text-gray-800 dark:text-gray-200 break-all">{value}</td>
               </tr>
             ))}
           </tbody>
         </table>
         <div className="flex justify-end mt-6">
           <button
-            className="bg-gray-100 text-gray-700 border border-gray-300 rounded py-2 px-5 cursor-pointer hover:bg-gray-200 transition-colors font-medium"
+            className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded py-2 px-5 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium"
             onClick={onClose}
           >
             Close

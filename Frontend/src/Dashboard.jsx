@@ -88,48 +88,48 @@ function CancelModal({ isOpen, onClose, onConfirm, isPending }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl p-6 animate-in">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl p-6 animate-in transition-colors">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
             <FaExclamationTriangle className="text-red-500" />
           </div>
-          <h3 className="text-lg font-bold text-gray-900">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">
             Cancel Subscription
           </h3>
         </div>
 
-        <p className="text-gray-600 text-sm mb-4 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 leading-relaxed">
           How would you like to cancel your subscription? You can cancel
           immediately or let it run until the end of your current billing
           period.
         </p>
         
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-6">
-          <p className="text-xs text-red-700 font-medium">
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800/50 rounded-lg p-3 mb-6 transition-colors">
+          <p className="text-xs text-red-700 dark:text-red-300 font-medium">
             <span className="font-bold">Note:</span> We do not offer refunds for cancelled subscriptions.
           </p>
         </div>
 
         <div className="flex flex-col gap-3">
           <button
-            className="w-full py-2.5 px-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800
-              font-medium text-sm cursor-pointer hover:bg-amber-100 transition-colors disabled:opacity-50"
+            className="w-full py-2.5 px-4 rounded-xl bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800/50 text-amber-800 dark:text-amber-200
+              font-medium text-sm cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-800/50 transition-colors disabled:opacity-50"
             onClick={() => onConfirm(true)}
             disabled={isPending}
           >
             Cancel at end of billing period
           </button>
           <button
-            className="w-full py-2.5 px-4 rounded-xl bg-red-50 border border-red-200 text-red-700
-              font-medium text-sm cursor-pointer hover:bg-red-100 transition-colors disabled:opacity-50"
+            className="w-full py-2.5 px-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-200
+              font-medium text-sm cursor-pointer hover:bg-red-100 dark:hover:bg-red-800/50 transition-colors disabled:opacity-50"
             onClick={() => onConfirm(false)}
             disabled={isPending}
           >
             Cancel immediately
           </button>
           <button
-            className="w-full py-2.5 px-4 rounded-xl bg-gray-100 text-gray-600
-              font-medium text-sm cursor-pointer hover:bg-gray-200 transition-colors border-none"
+            className="w-full py-2.5 px-4 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300
+              font-medium text-sm cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors border-none"
             onClick={onClose}
             disabled={isPending}
           >
@@ -158,7 +158,7 @@ function ProfileCard({ user }) {
         : "bg-blue-500";
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-colors">
       {/* Gradient header */}
       <div className="h-24 bg-gradient-to-r from-blue-500 via-violet-500 to-purple-600 relative">
         <div className="absolute -bottom-10 left-6">
@@ -178,8 +178,8 @@ function ProfileCard({ user }) {
         {/* Name & Role */}
         <div className="flex items-start justify-between mb-1">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">{user.name}</h2>
-            <p className="text-sm text-gray-500">{user.email}</p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white transition-colors">{user.name}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors">{user.email}</p>
           </div>
           <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 whitespace-nowrap">
             {user.role}
@@ -187,27 +187,27 @@ function ProfileCard({ user }) {
         </div>
 
         {/* Auth provider */}
-        <div className="flex items-center gap-1.5 mt-3 text-xs text-gray-500">
+        <div className="flex items-center gap-1.5 mt-3 text-xs text-gray-500 dark:text-gray-400 transition-colors">
           <ProviderIcon className={`${providerConfig.color}`} />
           <span>Signed in via {providerConfig.label}</span>
         </div>
 
         {/* Storage usage */}
-        <div className="mt-5 pt-4 border-t border-gray-100">
+        <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-700 transition-colors">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-700">Storage</span>
-            <span className="text-xs text-gray-500">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Storage</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
               {formatSize(user.usedStorageInBytes)} of{" "}
               {formatSize(user.maxStorageInBytes)}
             </span>
           </div>
-          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full ${storageBarColor} transition-all duration-500`}
               style={{ width: `${storagePercent}%` }}
             />
           </div>
-          <p className="text-xs text-gray-400 mt-1.5">
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5 transition-colors">
             {storagePercent.toFixed(1)}% used
           </p>
         </div>
@@ -249,20 +249,20 @@ function SubscriptionCard({ subscription, onCancel, cancelPending }) {
   const canChangePlan = !isEffectivelyFree && !isPendingCancellation && !isNonCard;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-colors">
       {/* Header */}
-      <div className="px-6 py-5 border-b border-gray-100">
+      <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 transition-colors">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white shadow-md">
               <PlanIcon />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-gray-900">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white transition-colors">
                 {isEffectivelyFree && status === "cancelled" ? "Free" : subscription.planName} Plan
               </h3>
               {!isEffectivelyFree && subscription.billingCycle && (
-                <p className="text-xs text-gray-500 capitalize">
+                <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors capitalize">
                   {subscription.billingCycle} billing
                 </p>
               )}
@@ -280,7 +280,7 @@ function SubscriptionCard({ subscription, onCancel, cancelPending }) {
                 : statusConfig.label}
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-gray-100 text-gray-600">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
               <FaCloud className="text-[10px]" />
               Free Plan
             </span>
@@ -306,10 +306,10 @@ function SubscriptionCard({ subscription, onCancel, cancelPending }) {
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-violet-100 to-blue-100 flex items-center justify-center">
               <FaCrown className="text-2xl text-violet-500" />
             </div>
-            <h4 className="text-lg font-semibold text-gray-900 mb-2">
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white transition-colors mb-2">
               Upgrade your experience
             </h4>
-            <p className="text-sm text-gray-500 mb-5 max-w-xs mx-auto">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-5 max-w-xs mx-auto transition-colors">
               Get more storage, advanced features, and priority support with a
               paid plan.
             </p>
@@ -364,7 +364,7 @@ function SubscriptionCard({ subscription, onCancel, cancelPending }) {
 
             {/* Non-card warning */}
             {isNonCard && (
-              <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs leading-relaxed">
+              <div className="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800/50 text-amber-800 dark:text-amber-200 text-xs leading-relaxed transition-colors">
                 <span className="font-semibold">⚠ Non-card payment detected:</span> Plan
                 upgrades/downgrades are only supported for card subscriptions.
                 To enable plan changes in the future, cancel and re-subscribe
@@ -373,12 +373,12 @@ function SubscriptionCard({ subscription, onCancel, cancelPending }) {
             )}
 
             {/* Actions */}
-            <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-100">
+            <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-100 dark:border-gray-700 transition-colors">
               <button
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-colors border ${
                   canChangePlan
-                    ? "bg-violet-50 text-violet-700 cursor-pointer hover:bg-violet-100 border-violet-200"
-                    : "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200"
+                    ? "bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 cursor-pointer hover:bg-violet-100 dark:hover:bg-violet-900/50 border-violet-200 dark:border-violet-800/50"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed border-gray-200 dark:border-gray-700"
                 }`}
                 onClick={() => navigate("/plans")}
                 disabled={!canChangePlan}
@@ -395,8 +395,8 @@ function SubscriptionCard({ subscription, onCancel, cancelPending }) {
               </button>
               {showCancelButton && (
                 <button
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 text-red-600
-                    font-medium text-sm cursor-pointer hover:bg-red-100 transition-colors border border-red-200
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400
+                    font-medium text-sm cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors border border-red-200 dark:border-red-800/50
                     disabled:opacity-50"
                   onClick={onCancel}
                   disabled={cancelPending}
@@ -416,10 +416,10 @@ function SubscriptionCard({ subscription, onCancel, cancelPending }) {
 function DetailItem({ label, value }) {
   return (
     <div>
-      <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
+      <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1 transition-colors">
         {label}
       </p>
-      <p className="text-sm font-semibold text-gray-800">{value}</p>
+      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 transition-colors">{value}</p>
     </div>
   );
 }
@@ -465,7 +465,7 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 transition-colors">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-6">
           <div className="h-8 w-32 bg-gray-200 rounded animate-pulse mb-8" />
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -483,7 +483,7 @@ const Dashboard = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex items-center justify-center transition-colors">
         <div className="bg-red-50 text-red-700 py-4 px-6 rounded-xl text-sm max-w-md text-center">
           {error.message || "Something went wrong. Please try again."}
         </div>
@@ -492,13 +492,13 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 transition-colors">
       {/* Header */}
       <header className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 pb-4">
         <button
-          className="flex items-center gap-2 text-gray-500 hover:text-gray-800 transition-colors
+          className="flex items-center gap-2 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors
             bg-transparent border-none cursor-pointer text-sm font-medium"
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/app")}
         >
           <FaArrowLeft className="text-xs" />
           Back to Drive
@@ -507,10 +507,10 @@ const Dashboard = () => {
 
       {/* Page title */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 pb-6">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight transition-colors">
           My Account
         </h1>
-        <p className="text-gray-500 text-sm mt-1">
+        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 transition-colors">
           Manage your profile and subscription
         </p>
       </section>

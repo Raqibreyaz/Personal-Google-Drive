@@ -25,7 +25,7 @@ const Login = () => {
 
   const loginMutation = useMutation({
     mutationFn: () => loginWithOtp(formData.email, otp),
-    onSuccess: () => navigate("/"),
+    onSuccess: () => navigate("/app"),
   });
 
   const handleChange = (e) => {

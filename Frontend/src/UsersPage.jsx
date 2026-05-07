@@ -27,7 +27,7 @@ export default function UsersPage() {
 
   useEffect(() => {
     if (currentUser && currentUser.role === "User") {
-      navigate("/");
+      navigate("/app");
     }
   }, [currentUser, navigate]);
 
@@ -108,21 +108,21 @@ export default function UsersPage() {
   const actionBtnBase = "py-1.5 px-3 text-[13px] border-none rounded text-white cursor-pointer transition-colors duration-200";
 
   return (
-    <div className="max-w-[900px] mx-auto p-5 font-sans">
-      <header className="flex items-center gap-3 mb-6 border-b-2 border-gray-300 pb-3">
-        <button className="bg-none border-none text-xl cursor-pointer text-blue-600 flex items-center p-1.5 rounded-full hover:bg-gray-100" onClick={() => navigate("/")}>
+    <div className="max-w-[900px] mx-auto p-5 font-sans transition-colors bg-white dark:bg-gray-900 min-h-screen">
+      <header className="flex items-center gap-3 mb-6 border-b-2 border-gray-300 dark:border-gray-700 pb-3 transition-colors">
+        <button className="bg-none border-none text-xl cursor-pointer text-blue-600 flex items-center p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" onClick={() => navigate("/app")}>
           <FaArrowLeft />
         </button>
         <div>
-          <h1 className="m-0 text-3xl font-bold">All Users</h1>
-          <p className="mt-1 text-[0.9rem] text-gray-500">
+          <h1 className="m-0 text-3xl font-bold dark:text-white">All Users</h1>
+          <p className="mt-1 text-[0.9rem] text-gray-500 dark:text-gray-400 transition-colors">
             {currentUser?.name} — {currentUser?.role}
           </p>
         </div>
       </header>
 
       {(error || logoutMutation.error || softDeleteMutation.error || hardDeleteMutation.error || recoverMutation.error || changeRoleMutation.error) && (
-        <div className="bg-red-50 text-red-700 py-2.5 px-4 rounded-md mb-4 text-[0.9rem]">
+        <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 py-2.5 px-4 rounded-md mb-4 text-[0.9rem]">
           {error?.message || 
            logoutMutation.error?.message || 
            softDeleteMutation.error?.message || 
@@ -135,16 +135,16 @@ export default function UsersPage() {
       <table className="w-full border-collapse">
         <thead>
           <tr>
-            <th className="border border-gray-200 p-3 text-left bg-gray-50 font-semibold text-[0.9rem] text-gray-700">Name</th>
-            <th className="border border-gray-200 p-3 text-left bg-gray-50 font-semibold text-[0.9rem] text-gray-700">Email</th>
-            <th className="border border-gray-200 p-3 text-left bg-gray-50 font-semibold text-[0.9rem] text-gray-700">Role</th>
-            <th className="border border-gray-200 p-3 text-left bg-gray-50 font-semibold text-[0.9rem] text-gray-700">Status</th>
-            {isAdminOrOwner && <th className="border border-gray-200 p-3 text-left bg-gray-50 font-semibold text-[0.9rem] text-gray-700">Actions</th>}
+            <th className="border border-gray-200 dark:border-gray-700 p-3 text-left bg-gray-50 dark:bg-gray-800 font-semibold text-[0.9rem] text-gray-700 dark:text-gray-200 transition-colors">Name</th>
+            <th className="border border-gray-200 dark:border-gray-700 p-3 text-left bg-gray-50 dark:bg-gray-800 font-semibold text-[0.9rem] text-gray-700 dark:text-gray-200 transition-colors">Email</th>
+            <th className="border border-gray-200 dark:border-gray-700 p-3 text-left bg-gray-50 dark:bg-gray-800 font-semibold text-[0.9rem] text-gray-700 dark:text-gray-200 transition-colors">Role</th>
+            <th className="border border-gray-200 dark:border-gray-700 p-3 text-left bg-gray-50 dark:bg-gray-800 font-semibold text-[0.9rem] text-gray-700 dark:text-gray-200 transition-colors">Status</th>
+            {isAdminOrOwner && <th className="border border-gray-200 dark:border-gray-700 p-3 text-left bg-gray-50 dark:bg-gray-800 font-semibold text-[0.9rem] text-gray-700 dark:text-gray-200 transition-colors">Actions</th>}
           </tr>
         </thead>
         <tbody>
           {isLoading ? (
-            <tr><td colSpan={isAdminOrOwner ? 5 : 4} className="text-center p-10 text-gray-500 italic">Loading...</td></tr>
+            <tr><td colSpan={isAdminOrOwner ? 5 : 4} className="text-center p-10 text-gray-500 dark:text-gray-400 italic">Loading...</td></tr>
           ) : users.map((user) => {
             if (user.email === currentUser?.email) return null;
             const isDeleted = user.isDeleted;
@@ -152,20 +152,20 @@ export default function UsersPage() {
             const userIsUnderMe = canActOn(user.role);
 
             return (
-              <tr key={user._id} className={isDeleted ? "opacity-60 bg-red-50" : ""}>
-                <td className="border border-gray-200 p-3">
+              <tr key={user._id} className={`${isDeleted ? "opacity-60 bg-red-50 dark:bg-red-900/10" : ""} transition-colors`}>
+                <td className="border border-gray-200 dark:border-gray-700 p-3 dark:text-gray-300">
                   {user.name}
                   {isDeleted && (
-                    <span className="inline-block bg-red-200 text-red-800 text-[0.7rem] py-0.5 px-1.5 rounded-lg ml-2 font-semibold uppercase">
+                    <span className="inline-block bg-red-200 dark:bg-red-900/30 text-red-800 dark:text-red-400 text-[0.7rem] py-0.5 px-1.5 rounded-lg ml-2 font-semibold uppercase">
                       deleted
                     </span>
                   )}
                 </td>
-                <td className="border border-gray-200 p-3">{user.email}</td>
-                <td className="border border-gray-200 p-3">
+                <td className="border border-gray-200 dark:border-gray-700 p-3 dark:text-gray-300">{user.email}</td>
+                <td className="border border-gray-200 dark:border-gray-700 p-3">
                   {userIsUnderMe && !isDeleted ? (
                     <select
-                      className="py-1.5 px-2.5 border border-gray-300 rounded text-[0.85rem] bg-white cursor-pointer focus:outline-none focus:border-blue-600"
+                      className="py-1.5 px-2.5 border border-gray-300 dark:border-gray-600 rounded text-[0.85rem] bg-white dark:bg-gray-700 text-gray-900 dark:text-white cursor-pointer focus:outline-none focus:border-blue-600 transition-colors"
                       value={user.role}
                       onChange={(e) => changeRole(user._id, e.target.value)}
                     >
@@ -176,19 +176,19 @@ export default function UsersPage() {
                       ))}
                     </select>
                   ) : (
-                    user.role
+                    <span className="dark:text-gray-300">{user.role}</span>
                   )}
                 </td>
-                <td className="border border-gray-200 p-3">
+                <td className="border border-gray-200 dark:border-gray-700 p-3">
                   <span
-                    className={`inline-block py-0.5 px-2.5 rounded-xl text-[0.8rem] font-medium ${user.isLoggedIn ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-500"
+                    className={`inline-block py-0.5 px-2.5 rounded-xl text-[0.8rem] font-medium transition-colors ${user.isLoggedIn ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                       }`}
                   >
                     {user.isLoggedIn ? "Online" : "Offline"}
                   </span>
                 </td>
                 {isAdminOrOwner && (
-                  <td className="border border-gray-200 p-3">
+                  <td className="border border-gray-200 dark:border-gray-700 p-3">
                     <div className="flex gap-2 flex-wrap">
                       {isDeleted ? (
                         isOwner && (

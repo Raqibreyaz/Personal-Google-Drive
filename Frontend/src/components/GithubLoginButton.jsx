@@ -36,7 +36,7 @@ const GithubLoginButton = ({
         if (event.origin !== FRONTEND_URI) return;
         if (event.data?.message === "success") {
           console.log("navigating to home page");
-          navigate("/");
+          navigate("/app");
         }
         setLoading(false);
         window.removeEventListener("message", onMessage);

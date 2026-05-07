@@ -113,17 +113,17 @@ function getYearlySavings(plan) {
 // ─── Skeleton Loader ────────────────────────────────────────────────────────
 function PlanCardSkeleton() {
     return (
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 animate-pulse">
-            <div className="h-12 w-12 bg-gray-200 rounded-xl mb-4" />
-            <div className="h-6 w-24 bg-gray-200 rounded mb-2" />
-            <div className="h-8 w-32 bg-gray-200 rounded mb-1" />
-            <div className="h-4 w-20 bg-gray-200 rounded mb-6" />
-            <div className="h-10 w-full bg-gray-200 rounded-lg mb-6" />
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 animate-pulse transition-colors">
+            <div className="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded-xl mb-4" />
+            <div className="h-6 w-24 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
+            <div className="h-8 w-32 bg-gray-200 dark:bg-gray-700 rounded mb-1" />
+            <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded mb-6" />
+            <div className="h-10 w-full bg-gray-200 dark:bg-gray-700 rounded-lg mb-6" />
             <div className="space-y-3">
                 {[...Array(4)].map((_, i) => (
                     <div key={i} className="flex items-center gap-2">
-                        <div className="h-4 w-4 bg-gray-200 rounded-full" />
-                        <div className="h-4 w-full bg-gray-200 rounded" />
+                        <div className="h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                        <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded" />
                     </div>
                 ))}
             </div>
@@ -210,7 +210,7 @@ function PlanCard({ plan, isYearly, isPopular, currentSubscription, onPostPaymen
         mutationFn: updateSubscription,
         onSuccess: () => {
             onPostPayment?.();
-            navigate("/dashboard");
+            navigate("/app/dashboard");
         },
     });
 
@@ -234,7 +234,7 @@ function PlanCard({ plan, isYearly, isPopular, currentSubscription, onPostPaymen
                 // console.log(response.razorpay_subscription_id);
                 // console.log(response.razorpay_signature);
                 onPostPayment?.();
-                navigate("/dashboard");
+                navigate("/app/dashboard");
             },
             "prefill": prefill,
             "notes": notes,
@@ -253,7 +253,7 @@ function PlanCard({ plan, isYearly, isPopular, currentSubscription, onPostPaymen
                 updateMutation.mutate(activeVariant.planKey);
             }
         } else if (buttonConfig.action === "navigate") {
-            navigate("/");
+            navigate("/app");
         }
     };
 
@@ -261,11 +261,11 @@ function PlanCard({ plan, isYearly, isPopular, currentSubscription, onPostPaymen
 
     return (
         <div
-            className={`relative bg-white rounded-2xl border ${isCurrentPlan
-                ? `${colors.border} ring-2 ring-emerald-300`
+            className={`relative bg-white dark:bg-gray-800 rounded-2xl border ${isCurrentPlan
+                ? `${colors.border} ring-2 ring-emerald-300 dark:ring-emerald-600`
                 : isPopular
                     ? `${colors.border} ring-2 ${colors.ring}`
-                    : "border-gray-200"
+                    : "border-gray-200 dark:border-gray-700"
                 } p-6 flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group`}
         >
             {/* Current Plan badge */}
@@ -297,7 +297,7 @@ function PlanCard({ plan, isYearly, isPopular, currentSubscription, onPostPaymen
             </div>
 
             {/* Name + Storage */}
-            <h3 className="text-xl font-bold text-gray-900 mb-1">{name}</h3>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1 transition-colors">{name}</h3>
             <p className={`text-sm font-medium ${colors.accent} mb-4`}>
                 {plan.storage}
             </p>
@@ -305,11 +305,11 @@ function PlanCard({ plan, isYearly, isPopular, currentSubscription, onPostPaymen
             {/* Price */}
             <div className="mb-6">
                 <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-extrabold text-gray-900">
+                    <span className="text-3xl font-extrabold text-gray-900 dark:text-white transition-colors">
                         {isFree ? "Free" : formatPrice(price)}
                     </span>
                     {!isFree && (
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-gray-500 dark:text-gray-400 transition-colors">
                             /{isYearly ? "year" : "month"}
                         </span>
                     )}
@@ -324,9 +324,9 @@ function PlanCard({ plan, isYearly, isPopular, currentSubscription, onPostPaymen
             {/* CTA Button */}
             <button
                 className={`w-full py-2.5 px-4 rounded-xl font-semibold text-sm transition-all duration-200 shadow-sm mb-6 flex items-center justify-center gap-2 ${isCurrentPlan
-                    ? "bg-emerald-100 text-emerald-700 cursor-default"
+                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 cursor-default"
                     : buttonConfig.disabled
-                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        ? "bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed"
                         : `text-white ${colors.btn} cursor-pointer hover:shadow-md`
                     }`}
                 onClick={handleButtonClick}
@@ -351,13 +351,13 @@ function PlanCard({ plan, isYearly, isPopular, currentSubscription, onPostPaymen
             )}
 
             {/* Feature list */}
-            <div className="border-t border-gray-100 pt-5">
+            <div className="border-t border-gray-100 dark:border-gray-700 pt-5 transition-colors">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
                     What's included
                 </p>
                 <ul className="space-y-2.5">
                     {features.map((feature, idx) => (
-                        <li key={idx} className="flex items-start gap-2.5 text-sm text-gray-600">
+                        <li key={idx} className="flex items-start gap-2.5 text-sm text-gray-600 dark:text-gray-300 transition-colors">
                             <FaCheck className={`${colors.accent} text-xs mt-1 shrink-0`} />
                             <span>{feature}</span>
                         </li>
@@ -418,13 +418,13 @@ const Plans = () => {
     }, [])
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 transition-colors">
             {/* Header */}
             <header className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-4">
                 <button
-                    className="flex items-center gap-2 text-gray-500 hover:text-gray-800 transition-colors 
+                    className="flex items-center gap-2 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors 
             bg-transparent border-none cursor-pointer text-sm font-medium"
-                    onClick={() => navigate("/")}
+                    onClick={() => navigate("/app")}
                 >
                     <FaArrowLeft className="text-xs" />
                     Back to Drive
@@ -433,13 +433,13 @@ const Plans = () => {
 
             {/* Hero section */}
             <section className="max-w-3xl mx-auto text-center px-4 pt-4 pb-10">
-                <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight mb-4">
+                <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-4 transition-colors">
                     Choose your{" "}
                     <span className="bg-gradient-to-r from-violet-600 to-blue-500 bg-clip-text text-transparent">
                         perfect plan
                     </span>
                 </h1>
-                <p className="text-gray-500 text-lg max-w-xl mx-auto leading-relaxed">
+                <p className="text-gray-500 dark:text-gray-400 text-lg max-w-xl mx-auto leading-relaxed transition-colors">
                     Secure cloud storage for all your files. Start free and scale as you
                     grow — no surprises, cancel anytime.
                 </p>
@@ -447,12 +447,12 @@ const Plans = () => {
                 {/* Billing toggle */}
                 <div className="flex items-center justify-center gap-3 mt-8">
                     <span
-                        className={`text-sm font-semibold transition-colors ${!isYearly ? "text-gray-900" : "text-gray-400"}`}
+                        className={`text-sm font-semibold transition-colors ${!isYearly ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-gray-500"}`}
                     >
                         Monthly
                     </span>
                     <button
-                        className={`relative w-14 h-7 rounded-full transition-colors duration-300 cursor-pointer border-none ${isYearly ? "bg-violet-600" : "bg-gray-300"}`}
+                        className={`relative w-14 h-7 rounded-full transition-colors duration-300 cursor-pointer border-none ${isYearly ? "bg-violet-600" : "bg-gray-300 dark:bg-gray-600"}`}
                         onClick={() => setIsYearly(!isYearly)}
                         aria-label="Toggle billing cycle"
                     >
@@ -462,7 +462,7 @@ const Plans = () => {
                         />
                     </button>
                     <span
-                        className={`text-sm font-semibold transition-colors ${isYearly ? "text-gray-900" : "text-gray-400"}`}
+                        className={`text-sm font-semibold transition-colors ${isYearly ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-gray-500"}`}
                     >
                         Yearly
                     </span>
@@ -486,16 +486,16 @@ const Plans = () => {
             <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-20">
                 {/* Current plan info banner */}
                 {currentSubscription && currentSubscription.planKey !== "free" && !isEffectivelyFree && (
-                    <div className="bg-violet-50 border border-violet-200 rounded-xl px-5 py-3 mb-6 flex items-center justify-between max-w-2xl mx-auto">
-                        <p className="text-sm text-violet-800">
+                    <div className="bg-violet-50 dark:bg-violet-900/30 border border-violet-200 dark:border-violet-800/50 rounded-xl px-5 py-3 mb-6 flex items-center justify-between max-w-2xl mx-auto transition-colors">
+                        <p className="text-sm text-violet-800 dark:text-violet-200">
                             You're on the <span className="font-bold">{currentSubscription.planName}</span> plan
                             {currentSubscription.status === "cancelled" && currentSubscription.cancelAtPeriodEnd && (
-                                <span className="text-amber-700"> (cancels at period end)</span>
+                                <span className="text-amber-700 dark:text-amber-400"> (cancels at period end)</span>
                             )}
                         </p>
                         <button
-                            className="text-xs font-semibold text-violet-600 hover:underline cursor-pointer bg-transparent border-none"
-                            onClick={() => navigate("/dashboard")}
+                            className="text-xs font-semibold text-violet-600 dark:text-violet-400 hover:underline cursor-pointer bg-transparent border-none transition-colors"
+                            onClick={() => navigate("/app/dashboard")}
                         >
                             Manage →
                         </button>
@@ -504,9 +504,9 @@ const Plans = () => {
 
                 {/* Non-card limitation banner */}
                 {currentSubscription && currentSubscription.paymentMethod && currentSubscription.paymentMethod !== "card" && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 mb-6 flex items-center gap-3 max-w-2xl mx-auto">
+                    <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800/50 rounded-xl px-5 py-3 mb-6 flex items-center gap-3 max-w-2xl mx-auto transition-colors">
                         <FaCreditCard className="text-amber-500 shrink-0" />
-                        <p className="text-xs text-amber-800 leading-relaxed">
+                        <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed transition-colors">
                             <span className="font-semibold">Plan changes unavailable:</span> Your subscription was paid via a non-card method.
                             To upgrade or downgrade, cancel your current plan and re-subscribe with a card.
                         </p>

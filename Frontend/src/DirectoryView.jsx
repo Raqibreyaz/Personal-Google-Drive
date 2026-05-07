@@ -113,7 +113,7 @@ function DirectoryView() {
 
   // Handlers
   const handleOpenItem = useCallback((type, id) => {
-    if (type === "directory") navigate(`/directory/${id}`);
+    if (type === "directory") navigate(`/app/directory/${id}`);
     else window.location.href = getFileUrl(id);
   }, [navigate]);
 
@@ -245,7 +245,7 @@ function DirectoryView() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
       ) : combinedItems.length === 0 ? (
-        <p className="text-center italic mt-10 text-gray-500">
+        <p className="text-center italic mt-10 text-gray-500 dark:text-gray-400 transition-colors">
           {dirNotFound
             ? "Directory not found or you do not have access to it!"
             : "This folder is empty. Upload files or create a folder to see some data."}

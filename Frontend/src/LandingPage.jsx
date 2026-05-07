@@ -13,7 +13,7 @@ import Footer from "./landing/Footer";
  */
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gray-950 text-white antialiased">
+    <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-950 dark:text-white antialiased transition-colors">
       {/* Meta hint: set <title>Storra – Cloud Storage for Humans</title> in your HTML head */}
       <Nav />
 

@@ -10,7 +10,7 @@ export default function GoogleLoginButton() {
         onSuccess={async function ({ credential }) {
           try {
             await loginWithGoogle(credential);
-            navigate("/");
+            navigate("/app");
           } catch (err) {
             alert(err.message || "Google login failed");
           }
@@ -20,6 +20,7 @@ export default function GoogleLoginButton() {
         }}
         text="continue_with"
         size="large"
+        theme="filled_blue"
         useOneTap
       />
     </div>

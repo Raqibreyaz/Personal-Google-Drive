@@ -65,15 +65,15 @@ export default function SharedWithMePage() {
         });
     };
 
-    const menuItemClass = "px-5 py-2 cursor-pointer whitespace-nowrap text-gray-700 hover:bg-gray-100";
+    const menuItemClass = "px-5 py-2 cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors";
 
     return (
-        <div className="max-w-[800px] mx-auto p-5">
-            <header className="flex items-center gap-3 mb-6 border-b-2 border-gray-300 pb-3">
-                <button className="bg-none border-none text-xl cursor-pointer text-blue-600 flex items-center p-1.5 rounded-full hover:bg-gray-100" onClick={() => navigate("/")}>
+        <div className="max-w-[800px] mx-auto p-5 transition-colors bg-white dark:bg-gray-900 min-h-screen">
+            <header className="flex items-center gap-3 mb-6 border-b-2 border-gray-300 dark:border-gray-700 pb-3 transition-colors">
+                <button className="bg-none border-none text-xl cursor-pointer text-blue-600 flex items-center p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" onClick={() => navigate("/app")}>
                     <FaArrowLeft />
                 </button>
-                <h1 className="m-0 text-3xl">Shared with Me</h1>
+                <h1 className="m-0 text-3xl dark:text-white">Shared with Me</h1>
             </header>
 
             {(error || deleteMutation.error || renameMutation.error) && (
@@ -112,33 +112,33 @@ export default function SharedWithMePage() {
                         const isEditor = entry.permission === "Edit";
 
                         return (
-                            <div
-                                key={idx}
-                                className="flex items-center justify-between py-3 px-4 border border-gray-200 rounded-md cursor-pointer bg-gray-50 transition-colors hover:bg-gray-100"
-                                onClick={() => handleFileClick(fileId)}
-                                onContextMenu={(e) => handleContextMenu(e, fileId)}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <FileIcon filename={fileName} isDirectory={false} className="text-xl shrink-0" />
-                                    <div className="flex flex-col">
-                                        <span className="font-medium text-gray-800">{fileName}</span>
-                                        <span className="text-[0.8rem] text-gray-500">{formatSize(entry.file?.size)}</span>
+                                <div
+                                    key={idx}
+                                    className="flex items-center justify-between py-3 px-4 border border-gray-200 dark:border-gray-700 rounded-md cursor-pointer bg-gray-50 dark:bg-gray-800 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    onClick={() => handleFileClick(fileId)}
+                                    onContextMenu={(e) => handleContextMenu(e, fileId)}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <FileIcon filename={fileName} isDirectory={false} className="text-xl shrink-0" />
+                                        <div className="flex flex-col">
+                                            <span className="font-medium text-gray-800 dark:text-white transition-colors">{fileName}</span>
+                                            <span className="text-[0.8rem] text-gray-500 dark:text-gray-400 transition-colors">{formatSize(entry.file?.size)}</span>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="flex items-center gap-1 py-1 px-2.5 rounded-xl text-[0.8rem] font-medium bg-sky-100 text-sky-700">
-                                        {isEditor ? (<><FaEdit /> Editor</>) : (<><FaEye /> Viewer</>)}
-                                    </span>
-                                    <div
-                                        className="flex items-center justify-center text-lg cursor-pointer text-gray-500 rounded-full p-1.5 hover:bg-gray-200"
-                                        onClick={(e) => handleContextMenu(e, fileId)}
-                                    >
-                                        <BsThreeDotsVertical />
+                                    <div className="flex items-center gap-2">
+                                        <span className="flex items-center gap-1 py-1 px-2.5 rounded-xl text-[0.8rem] font-medium bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 transition-colors">
+                                            {isEditor ? (<><FaEdit /> Editor</>) : (<><FaEye /> Viewer</>)}
+                                        </span>
+                                        <div
+                                            className="flex items-center justify-center text-lg cursor-pointer text-gray-500 dark:text-gray-400 rounded-full p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                            onClick={(e) => handleContextMenu(e, fileId)}
+                                        >
+                                            <BsThreeDotsVertical />
+                                        </div>
                                     </div>
-                                </div>
 
                                 {activeContextMenu === fileId && (
-                                    <div className="fixed bg-white shadow-md rounded z-[999] py-1" style={{ top: contextMenuPos.y, left: contextMenuPos.x }}>
+                                    <div className="fixed bg-white dark:bg-gray-800 shadow-md rounded z-[999] py-1 border dark:border-gray-700 transition-colors" style={{ top: contextMenuPos.y, left: contextMenuPos.x }}>
                                         <div className={menuItemClass} onClick={(e) => { e.stopPropagation(); window.open(getFileUrl(fileId), "_blank"); }}>
                                             Download
                                         </div>

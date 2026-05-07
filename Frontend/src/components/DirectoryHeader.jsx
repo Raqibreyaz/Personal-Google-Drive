@@ -17,6 +17,7 @@ import ProfileImage from "./ProfileImage";
 import { sanitizeText } from "../utils/sanitize.js";
 import formatSize from "../utils/formatSize.js";
 import { getCurrentUser, logoutSelf, logoutAllDevices } from "../api/user.js";
+import ThemeToggle from "./ThemeToggle";
 
 function DirectoryHeader({
   directoryName,
@@ -92,11 +93,11 @@ function DirectoryHeader({
   const iconBtnClass = "bg-transparent border-none cursor-pointer text-xl text-blue-600 flex items-center justify-center disabled:opacity-50 hover:enabled:text-blue-800";
 
   return (
-    <header className="flex flex-wrap justify-between items-center border-b-2 border-gray-300 py-2.5 sticky top-0 z-10 bg-white">
-      <div className="flex items-center m-0 mr-5 text-xl sm:text-2xl rounded text-gray-800 font-semibold overflow-x-auto whitespace-nowrap hide-scrollbar flex-1">
+    <header className="flex flex-wrap justify-between items-center border-b-2 border-gray-300 dark:border-gray-700 py-2.5 sticky top-0 z-10 bg-white dark:bg-gray-900 transition-colors">
+      <div className="flex items-center m-0 mr-5 text-xl sm:text-2xl rounded text-gray-800 dark:text-gray-200 font-semibold overflow-x-auto whitespace-nowrap hide-scrollbar flex-1">
         <span
           className="cursor-pointer hover:underline text-blue-600 transition-colors"
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/app")}
         >
           My Drive
         </span>
@@ -105,7 +106,7 @@ function DirectoryHeader({
             <FaChevronRight className="mx-2 text-sm text-gray-400" />
             <span
               className="cursor-pointer hover:underline text-blue-600 transition-colors truncate max-w-[120px] sm:max-w-[200px]"
-              onClick={() => navigate(`/directory/${folder._id}`)}
+              onClick={() => navigate(`/app/directory/${folder._id}`)}
               title={folder.name}
             >
               {folder.name}
@@ -115,13 +116,14 @@ function DirectoryHeader({
         {directoryName !== "My Drive" && (
           <span className="flex items-center">
             <FaChevronRight className="mx-2 text-sm text-gray-400" />
-            <span className="text-gray-600 truncate max-w-[150px] sm:max-w-xs block" title={directoryName}>
+            <span className="text-gray-600 dark:text-gray-300 truncate max-w-[150px] sm:max-w-xs block" title={directoryName}>
               {directoryName}
             </span>
           </span>
         )}
       </div>
       <div className="flex flex-wrap items-center gap-2.5 ml-4">
+        <ThemeToggle />
         <button className={iconBtnClass} title="Create Folder" onClick={onCreateFolderClick} disabled={disabled}>
           <FaFolderPlus />
         </button>
@@ -136,14 +138,14 @@ function DirectoryHeader({
           </button>
 
           {showUserMenu && (
-            <div className="absolute top-7 right-0 bg-white border border-gray-200 rounded-md shadow-md z-[999] min-w-[150px]">
+            <div className="absolute top-7 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-md z-[999] min-w-[150px]">
               {loggedIn ? (
                 <div>
                   <div className="flex flex-col overflow-hidden gap-1 px-4 py-2 cursor-auto">
-                    <span className="font-semibold text-gray-800">{userName}</span>
-                    <span className="text-[0.85rem] text-gray-500">{userEmail}</span>
+                    <span className="font-semibold text-gray-800 dark:text-gray-200">{userName}</span>
+                    <span className="text-[0.85rem] text-gray-500 dark:text-gray-400">{userEmail}</span>
                     <div className="flex flex-col text-xs mr-2 mt-2">
-                      <div className="w-40 h-1 bg-gray-300 rounded-full overflow-hidden mb-1">
+                      <div className="w-40 h-1 bg-gray-300 dark:bg-gray-600 rounded-full overflow-hidden mb-1">
                         <div
                           className="bg-blue-500 rounded-full h-full"
                           style={{ width: `${(usedStorageInBytes / maxStorageInBytes) * 100}%` }}
@@ -160,43 +162,43 @@ function DirectoryHeader({
                       </div>
                     </div>
                   </div>
-                  <div className="border-t border-gray-200" />
+                  <div className="border-t border-gray-200 dark:border-gray-700" />
                   <div
-                    className="flex overflow-hidden gap-1 px-4 py-2 cursor-pointer text-gray-700 text-[0.95rem] whitespace-nowrap hover:bg-gray-100"
-                    onClick={() => { navigate("/dashboard"); setShowUserMenu(false); }}
+                    className="flex overflow-hidden gap-1 px-4 py-2 cursor-pointer text-gray-700 dark:text-gray-300 text-[0.95rem] whitespace-nowrap hover:bg-gray-100 dark:hover:bg-gray-700"
+                    onClick={() => { navigate("/app/dashboard"); setShowUserMenu(false); }}
                   >
                     <FaTachometerAlt className="text-base text-violet-500" />
                     <span>My Account</span>
                   </div>
                   <div
-                    className="flex overflow-hidden gap-1 px-4 py-2 cursor-pointer text-gray-700 text-[0.95rem] whitespace-nowrap hover:bg-gray-100"
+                    className="flex overflow-hidden gap-1 px-4 py-2 cursor-pointer text-gray-700 dark:text-gray-300 text-[0.95rem] whitespace-nowrap hover:bg-gray-100 dark:hover:bg-gray-700"
                     onClick={() => { navigate("/plans"); setShowUserMenu(false); }}
                   >
                     <FaCrown className="text-base text-yellow-500" />
                     <span>Upgrade Plan</span>
                   </div>
                   <div
-                    className="flex overflow-hidden gap-1 px-4 py-2 cursor-pointer text-gray-700 text-[0.95rem] whitespace-nowrap hover:bg-gray-100"
-                    onClick={() => { navigate("/shared"); setShowUserMenu(false); }}
+                    className="flex overflow-hidden gap-1 px-4 py-2 cursor-pointer text-gray-700 dark:text-gray-300 text-[0.95rem] whitespace-nowrap hover:bg-gray-100 dark:hover:bg-gray-700"
+                    onClick={() => { navigate("/app/shared"); setShowUserMenu(false); }}
                   >
                     <FaShareAlt className="text-base text-blue-600" />
                     <span>Shared with Me</span>
                   </div>
                   {userRole !== "User" && (
                     <div
-                      className="flex overflow-hidden gap-1 px-4 py-2 cursor-pointer text-gray-700 text-[0.95rem] whitespace-nowrap hover:bg-gray-100"
-                      onClick={() => { navigate("/users"); setShowUserMenu(false); }}
+                      className="flex overflow-hidden gap-1 px-4 py-2 cursor-pointer text-gray-700 dark:text-gray-300 text-[0.95rem] whitespace-nowrap hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => { navigate("/app/users"); setShowUserMenu(false); }}
                     >
                       <FaUsers className="text-base text-blue-600" />
                       <span>Manage Users</span>
                     </div>
                   )}
-                  <div className="border-t border-gray-200" />
-                  <div className="flex overflow-hidden gap-1 px-4 py-2 cursor-pointer text-gray-700 text-[0.95rem] whitespace-nowrap hover:bg-gray-100" onClick={handleLogout}>
+                  <div className="border-t border-gray-200 dark:border-gray-700" />
+                  <div className="flex overflow-hidden gap-1 px-4 py-2 cursor-pointer text-gray-700 dark:text-gray-300 text-[0.95rem] whitespace-nowrap hover:bg-gray-100 dark:hover:bg-gray-700" onClick={handleLogout}>
                     <FaSignOutAlt className="text-base text-blue-600" />
                     <span>Logout</span>
                   </div>
-                  <div className="flex overflow-hidden gap-1 px-4 py-2 cursor-pointer text-gray-700 text-[0.95rem] whitespace-nowrap hover:bg-gray-100" onClick={handleLogoutAll}>
+                  <div className="flex overflow-hidden gap-1 px-4 py-2 cursor-pointer text-gray-700 dark:text-gray-300 text-[0.95rem] whitespace-nowrap hover:bg-gray-100 dark:hover:bg-gray-700" onClick={handleLogoutAll}>
                     <FaSignOutAlt className="text-base text-blue-600" />
                     <span>Logout All</span>
                   </div>
@@ -204,14 +206,14 @@ function DirectoryHeader({
               ) : (
                 <>
                   <div
-                    className="flex overflow-hidden gap-1 px-4 py-2 cursor-pointer text-gray-700 text-[0.95rem] whitespace-nowrap hover:bg-gray-100"
+                    className="flex overflow-hidden gap-1 px-4 py-2 cursor-pointer text-gray-700 dark:text-gray-300 text-[0.95rem] whitespace-nowrap hover:bg-gray-100 dark:hover:bg-gray-700"
                     onClick={() => { navigate("/login"); setShowUserMenu(false); }}
                   >
                     <FaSignInAlt className="text-base text-blue-600" />
                     <span>Login</span>
                   </div>
                   <div
-                    className="flex overflow-hidden gap-1 px-4 py-2 cursor-pointer text-gray-700 text-[0.95rem] whitespace-nowrap hover:bg-gray-100"
+                    className="flex overflow-hidden gap-1 px-4 py-2 cursor-pointer text-gray-700 dark:text-gray-300 text-[0.95rem] whitespace-nowrap hover:bg-gray-100 dark:hover:bg-gray-700"
                     onClick={() => { navigate("/plans"); setShowUserMenu(false); }}
                   >
                     <FaCrown className="text-base text-yellow-500" />

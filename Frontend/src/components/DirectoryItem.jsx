@@ -40,8 +40,8 @@ function DirectoryItem({
     <div
       className={`flex flex-col relative gap-1 border rounded cursor-pointer transition-all duration-200 select-none ${
         isSelected
-          ? "border-blue-500 bg-blue-50 shadow-sm"
-          : "border-gray-200 bg-gray-50 hover:bg-white hover:border-blue-300 hover:shadow-md"
+          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 shadow-sm"
+          : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-white dark:hover:bg-gray-700 hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-md"
       }`}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
@@ -54,13 +54,13 @@ function DirectoryItem({
             isDirectory={item.isDirectory}
             className="text-xl shrink-0"
           />
-          <span className={`truncate text-sm font-medium ${isSelected ? "text-blue-900" : "text-gray-700"}`}>
+          <span className={`truncate text-sm font-medium ${isSelected ? "text-blue-900 dark:text-blue-100" : "text-gray-700 dark:text-gray-300"}`}>
             {item.name}
           </span>
         </div>
 
         <div
-          className="flex items-center justify-center text-xl cursor-pointer ml-auto text-gray-700 rounded-full p-2 mr-1 hover:bg-gray-200"
+          className="flex items-center justify-center text-xl cursor-pointer ml-auto text-gray-700 dark:text-gray-400 rounded-full p-2 mr-1 hover:bg-gray-200 dark:hover:bg-gray-600"
           onClick={(e) => {
             e.stopPropagation();
             handleContextMenu(e, item._id);

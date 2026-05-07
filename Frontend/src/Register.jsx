@@ -26,7 +26,7 @@ const Register = () => {
 
   const registerMutation = useMutation({
     mutationFn: () => registerWithOtp({ ...formData, name: sanitizeText(formData.name) }, otp),
-    onSuccess: () => navigate("/"),
+    onSuccess: () => navigate("/app"),
   });
 
   const handleChange = (e) => {

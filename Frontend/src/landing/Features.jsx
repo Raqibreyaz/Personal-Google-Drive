@@ -21,7 +21,7 @@ const featureRows = [
     title: "Path-aware directory details",
     text: "Storra tracks every folder's full path from root and computes recursive counts of child files and folders, so you always know exactly where you are in your drive.",
     visual: (
-      <div className="bg-gray-800/60 border border-white/10 rounded-xl p-5 flex flex-col gap-3">
+      <div className="bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-white/10 rounded-xl p-5 flex flex-col gap-3 transition-colors">
         <div className="flex items-center gap-1 text-xs text-gray-400 flex-wrap">
           {["My Drive", "Projects", "2025", "Q2"].map((crumb, i, arr) => (
             <span key={crumb} className="flex items-center gap-1">
@@ -49,7 +49,7 @@ const featureRows = [
     title: "Direct S3 uploads with guardrails",
     text: "Your browser talks directly to S3 using a presigned URL signed by the Storra backend. The backend validates content-type and file size before signing, so bad actors can't sneak in oversized or mistyped files.",
     visual: (
-      <div className="bg-gray-800/60 border border-white/10 rounded-xl p-5 flex flex-col gap-3 font-mono text-xs">
+      <div className="bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-white/10 rounded-xl p-5 flex flex-col gap-3 font-mono text-xs transition-colors">
         <div className="flex items-center gap-3">
           <span className="bg-blue-500/10 text-blue-400 border border-blue-400/20 px-3 py-1.5 rounded-lg">Browser</span>
           <span className="text-gray-600">──────▶</span>
@@ -70,7 +70,7 @@ const featureRows = [
     title: "Webhook-powered subscriptions",
     text: "Razorpay fires webhooks on every subscription event. Storra listens, updates the user's plan in the database, and immediately adjusts the enforced storage quota — no manual intervention needed.",
     visual: (
-      <div className="bg-gray-800/60 border border-white/10 rounded-xl p-5 flex flex-col gap-2 font-mono text-xs">
+      <div className="bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-white/10 rounded-xl p-5 flex flex-col gap-2 font-mono text-xs transition-colors">
         {[
           { from: "Razorpay", arrow: "→ Webhook →", to: "Storra API" },
           { from: "Storra API", arrow: "→ writes →", to: "Database" },
@@ -93,24 +93,24 @@ export default function Features() {
   return (
     <>
       {/* Benefits strip */}
-      <section id="features" className="bg-gray-950 py-20 border-t border-white/5">
+      <section id="features" className="bg-white dark:bg-gray-950 py-20 border-t border-gray-200 dark:border-white/5 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-gray-400 max-w-2xl mx-auto mb-12 text-lg leading-relaxed">
+          <p className="text-center text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-12 text-lg leading-relaxed transition-colors">
             Storra is a cloud drive built to{" "}
-            <span className="text-white font-medium">never desync</span> your
+            <span className="text-gray-900 dark:text-white font-medium">never desync</span> your
             storage, billing, and subscription state.
           </p>
           <div className="grid sm:grid-cols-3 gap-6">
             {benefits.map((b) => (
               <div
                 key={b.title}
-                className="bg-gray-900 border border-white/5 rounded-2xl p-6 flex flex-col gap-4 hover:border-blue-500/30 transition-colors duration-200"
+                className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-white/5 rounded-2xl p-6 flex flex-col gap-4 hover:border-blue-500/30 transition-colors duration-200"
               >
                 <span className="w-11 h-11 bg-blue-500/10 rounded-xl flex items-center justify-center text-xl">
                   {b.emoji}
                 </span>
-                <h3 className="font-semibold text-white text-lg">{b.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{b.body}</p>
+                <h3 className="font-semibold text-gray-900 dark:text-white text-lg transition-colors">{b.title}</h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed transition-colors">{b.body}</p>
               </div>
             ))}
           </div>
@@ -118,7 +118,7 @@ export default function Features() {
       </section>
 
       {/* Feature detail rows */}
-      <section id="feature-details" className="bg-gray-900/50 py-20 border-t border-white/5">
+      <section id="feature-details" className="bg-gray-50 dark:bg-gray-900/50 py-20 border-t border-gray-200 dark:border-white/5 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-24">
           {featureRows.map((row) => (
             <div
@@ -126,8 +126,8 @@ export default function Features() {
               className={`grid lg:grid-cols-2 gap-10 items-center ${row.flip ? "lg:[direction:rtl]" : ""}`}
             >
               <div className={`flex flex-col gap-4 ${row.flip ? "lg:[direction:ltr]" : ""}`}>
-                <h3 className="text-2xl font-bold text-white">{row.title}</h3>
-                <p className="text-gray-400 leading-relaxed">{row.text}</p>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white transition-colors">{row.title}</h3>
+                <p className="text-gray-600 dark:text-gray-400 leading-relaxed transition-colors">{row.text}</p>
               </div>
               <div className={row.flip ? "lg:[direction:ltr]" : ""}>{row.visual}</div>
             </div>

@@ -3,29 +3,21 @@ TODO:
     - github logged in, but cookie didnt get saved, while google and local login works
     - dangerous site error occuring on previewing a file
     - nodemailer failed to refresh token, need to publish app to production maybe
+    - handling razorpay specific errors in error middleware 
+    - ErrorCode fixing in Error Responses
+    - check for atomic Ops requirement wherever possible
+    - make the subscription creation and user updation atomic
   
   FEATURE_REQUEST:
-    - toggling 2FA
-    - light/dark mode feature
-    - adding invoices feature in the dashboard
-    - import from google drive
-    - directory sharing functionality with the help of path property
-    - Bulk Download
     - Download as zip for both files and directories
     - sort by name,date,size etc.
-    - filter
+    - import from google drive
+    - toggling 2FA
   
   - deploy the frontend to netlify or any reliable place -> skip deploying to aws(s3 + cloudfornt) for now
   - cloudfront's filenaming and downloading problem -> remove cloudfront for now
 
 LATER:
-  - handling razorpay specific errors in error middleware
-  - check for atomic Ops requirement wherever possible
-  - make the subscription creation and user updation atomic
-  - ErrorCode fixing in Error Responses
-  - Move/copy files/directories from one directory to other
-  - put user's files to glacier storage for low cost where needed
-  - handle case where user has paused subscription from too long
   - razorpay plan updation failing with, checking with a different card
       {
         statusCode: 400,
@@ -34,7 +26,14 @@ LATER:
           description: "Can't update subscription immediately when card mandate is applicable"
         }
       }
+  - handle case where user has paused subscription from too long
+  - put user's files to glacier storage for low cost where needed
+  - Move/copy files/directories from one directory to other
+  - adding invoices feature in the dashboard
+  - directory sharing functionality with the help of path property
+  - filter
 
 DONE:
     - otp input goes hidden on page refresh, login and signup page
     - adding landing page
+    - light/dark mode feature
