@@ -1,16 +1,22 @@
 TODO:
+  1. add compound index to avoid duplicate name file/directory
+  2. between db updation and s3 updation of the file' name, a user can try to look for the file which is not in consistent state
+  3. what if the rollback also get fail
+
   ISSUES:
-    - github logged in, but cookie didnt get saved, while google and local login works
-    - dangerous site error occuring on previewing a file
+    - handle these in error middleware:
+      - razorpay specific errors
+      - mongodb/mongoose specific errors
+      - app specific errors
+
     - nodemailer failed to refresh token, need to publish app to production maybe
-    - handling razorpay specific errors in error middleware 
+    - dangerous site error occuring on previewing a file
     - ErrorCode fixing in Error Responses
     - check for atomic Ops requirement wherever possible
     - make the subscription creation and user updation atomic
+    - github logged in, but cookie didnt get saved, while google and local login works
   
   FEATURE_REQUEST:
-    - Download as zip for both files and directories
-    - sort by name,date,size etc.
     - import from google drive
     - toggling 2FA
   
@@ -26,12 +32,15 @@ LATER:
           description: "Can't update subscription immediately when card mandate is applicable"
         }
       }
+  - Download as zip for both files and directories
+  - sort by name,date,size etc.
   - handle case where user has paused subscription from too long
   - put user's files to glacier storage for low cost where needed
   - Move/copy files/directories from one directory to other
   - adding invoices feature in the dashboard
   - directory sharing functionality with the help of path property
   - filter
+  - remove file extension from s3 object completely to maintain atomic updates
 
 DONE:
     - otp input goes hidden on page refresh, login and signup page

@@ -78,7 +78,10 @@ export const initiateFileUpload = async (req, res, next) => {
   let effectiveQuota = user.maxStorageInBytes;
 
   const subscription = await Subscription.findOne({ user: userId }).lean();
-  if (subscription?.razorpaySubscriptionId && subscription.status !== "active") {
+  if (
+    subscription?.razorpaySubscriptionId &&
+    subscription.status !== "active"
+  ) {
     if (["paused", "past_due", "in_grace"].includes(subscription.status))
       throw new ApiError(
         403,
@@ -223,32 +226,40 @@ export const completeFileUpload = async (req, res, next) => {
 
 export const renameFile = async (req, res, next) => {
   const fileId = req.params.fileId;
-  const newFilename = req.body.newFilename;
-  const newExt = path.extname(newFilename);
 
-  const file = req.fileDoc
-    ? req.fileDoc
-    : await File.findById(req.params.fileId).lean();
+  const initialFilename = req.body.newFilename;
+  const newFilename = dataSanitizer.sanitize(initialFilename);
+  if (!newFilename || newFilename?.length !== initialFilename?.length)
+    throw new ApiError(400, "Invalid Filename!");
+  
+  let file = req.fileDoc;
+  if (!file) file = await File.findById(req.params.fileId).lean();
   if (!file) throw new ApiError(404, "File not found!", FILE_NOT_FOUND);
+  
+  if (file.name === newFilename) throw new ApiError(200, "No change!");
+  
+  const newExt = path.extname(newFilename);
   const oldExt = file.extname;
 
   // check if a file with that name already exists in that directory
-  const fileAlreadyExist = !!(await File.exists({
+  const duplicate = await File.exists({
+    _id: { $ne: file._id },
     parentDir: file.parentDir,
     name: newFilename,
-  }).lean());
-  if (fileAlreadyExist) {
-    throw new ApiError(
-      400,
-      "A file with this name already exist in this directory",
-      DUPLICATE_FILE,
-    );
+  }).lean();
+
+  if (duplicate) {
+    throw new ApiError(400, "Duplicate file name!", DUPLICATE_FILE);
   }
 
   // updating filename in DB
-  await File.findByIdAndUpdate(file._id, {
-    $set: { name: newFilename, extname: newExt },
-  });
+  await File.findByIdAndUpdate(
+    file._id,
+    {
+      $set: { name: newFilename, extname: newExt },
+    },
+    { runValidators: true },
+  );
 
   // renaming when extension differs
   if (oldExt != newExt) {
@@ -256,9 +267,13 @@ export const renameFile = async (req, res, next) => {
       await renameObject(fileId + oldExt, fileId + newExt);
     } catch (error) {
       // rollback changes
-      await File.findByIdAndUpdate(file._id, {
-        $set: { name: file.name, extname: oldExt },
-      });
+      await File.findByIdAndUpdate(
+        file._id,
+        {
+          $set: { name: file.name, extname: oldExt },
+        },
+        { runValidators: true },
+      );
       throw error;
     }
   }

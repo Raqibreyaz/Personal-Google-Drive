@@ -27,47 +27,59 @@ export const getUser = async (req, res, next) => {
 // delete user either soft/hard
 export const deleteUser = async (req, res, next) => {
   const { userId } = req.params;
-  const { permanent } = req.query;
+  const isPermanent = req.query.permanent === "true";
 
   if (req.session.user._id.equals(userId))
     throw new ApiError(400, "You cant delete yourself!", SELF_ACTION_DENIED);
 
-  const user = await User.findById(userId);
+  const user = await User.findOne({ _id: userId }).select("_id name").lean();
+  if (!user) throw new ApiError(400, "Given User doesn't exist!");
 
-  if (!user) throw new ApiError(404, "User not found!", USER_NOT_FOUND);
+  // take all the user's files
+  let files = null;
 
+  // atomically delete directories,files,fileshares and user
   const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    await Session.deleteMany({ user: user._id }, { session });
+  await session.withTransaction(async () => {
+    await Session.deleteMany({ user: userId }, { session });
 
     // soft delete
-    if (!permanent || permanent === "false") {
-      await user.updateOne({ $set: { isDeleted: true } }, { session });
+    if (!isPermanent) {
+      await User.updateOne(
+        { _id: userId },
+        { $set: { isDeleted: true } },
+        { session },
+      );
     }
 
     // hard delete
     else {
-      await Directory.deleteMany({ user: user._id }, { session });
-      const files = await File.find({ user: user._id }).select("extname");
-      for (const file of files) {
-        await file.deleteOne({ session });
-        await FileShare.deleteMany({ file: file._id }, { session });
-        await deleteObject(file.id + file.extname);
-      }
-      await FileShare.deleteMany({ user: user._id }, { session });
-      await user.deleteOne({ session });
+      files = await File.find({ user: userId })
+        .session(session)
+        .select("_id extname")
+        .lean();
+      await Directory.deleteMany({ user: userId }, { session });
+      await FileShare.deleteMany(
+        {
+          file: { $in: files.map((file) => file._id) },
+        },
+        { session },
+      );
+      await FileShare.deleteMany({ user: userId }, { session });
+      await File.deleteMany({ user: userId }, { session });
+      await User.deleteOne({ _id: userId }, { session });
     }
+  });
 
-    await session.commitTransaction();
-  } catch (error) {
-    await session.abortTransaction();
-    throw error;
+  // deleting from s3 when permanently deleting
+  if (isPermanent && files) {
+    for (const file of files) {
+      await deleteObject(String(file._id) + file.extname);
+    }
   }
 
   res.status(200).json({
-    message: `successfully deleted user ${user.name}${permanent ? " permanently" : ""}`,
+    message: `successfully deleted user ${user.name}${isPermanent ? " permanently" : ""}`,
   });
 };
 

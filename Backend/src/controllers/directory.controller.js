@@ -96,9 +96,6 @@ export const updateDirectoryName = async (req, res, next) => {
   const initialDirname = req.body.newDirname;
   const newDirname = dataSanitizer.sanitize(req.body.newDirname);
 
-  console.log(initialDirname);
-  console.log(newDirname);
-
   if (!newDirname || initialDirname?.length !== newDirname?.length)
     throw new ApiError(400, "Invalid Dirname!", INVALID_DIRNAME);
 
@@ -107,19 +104,19 @@ export const updateDirectoryName = async (req, res, next) => {
     throw new ApiError(404, "Directory doesn't exist!", DIR_NOT_FOUND);
 
   // check if a directory with that name already exists in that directory
-  const directoryAlreadyExist = !!(await Directory.exists({
+  const duplicate = await Directory.exists({
     parentDir: directory.parentDir,
     name: newDirname,
     user: userId,
-  }).lean());
-  if (directoryAlreadyExist)
-    throw new ApiError(
-      400,
-      "A directory with this name already exist in this level!",
-      DUPLICATE_DIR,
-    );
+  }).lean();
+  if (duplicate) {
+    throw new ApiError(400, "Duplicate directory name!", DUPLICATE_DIR);
+  }
 
-  await directory.updateOne({ $set: { name: newDirname } });
+  await directory.updateOne(
+    { $set: { name: newDirname } },
+    { runValidators: true },
+  );
 
   res.status(200).json({ message: "Directory name updated!" });
 };
