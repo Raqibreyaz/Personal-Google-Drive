@@ -35,6 +35,10 @@ const webhookEventSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     required: true,
   },
+  error: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null,
+  },
 });
 
 const WebhookEvent = mongoose.model("WebhookEvent", webhookEventSchema);

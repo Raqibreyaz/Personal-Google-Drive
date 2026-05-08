@@ -36,14 +36,16 @@ app.use(
 
 app.use(preventCsrf) //preventing CSRF, helpful when cors by-passed
 app.use(cookieParser(process.env.COOKIE_PARSER_KEY));
-app.use(express.json());
 
+// body should be passed as raw to webhook
+app.use("/subscriptions", subscriptionRoutes);
+
+app.use(express.json());
 app.use("/directory", checkAuthentication, directoryRoutes);
 app.use("/file", checkAuthentication, fileRoutes);
 app.use("/share", checkAuthentication, fileShareRoutes);
 app.use("/user", checkAuthentication, userRoutes);
 app.use("/item", checkAuthentication, itemRoutes);
-app.use("/subscriptions", subscriptionRoutes);
 app.use("/plans", planRoutes);
 app.use("/auth", authRoutes);
 

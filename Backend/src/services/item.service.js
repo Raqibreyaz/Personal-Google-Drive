@@ -37,33 +37,26 @@ export const bulkDeleteItemsService = async (selectedDirs, selectedFiles) => {
     : selectedFiles[0]?.parentDir;
 
   const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
-    const fileIds = fileInfos.map((f) => f.fileId);
-    if (fileIds.length) {
-      await File.deleteMany({ _id: { $in: fileIds } }, { session });
-      await FileShare.deleteMany({ file: { $in: fileIds } }, { session });
-    }
+    await session.withTransaction(async () => {
+      const fileIds = fileInfos.map((f) => f.fileId);
+      if (fileIds.length) {
+        await File.deleteMany({ _id: { $in: fileIds } }, { session });
+        await FileShare.deleteMany({ file: { $in: fileIds } }, { session });
+      }
 
-    if (dirIds.length) {
-      await Directory.deleteMany({ _id: { $in: dirIds } }, { session });
-    }
+      if (dirIds.length) {
+        await Directory.deleteMany({ _id: { $in: dirIds } }, { session });
+      }
 
-    if (parentDirId) {
-      await updateParentSize(parentDirId, -decreasingSize, session);
-    }
-
-    await session.commitTransaction();
-  } catch (error) {
-    await session.abortTransaction();
-    throw error;
+      if (parentDirId) {
+        await updateParentSize(parentDirId, -decreasingSize, session);
+      }
+    });
   } finally {
-    session.endSession();
+    await session.endSession();
   }
 
   // S3 cleanup AFTER commit (orphan files are harmless)
-  await deleteObjects(fileInfos.map((file) => ({ Key: file.objectKey }))).catch(
-    () => {},
-  );
+  await deleteObjects(fileInfos.map((file) => ({ Key: file.objectKey })));
 };

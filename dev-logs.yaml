@@ -118,3 +118,18 @@ issues:
 
   - issue: file upload status and ancestor directories size updation were not atomic so this can be problematic if file status updated but size remained unaltered
   - fix: used transactions to atomically update the ancestor's size and file status
+
+  - issue: stringifying json in our end and the stringified json comes from razorpay may have keys in different order, resulting in different signature even with same data
+  - fix: do not pass self-stringified json, pass the raw json received from razorpay
+
+  - issue: razorpay logic in the controller, from configuring with env vars to handling different webhook events made the code large and error prone
+  - fix: splitted the razorpay logic + webhook event handling as a separate service file, increasing code readability + reducing errors
+
+  - issue: we are only storing events which are pending or processed state, but for failed case we are ignoring it, causing difficulty to know exactly what happened
+  - fix: added logic to store failed processing state also + added a new field 'error' to store the exact error of the catch block
+
+  - issue: there can be some cases where incoming subscription event is orphaned(no db entry exist) or the corresponding plan doesnt exist now or the event by somehow came as a non-subscription entity
+  - fix: added checks to ignore these subscriptions and returning 200 status so that razorpay should stop sending the same event in loop
+
+  - issue: handling the razorpay webhook events was not transaction based, which could cause inconsistent state
+  - fix: used mongodb transactions to make the steps atomic
