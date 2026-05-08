@@ -22,8 +22,8 @@ export const bulkDeleteItemsService = async (selectedDirs, selectedFiles) => {
   }
 
   // Add specifically selected files to deletion task
-  for (const { _id: fileId, extname } of selectedFiles) {
-    const objectKey = fileId.toString() + extname;
+  for (const { _id: fileId } of selectedFiles) {
+    const objectKey = fileId.toString();
     fileInfos.push({ fileId, objectKey });
   }
 

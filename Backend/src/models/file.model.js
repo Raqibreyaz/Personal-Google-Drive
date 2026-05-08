@@ -17,10 +17,6 @@ const fileSchema = new mongoose.Schema(
       ref: "Directory",
       required: [true, "Provide File's parent!"],
     },
-    extname: {
-      type: String,
-      trim: true,
-    },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

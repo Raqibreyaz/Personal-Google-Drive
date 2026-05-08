@@ -78,7 +78,7 @@ export const deleteUser = async (req, res, next) => {
   // deleting from s3, when permanently deleting 'files' will not be null
   if (isPermanent && files) {
     for (const file of files) {
-      await deleteObject(String(file._id) + file.extname);
+      await deleteObject(file._id.toString());
     }
   }
 
@@ -129,8 +129,7 @@ export const recoverUser = async (req, res, next) => {
     { $set: { isDeleted: false } },
   );
 
-  if (!result.modifiedCount)
-    throw new ApiError(404, "User not found!");
+  if (!result.modifiedCount) throw new ApiError(404, "User not found!");
 
   res.status(200).json({ message: "User recovered successfully!" });
 };
@@ -140,14 +139,10 @@ export const changeUserRole = async (req, res, next) => {
   const { role } = req.body;
 
   if (req.session.user._id.equals(userId))
-    throw new ApiError(
-      400,
-      `You can't change your own role!`
-    );
+    throw new ApiError(400, `You can't change your own role!`);
 
   const result = await User.updateOne({ _id: userId }, { $set: { role } });
-  if (!result.modifiedCount)
-    throw new ApiError(404, "User not found!");
+  if (!result.modifiedCount) throw new ApiError(404, "User not found!");
 
   res.status(200).json({ message: "User role changes successfully!" });
 };

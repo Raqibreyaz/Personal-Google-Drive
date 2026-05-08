@@ -36,7 +36,7 @@ export const getFileContents = async (req, res, next) => {
   let toDownload = req.query.action === "download";
 
   if (!toDownload) {
-    const ext = file.extname.toLowerCase();
+    const ext = path.extname(file.name).toLowerCase();
     if (SAFE_INLINE_TYPES.has(ext)) {
     } else if (RENDER_AS_TEXT.has(ext)) {
       renderAsText = true;
@@ -47,7 +47,7 @@ export const getFileContents = async (req, res, next) => {
   }
 
   const fileUrl = await getObjectPresignedUrl(
-    fileId + file.extname,
+    fileId,
     file.name,
     toDownload,
     renderAsText,
@@ -64,7 +64,7 @@ export const initiateFileUpload = async (req, res, next) => {
   const userId = req.targetUserId || req.session.user._id.toString();
   const parentDirId = req.params.parentDirId;
   const fileSize = req.body.fileSize;
-  const fileType = req.body.fileType;
+  const fileType = req.body.fileType || "application/octet-stream";
   const fileName = req.body.fileName;
 
   const user = await User.findById(userId).lean();
@@ -113,7 +113,6 @@ export const initiateFileUpload = async (req, res, next) => {
   }
 
   const fileId = new ObjectId();
-  const fileExt = path.extname(fileName);
 
   // get the parentDir or assign the root directory
   let parentDir = rootDir;
@@ -125,10 +124,7 @@ export const initiateFileUpload = async (req, res, next) => {
 
   // throw when given directory doesn't exist
   if (!parentDir)
-    throw new ApiError(
-      404,
-      "Given Parent Directory doesn't exist!"
-    );
+    throw new ApiError(404, "Given Parent Directory doesn't exist!");
 
   // check if a file with that name already exists in that directory
   const file = await File.exists({
@@ -140,7 +136,7 @@ export const initiateFileUpload = async (req, res, next) => {
   if (file && !file.isUploading) {
     throw new ApiError(
       400,
-      "A file with this name already exist in this directory"
+      "A file with this name already exist in this directory",
     );
   }
 
@@ -152,7 +148,6 @@ export const initiateFileUpload = async (req, res, next) => {
       name: fileName,
       size: fileSize,
       parentDir: parentDir._id,
-      extname: fileExt,
       isUploading: true,
       user: userId,
     });
@@ -160,7 +155,7 @@ export const initiateFileUpload = async (req, res, next) => {
 
   // create a new presigned url of the file
   const signedUrl = await createObjectPresignedUrl(
-    fileId + fileExt,
+    fileId.toString(),
     fileSize,
     fileType,
   );
@@ -197,10 +192,10 @@ export const completeFileUpload = async (req, res, next) => {
   if (!file.isUploading) throw new ApiError(400, "File was already uploaded!");
 
   // checking if the uploaded file's size is the expected size
-  const uploadedSize = await getObjectSize(file._id.toString() + file.extname);
+  const uploadedSize = await getObjectSize(file._id.toString());
   if (uploadedSize !== file.size) {
     await File.deleteOne({ _id: file._id });
-    await deleteObject(file._id.toString() + file.extname);
+    await deleteObject(file._id.toString());
 
     throw new ApiError(
       400,
@@ -240,13 +235,10 @@ export const renameFile = async (req, res, next) => {
     throw new ApiError(400, "Invalid Filename!");
 
   let file = req.fileDoc;
-  if (!file) file = await File.findById(req.params.fileId).lean();
+  if (!file) file = await File.findById(fileId).lean();
   if (!file) throw new ApiError(404, "File not found!");
 
   if (file.name === newFilename) throw new ApiError(200, "No change!");
-
-  const newExt = path.extname(newFilename);
-  const oldExt = file.extname;
 
   // check if a file with that name already exists in that directory
   const duplicate = await File.exists({
@@ -263,27 +255,10 @@ export const renameFile = async (req, res, next) => {
   await File.findByIdAndUpdate(
     file._id,
     {
-      $set: { name: newFilename, extname: newExt },
+      $set: { name: newFilename },
     },
     { runValidators: true },
   );
-
-  // renaming when extension differs
-  if (oldExt != newExt) {
-    try {
-      await renameObject(fileId + oldExt, fileId + newExt);
-    } catch (error) {
-      // rollback changes
-      await File.findByIdAndUpdate(
-        file._id,
-        {
-          $set: { name: file.name, extname: oldExt },
-        },
-        { runValidators: true },
-      );
-      throw error;
-    }
-  }
 
   res.status(200).json({ message: "File Renamed!" });
 };
@@ -297,8 +272,7 @@ export const setAllowAnyone = async (req, res, next) => {
     { $set: { allowAnyoneAccess: permission ? permission : null } },
   );
 
-  if (!result.modifiedCount)
-    throw new ApiError(404, "file not found!");
+  if (!result.modifiedCount) throw new ApiError(404, "file not found!");
 
   res.status(200).json({ message: "File permissions saved successfully!" });
 };
@@ -314,10 +288,10 @@ export const deleteFile = async (req, res, next) => {
     await session.withTransaction(async () => {
       // remove all fileshare docs where this file shared
       await FileShare.deleteMany({ file: file._id }, { session });
-      
+
       // remove the file
       await File.findByIdAndDelete(file._id, { session });
-      
+
       // updating ancestors size
       await updateParentSize(file.parentDir, -file.size, session);
     });
@@ -325,7 +299,7 @@ export const deleteFile = async (req, res, next) => {
     await session.endSession();
   }
   // remove file from storage now
-  await deleteObject(fileId + file.extname);
+  await deleteObject(fileId);
 
   res.status(200).json({ message: "File Deleted!" });
 };

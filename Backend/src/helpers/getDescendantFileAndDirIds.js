@@ -12,9 +12,7 @@ export default async function getDescendantFileAndDirIds(
     .lean();
 
   // get all the files of the current directory
-  const files = await File.find({ parentDir: currDirId })
-    .select("extname")
-    .lean();
+  const files = await File.find({ parentDir: currDirId }).select("_id").lean();
 
   // get all sub directories Ids and their content's Ids recursively
   for (const { _id: dirId } of directories) {
@@ -23,8 +21,8 @@ export default async function getDescendantFileAndDirIds(
   }
 
   // removing all the files from storage
-  for (const { _id: fileId, extname } of files) {
-    const objectKey = fileId.toString() + extname ?? "";
+  for (const { _id: fileId } of files) {
+    const objectKey = fileId.toString();
     fileInfos.push({ fileId, objectKey });
   }
 }
