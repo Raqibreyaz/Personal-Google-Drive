@@ -135,4 +135,10 @@ issues:
   - fix: used mongodb transactions to make the steps atomic
 
   - issue: webhook event having 'pending' status doesnt sound that much good in comparison to 'failed' 'processed'
-  - fix: replaced 'pending' to 'processing' 
+  - fix: replaced 'pending' to 'processing'
+
+  - issue: ErrorCode were increasing the readability but increase overhead also due to writing an error code for each error which increases manual handling
+  - fix: used ErrorCode only at rare scenarios while made the app to work without it
+
+  - issue: errors specific to AWS, Razorpay, Redis etc were handled by something went wrong type generic error
+  - fix: added safe less generic service specific error handling

@@ -3,11 +3,7 @@ import ApiError from "../helpers/apiError.js";
 import dataSanitizer from "../helpers/dataSanitizer.js";
 import Directory from "../models/directory.model.js";
 import File from "../models/file.model.js";
-import {
-  DIR_NOT_FOUND,
-  INVALID_DIRNAME,
-  DUPLICATE_DIR,
-} from "../constants/errorCodes.js";
+
 import { bulkDeleteItemsService } from "../services/item.service.js";
 
 export const getDirectoryContents = async (req, res, next) => {
@@ -24,7 +20,7 @@ export const getDirectoryContents = async (req, res, next) => {
         .populate("path", "name")
         .select("-user -__v")
         .lean();
-  if (!dir) throw new ApiError(404, "Directory not found!", DIR_NOT_FOUND);
+  if (!dir) throw new ApiError(404, "Directory not found!","DIR_NOT_FOUND");
 
   // get all files where parent is 'dir'
   const files = await File.find({
@@ -51,7 +47,7 @@ export const createDirectory = async (req, res, next) => {
   const parentDirId = req.params.parentDirId;
 
   if (!dirname || initialDirname.length !== dirname.length)
-    throw new ApiError(400, "Invalid Dirname!", INVALID_DIRNAME);
+    throw new ApiError(400, "Invalid Dirname!");
 
   const parentDir = parentDirId
     ? await Directory.findOne({ user: userId, _id: parentDirId }).lean()
@@ -59,8 +55,7 @@ export const createDirectory = async (req, res, next) => {
   if (!parentDir)
     throw new ApiError(
       404,
-      "Given Parent directory doesn't exist!",
-      DIR_NOT_FOUND,
+      "Given Parent directory doesn't exist!"
     );
 
   // check if a file with that name already exists in that directory
@@ -72,8 +67,7 @@ export const createDirectory = async (req, res, next) => {
   if (directoryAlreadyExist)
     throw new ApiError(
       400,
-      "A directory with this name already exist in this level!",
-      DUPLICATE_DIR,
+      "A directory with this name already exist in this level!"
     );
 
   const dirPath = [...parentDir.path, parentDir._id];
@@ -97,11 +91,11 @@ export const updateDirectoryName = async (req, res, next) => {
   const newDirname = dataSanitizer.sanitize(req.body.newDirname);
 
   if (!newDirname || initialDirname?.length !== newDirname?.length)
-    throw new ApiError(400, "Invalid Dirname!", INVALID_DIRNAME);
+    throw new ApiError(400, "Invalid Dirname!");
 
   const directory = await Directory.findOne({ _id: dirId, user: userId });
   if (!directory)
-    throw new ApiError(404, "Directory doesn't exist!", DIR_NOT_FOUND);
+    throw new ApiError(404, "Directory doesn't exist!");
 
   // check if a directory with that name already exists in that directory
   const duplicate = await Directory.exists({
@@ -110,7 +104,7 @@ export const updateDirectoryName = async (req, res, next) => {
     user: userId,
   }).lean();
   if (duplicate) {
-    throw new ApiError(400, "Duplicate directory name!", DUPLICATE_DIR);
+    throw new ApiError(400, "Duplicate directory name!");
   }
 
   await directory.updateOne(
@@ -127,7 +121,7 @@ export const deleteDirectory = async (req, res, next) => {
 
   const currDir = await Directory.findOne({ _id: dirId, user: userId }).lean();
   if (!currDir)
-    throw new ApiError(404, "Directory doesn't exist!", DIR_NOT_FOUND);
+    throw new ApiError(404, "Directory doesn't exist!");
 
   // remove all the files and sub-dirs of sub-dir
   // remove all the files and sub directories of the directory

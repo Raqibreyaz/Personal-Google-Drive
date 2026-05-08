@@ -10,29 +10,18 @@ import createUserWithEssentials from "../services/user.service.js";
 import sendOtpService from "../services/otp.service.js";
 import Role from "../constants/role.js";
 import Provider from "../constants/provider.js";
-import {
-  MISSING_DATA,
-  INVALID_INPUT,
-  ACCOUNT_DELETED,
-  DUPLICATE_USER,
-  INVALID_OAUTH_STATE,
-  OAUTH_ERROR,
-} from "../constants/errorCodes.js";
+
 
 export const registerUser = async (req, res, next) => {
-  if (!req.body) throw new ApiError(400, "No data received!", MISSING_DATA);
+  if (!req.body) throw new ApiError(400, "No data received!");
 
   const { name, password, email } = req.body;
   if (!name || !password || !email)
-    throw new ApiError(
-      400,
-      "Name,Password and Email all are Required!",
-      MISSING_DATA,
-    );
+    throw new ApiError(400, "Name,Password and Email all are Required!");
 
   const sanitizedName = dataSanitizer.sanitize(name);
   if (!sanitizedName || sanitizedName.length !== name.length)
-    throw new ApiError(400, "Invalid name of user!", INVALID_INPUT);
+    throw new ApiError(400, "Invalid name of user!");
 
   const { userId, sessionId } = await createUserWithEssentials({
     name: sanitizedName,
@@ -47,10 +36,10 @@ export const registerUser = async (req, res, next) => {
 };
 
 export const loginUser = async (req, res, next) => {
-  if (!req.body) throw new ApiError(400, "No data received!", MISSING_DATA);
+  if (!req.body) throw new ApiError(400, "No data received!");
 
   const { email } = req.body;
-  if (!email) throw new ApiError(400, "Email is Required!", MISSING_DATA);
+  if (!email) throw new ApiError(400, "Email is Required!");
 
   const user = await User.findOne({ email }).select("_id").lean();
 
@@ -74,7 +63,7 @@ export const loginUser = async (req, res, next) => {
 };
 
 export const loginWithGoogle = async (req, res, next) => {
-  if (!req.body) throw new ApiError(400, "No data received!", MISSING_DATA);
+  if (!req.body) throw new ApiError(400, "No data received!");
 
   const { idToken } = req.body;
   const userData = await verifyIdToken(idToken);
@@ -101,16 +90,14 @@ export const loginWithGoogle = async (req, res, next) => {
     if (userDoc.providerId !== String(userData.sub))
       throw new ApiError(
         400,
-        `User already exists as a ${userDoc.authProvider} user`,
-        DUPLICATE_USER,
+        `User already exists as a ${userDoc.authProvider} user`
       );
 
     // when user got soft deleted
     if (userDoc.isDeleted)
       throw new ApiError(
         403,
-        "Your account is flagged as deleted, Contact App Owner for further details!",
-        ACCOUNT_DELETED,
+        "Your account is flagged as deleted, Contact App Owner for further details!"
       );
 
     // first check if user hasn't exhausted number of sessions limits
@@ -140,7 +127,7 @@ export const loginWithGithub = async (req, res, next) => {
   const savedState = req.signedCookies.oauth_state;
 
   if (!savedState || savedState !== state) {
-    throw new ApiError(401, "Invalid OAuth state", INVALID_OAUTH_STATE);
+    throw new ApiError(401, "Invalid OAuth state");
   }
   res.clearCookie("oauth_state");
 
@@ -167,7 +154,7 @@ export const loginWithGithub = async (req, res, next) => {
       );
   } catch (err) {
     if (err instanceof ApiError) throw err;
-    throw new ApiError(502, "GitHub authentication failed", OAUTH_ERROR);
+    throw new ApiError(502, "GitHub authentication failed");
   }
 
   let githubId, name, avatar_url, primaryEmail;
@@ -191,7 +178,7 @@ export const loginWithGithub = async (req, res, next) => {
       throw new Error("No primary email found on GitHub account");
   } catch (err) {
     if (err instanceof ApiError) throw err;
-    throw new ApiError(502, "Failed to retrieve GitHub profile", OAUTH_ERROR);
+    throw new ApiError(502, "Failed to retrieve GitHub profile");
   }
 
   const user = await User.findOne({ email: primaryEmail }).lean();
@@ -216,15 +203,13 @@ export const loginWithGithub = async (req, res, next) => {
     if (user.isDeleted)
       throw new ApiError(
         403,
-        "Your account is flagged as deleted, Contact App Owner for further details!",
-        ACCOUNT_DELETED,
+        "Your account is flagged as deleted, Contact App Owner for further details!"
       );
 
     if (user.providerId !== String(githubId))
       throw new ApiError(
         400,
-        `User already exists as a ${user.authProvider} user`,
-        DUPLICATE_USER,
+        `User already exists as a ${user.authProvider} user`
       );
 
     // first check if user hasn't exhausted number of sessions limits
@@ -248,10 +233,10 @@ export const loginWithGithub = async (req, res, next) => {
 };
 
 export const sendOtp = async (req, res, next) => {
-  if (!req.body) throw new ApiError(400, "No data received!", MISSING_DATA);
+  if (!req.body) throw new ApiError(400, "No data received!");
 
   const { email } = req.body;
-  if (!email) throw new ApiError(400, "Email is required!", MISSING_DATA);
+  if (!email) throw new ApiError(400, "Email is required!");
 
   const result = await sendOtpService(email);
   res.status(200).json(result);

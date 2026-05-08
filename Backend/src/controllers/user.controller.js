@@ -5,7 +5,7 @@ import User from "../models/user.model.js";
 import Session from "../models/session.model.js";
 import ApiError from "../helpers/apiError.js";
 import FileShare from "../models/fileShare.model.js";
-import { SELF_ACTION_DENIED, USER_NOT_FOUND } from "../constants/errorCodes.js";
+
 import { deleteObject } from "../services/aws.service.js";
 
 export const getUser = async (req, res, next) => {
@@ -30,7 +30,7 @@ export const deleteUser = async (req, res, next) => {
   const isPermanent = req.query.permanent === "true";
 
   if (req.session.user._id.equals(userId))
-    throw new ApiError(400, "You cant delete yourself!", SELF_ACTION_DENIED);
+    throw new ApiError(400, "You cant delete yourself!");
 
   const user = await User.findOne({ _id: userId }).select("_id name").lean();
   if (!user) throw new ApiError(400, "Given User doesn't exist!");
@@ -130,7 +130,7 @@ export const recoverUser = async (req, res, next) => {
   );
 
   if (!result.modifiedCount)
-    throw new ApiError(404, "User not found!", USER_NOT_FOUND);
+    throw new ApiError(404, "User not found!");
 
   res.status(200).json({ message: "User recovered successfully!" });
 };
@@ -142,13 +142,12 @@ export const changeUserRole = async (req, res, next) => {
   if (req.session.user._id.equals(userId))
     throw new ApiError(
       400,
-      `You can't change your own role!`,
-      SELF_ACTION_DENIED,
+      `You can't change your own role!`
     );
 
   const result = await User.updateOne({ _id: userId }, { $set: { role } });
   if (!result.modifiedCount)
-    throw new ApiError(404, "User not found!", USER_NOT_FOUND);
+    throw new ApiError(404, "User not found!");
 
   res.status(200).json({ message: "User role changes successfully!" });
 };

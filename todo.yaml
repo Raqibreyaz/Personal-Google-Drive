@@ -8,7 +8,7 @@ TODO:
       - razorpay specific errors
       - mongodb/mongoose specific errors
       - app specific errors
-    - remove file extension from s3 object completely to maintain atomic updates
+    - remove file extension from s3 object completely to maintain atomic updates, have to handle extension removal also from whole app as it may not be necessary
     - nodemailer failed to refresh token, need to publish app to production maybe
     - dangerous site error occuring on previewing a file
     - ErrorCode fixing in Error Responses

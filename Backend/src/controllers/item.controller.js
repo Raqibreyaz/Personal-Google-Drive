@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 import ApiError from "../helpers/apiError.js";
 import Directory from "../models/directory.model.js";
 import File from "../models/file.model.js";
-import { INVALID_SELECTION, DIFFERENT_PARENTS } from "../constants/errorCodes.js";
+
 import { bulkDeleteItemsService } from "../services/item.service.js";
 
 export const bulkDelete = async (req, res, next) => {
@@ -38,16 +38,14 @@ export const bulkDelete = async (req, res, next) => {
   if (uniqueParents.size > 1) {
     throw new ApiError(
       400,
-      "All selected files and directories should be of same parent!",
-      DIFFERENT_PARENTS
+      "All selected files and directories should be of same parent!"
     );
   }
 
   if (!selectedDirs.length && !selectedFiles.length) {
     throw new ApiError(
       400,
-      "Either directories/files not exist or you are not authorized for it!",
-      INVALID_SELECTION
+      "Either directories/files not exist or you are not authorized for it!"
     );
   }
 

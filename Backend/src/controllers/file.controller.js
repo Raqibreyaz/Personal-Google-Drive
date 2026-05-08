@@ -9,13 +9,7 @@ import File from "../models/file.model.js";
 import FileShare from "../models/fileShare.model.js";
 import Subscription from "../models/subscription.model.js";
 import updateParentSize from "../helpers/updateParentSize.js";
-import {
-  FILE_NOT_FOUND,
-  FILE_MISSING_STORAGE,
-  DUPLICATE_FILE,
-  FILE_SEND_FAILED,
-  DIR_NOT_FOUND,
-} from "../constants/errorCodes.js";
+
 import {
   createObjectPresignedUrl,
   deleteObject,
@@ -33,7 +27,7 @@ export const getFileContents = async (req, res, next) => {
   const fileId = req.params.fileId;
 
   const file = req.fileDoc ? req.fileDoc : await File.findById(fileId).lean();
-  if (!file) throw new ApiError(404, "File not found!", FILE_NOT_FOUND);
+  if (!file) throw new ApiError(404, "File not found!");
 
   // prevent mime sniffing when content-type is not provided
   res.set("X-Content-Type-Options", "nosniff");
@@ -109,7 +103,7 @@ export const initiateFileUpload = async (req, res, next) => {
       "Storage Quota Over used, delete files to continue!",
     );
   if (effectiveMaxLimit < fileSize) {
-    throw new ApiError(413, "File Too Large!", "FILE_SIZE_LIMIT_EXCEEDED");
+    throw new ApiError(413, "File Too Large!");
   }
   if (dataSanitizer.sanitize(fileName) !== fileName) {
     throw new ApiError(400, "Invalid filename!");
@@ -133,8 +127,7 @@ export const initiateFileUpload = async (req, res, next) => {
   if (!parentDir)
     throw new ApiError(
       404,
-      "Given Parent Directory doesn't exist!",
-      DIR_NOT_FOUND,
+      "Given Parent Directory doesn't exist!"
     );
 
   // check if a file with that name already exists in that directory
@@ -147,8 +140,7 @@ export const initiateFileUpload = async (req, res, next) => {
   if (file && !file.isUploading) {
     throw new ApiError(
       400,
-      "A file with this name already exist in this directory",
-      DUPLICATE_FILE,
+      "A file with this name already exist in this directory"
     );
   }
 
@@ -249,7 +241,7 @@ export const renameFile = async (req, res, next) => {
 
   let file = req.fileDoc;
   if (!file) file = await File.findById(req.params.fileId).lean();
-  if (!file) throw new ApiError(404, "File not found!", FILE_NOT_FOUND);
+  if (!file) throw new ApiError(404, "File not found!");
 
   if (file.name === newFilename) throw new ApiError(200, "No change!");
 
@@ -264,7 +256,7 @@ export const renameFile = async (req, res, next) => {
   }).lean();
 
   if (duplicate) {
-    throw new ApiError(400, "Duplicate file name!", DUPLICATE_FILE);
+    throw new ApiError(400, "Duplicate file name!");
   }
 
   // updating filename in DB
@@ -306,7 +298,7 @@ export const setAllowAnyone = async (req, res, next) => {
   );
 
   if (!result.modifiedCount)
-    throw new ApiError(404, "file not found!", FILE_NOT_FOUND);
+    throw new ApiError(404, "file not found!");
 
   res.status(200).json({ message: "File permissions saved successfully!" });
 };
@@ -315,7 +307,7 @@ export const deleteFile = async (req, res, next) => {
   const fileId = req.params.fileId;
 
   const file = req.fileDoc ? req.fileDoc : await File.findById(fileId).lean();
-  if (!file) throw new ApiError(404, "File not found!", FILE_NOT_FOUND);
+  if (!file) throw new ApiError(404, "File not found!");
 
   const session = await mongoose.startSession();
   try {
