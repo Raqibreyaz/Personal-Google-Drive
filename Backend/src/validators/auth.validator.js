@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { strictSanitizedString } from "./common.validator.js";
 
 export const checkUserAndSendOTPSchema = z.object({
   body: z.object({ email: z.email() }),
@@ -13,7 +14,7 @@ export const checkUserWithPasswordAndSendOTPSchema = z.object({
 
 export const verifyOTPAndRegisterSchema = z.object({
   body: z.object({
-    name: z.string().min(3).max(100),
+    name: strictSanitizedString("Name").min(3).max(100),
     password: z.string().min(6).max(10),
     email: z.email(),
     otp: z

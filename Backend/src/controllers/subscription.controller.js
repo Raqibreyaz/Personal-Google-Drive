@@ -162,8 +162,10 @@ export const cancelSubscription = async (req, res) => {
 
 export const updateSubscription = async (req, res) => {
   const rootDirId = req.session.user.storageDir;
+
   const { planKey } = req.body;
   const plan = getPlanByKey(planKey);
+  if (!plan) throw new ApiError(400, "Invalid Plan Key received!");
 
   const storedSubscriptionId = req.session.user.subscription;
   if (!storedSubscriptionId)

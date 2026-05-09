@@ -3,7 +3,6 @@ import axios from "axios";
 import User from "../models/user.model.js";
 import Session from "../models/session.model.js";
 import ApiError from "../helpers/apiError.js";
-import dataSanitizer from "../helpers/dataSanitizer.js";
 import createCookie from "../helpers/createCookie.js";
 import verifyIdToken from "../services/google.service.js";
 import createUserWithEssentials from "../services/user.service.js";
@@ -19,12 +18,8 @@ export const registerUser = async (req, res, next) => {
   if (!name || !password || !email)
     throw new ApiError(400, "Name,Password and Email all are Required!");
 
-  const sanitizedName = dataSanitizer.sanitize(name);
-  if (!sanitizedName || sanitizedName.length !== name.length)
-    throw new ApiError(400, "Invalid name of user!");
-
   const { userId, sessionId } = await createUserWithEssentials({
-    name: sanitizedName,
+    name,
     email,
     password,
     role: Role.USER,

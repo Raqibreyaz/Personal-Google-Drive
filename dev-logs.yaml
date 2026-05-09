@@ -146,5 +146,8 @@ issues:
   - issue: we are storing file's extensions explicitly which was done intentionally to fast lookup but it created headache like renaming an s3 object which is not a good choice + we can also find extension at runtime
   - fix: removed the extname field from file's schema and also removed adding extension to s3 objects which decreased code complexity as renaming an s3 object was a 2-step process
 
+  - issue: input from client like directory name can have malicious script injected triggering XSS attack or it may have unexpcted type of data causing SQL injection attack
+  - fix: centralised the input validation + sanitization part from contollers so that each input passes through proper validation by zod and dom purifier
+
 LOGS:  
   - i found a very interesting bug while uploading file to s3, actually i used mongodb id as s3 object key, so instead of id.toString() i did String(id) and behavior is different, String(id) even added double quotes in the objectKey, means s3 object with quoted name but when i did .toString then all things worked expectedly

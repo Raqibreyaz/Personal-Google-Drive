@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import dataSanitizer from "../helpers/dataSanitizer.js";
 import path from "node:path";
 import { ObjectId } from "mongodb";
 import ApiError from "../helpers/apiError.js";
@@ -104,12 +103,6 @@ export const initiateFileUpload = async (req, res, next) => {
     );
   if (effectiveMaxLimit < fileSize) {
     throw new ApiError(413, "File Too Large!");
-  }
-  if (dataSanitizer.sanitize(fileName) !== fileName) {
-    throw new ApiError(400, "Invalid filename!");
-  }
-  if (dataSanitizer.sanitize(fileType) !== fileType) {
-    throw new ApiError(400, "Invalid Filetype!");
   }
 
   const fileId = new ObjectId();
@@ -228,11 +221,7 @@ export const completeFileUpload = async (req, res, next) => {
 
 export const renameFile = async (req, res, next) => {
   const fileId = req.params.fileId;
-
-  const initialFilename = req.body.newFilename;
-  const newFilename = dataSanitizer.sanitize(initialFilename);
-  if (!newFilename || newFilename?.length !== initialFilename?.length)
-    throw new ApiError(400, "Invalid Filename!");
+  const newFilename = req.body.newFilename;
 
   let file = req.fileDoc;
   if (!file) file = await File.findById(fileId).lean();

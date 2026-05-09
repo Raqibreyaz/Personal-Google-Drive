@@ -1,6 +1,5 @@
 import { ObjectId } from "mongodb";
 import ApiError from "../helpers/apiError.js";
-import dataSanitizer from "../helpers/dataSanitizer.js";
 import Directory from "../models/directory.model.js";
 import File from "../models/file.model.js";
 
@@ -42,12 +41,8 @@ export const getDirectoryContents = async (req, res, next) => {
 
 export const createDirectory = async (req, res, next) => {
   const userId = req.targetUserId || req.session.user._id.toString();
-  const initialDirname = req.body.dirname;
-  const dirname = dataSanitizer.sanitize(req.body.dirname);
+  const dirname = req.body.dirname;
   const parentDirId = req.params.parentDirId;
-
-  if (!dirname || initialDirname.length !== dirname.length)
-    throw new ApiError(400, "Invalid Dirname!");
 
   const parentDir = parentDirId
     ? await Directory.findOne({ user: userId, _id: parentDirId }).lean()
@@ -87,11 +82,7 @@ export const createDirectory = async (req, res, next) => {
 export const updateDirectoryName = async (req, res, next) => {
   const userId = req.targetUserId || req.session.user._id.toString();
   const dirId = req.params.dirId;
-  const initialDirname = req.body.newDirname;
-  const newDirname = dataSanitizer.sanitize(req.body.newDirname);
-
-  if (!newDirname || initialDirname?.length !== newDirname?.length)
-    throw new ApiError(400, "Invalid Dirname!");
+  const newDirname = req.body.newDirname;
 
   const directory = await Directory.findOne({ _id: dirId, user: userId });
   if (!directory)

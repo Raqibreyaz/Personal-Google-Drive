@@ -1,13 +1,14 @@
 import { z } from "zod";
+import { strictSanitizedString } from "./common.validator.js";
 
 export const createDirectorySchema = z.object({
   body: z.object({
-    dirname: z.string().min(1),
+    dirname: strictSanitizedString("Directory name"),
   }),
 });
 
 export const renameDirectorySchema = z.object({
   body: z.object({
-    newDirname: z.string().min(1),
+    newDirname: strictSanitizedString("Directory name"),
   }),
 });

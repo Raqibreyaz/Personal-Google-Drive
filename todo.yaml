@@ -1,11 +1,12 @@
 TODO:
   ISSUES:
-    - adding some setting at owner dashboard to, disable payment temporarily, seeing subscription events etc some useful work
     - what parts in the application is creating unnecessary complexity
-    - adding zod validation to routes where not used
-    - sanitizing input where not performed
-    - rate limitting and throttling correction
-    - remove file extension from s3 object completely to maintain atomic updates, have to handle extension removal also from whole app as it may not be necessary
+    - how the rate limiting part in the entire app can be made scalable, currently not every route is rate limited, many are rate limited but i dont feel it good, limits are taken from env vars else default limits are used, what else things you find broken or can be made significantly better here in rate limiting
+    - what you find can be made significantly better for throttling, problems in current implementation, and how to make it easy, readable and less code
+    - adding some setting at owner dashboard to:
+      - disable payment temporarily
+      - seeing subscription events 
+      - allow only cors allowed origin(s) to make request
     - nodemailer failed to refresh token, need to publish app to production maybe
     - dangerous site error occuring on previewing a file
     - github logged in, but cookie didnt get saved, while google and local login works
@@ -45,3 +46,6 @@ DONE:
       - mongodb/mongoose specific errors
       - app specific errors
     - ErrorCode fixing in Error Responses
+    - remove file extension from s3 object completely to maintain atomic updates, have to handle extension removal also from whole app as it may not be necessary
+    - adding zod validation to routes where not used
+    - sanitizing input where not performed
