@@ -57,7 +57,7 @@ export const deleteUser = async (req, res, next) => {
       else {
         files = await File.find({ user: userId })
           .session(session)
-          .select("_id extname")
+          .select("_id")
           .lean();
         await Directory.deleteMany({ user: userId }, { session });
         await FileShare.deleteMany(

@@ -164,5 +164,8 @@ issues:
   - issues: the middleware logic worked for imposing the settings but for login with google and github this got failed as at the route we dont know if the user exist
   - fix: for every registration, controllers use 'createUserWithEssentials' service which creates the user atomically with it's directories and sessions, so added the settings check there
 
+  - issue: file can have no mime type, so instead of rejecting it we have to allow it
+  - fix: added a default application/octet-stream type if mime type is not present, in the input validation layer
+
 LOGS:  
   - i found a very interesting bug while uploading file to s3, actually i used mongodb id as s3 object key, so instead of id.toString() i did String(id) and behavior is different, String(id) even added double quotes in the objectKey, means s3 object with quoted name but when i did .toString then all things worked expectedly

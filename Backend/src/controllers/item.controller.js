@@ -7,8 +7,12 @@ import { bulkDeleteItemsService } from "../services/item.service.js";
 
 export const bulkDelete = async (req, res, next) => {
   const userId = req.targetUserId || req.session.user._id.toString();
-  const selectedDirIds = (req.body.selectedDirs || []).map((id) => new ObjectId(id));
-  const selectedFileIds = (req.body.selectedFiles || []).map((id) => new ObjectId(id));
+  const selectedDirIds = (req.body.selectedDirs || []).map(
+    (id) => new ObjectId(id),
+  );
+  const selectedFileIds = (req.body.selectedFiles || []).map(
+    (id) => new ObjectId(id),
+  );
 
   let selectedDirs = [];
   if (selectedDirIds.length) {
@@ -26,31 +30,37 @@ export const bulkDelete = async (req, res, next) => {
       _id: { $in: selectedFileIds },
       user: userId,
     })
-      .select("_id parentDir size extname")
+      .select("_id parentDir size")
       .lean();
   }
 
   const uniqueParents = new Set([
-    ...selectedFiles.map(({ parentDir }) => (parentDir ? parentDir.toString() : "root")),
-    ...selectedDirs.map(({ parentDir }) => (parentDir ? parentDir.toString() : "root")),
+    ...selectedFiles.map(({ parentDir }) =>
+      parentDir ? parentDir.toString() : "root",
+    ),
+    ...selectedDirs.map(({ parentDir }) =>
+      parentDir ? parentDir.toString() : "root",
+    ),
   ]);
 
   if (uniqueParents.size > 1) {
     throw new ApiError(
       400,
-      "All selected files and directories should be of same parent!"
+      "All selected files and directories should be of same parent!",
     );
   }
 
   if (!selectedDirs.length && !selectedFiles.length) {
     throw new ApiError(
       400,
-      "Either directories/files not exist or you are not authorized for it!"
+      "Either directories/files not exist or you are not authorized for it!",
     );
   }
 
   // Delegate the complex transaction and recursive logic to generic service
   await bulkDeleteItemsService(selectedDirs, selectedFiles);
 
-  res.status(200).json({ message: "All selected entries deleted successfully!" });
+  res
+    .status(200)
+    .json({ message: "All selected entries deleted successfully!" });
 };

@@ -7,6 +7,7 @@ import {
   CopyObjectCommand,
   DeleteObjectsCommand,
   HeadObjectCommand,
+  GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl as getS3SignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getSignedUrl as getCloudFrontSignedUrl } from "@aws-sdk/cloudfront-signer";
@@ -30,7 +31,6 @@ const cloudFrontPrivateKey = process.env.AWS_CLOUDFRONT_PRIVATE_KEY;
 const s3Client = new S3Client({
   credentials: { accessKeyId, secretAccessKey },
 });
-const cloudFrontClient = new CloudFrontClient({ region });
 
 const toCfPath = (p) =>
   p.startsWith("/") ? p : `/${String(p).replace(/^\/+/, "")}`;
@@ -80,7 +80,7 @@ export const deleteObject = async (objectKey) => {
 
   await s3Client.send(deleteObjectCommand);
 
-  return true
+  return true;
 };
 
 // delete the given objects and invalidate cache
@@ -99,7 +99,7 @@ export const deleteObjects = async (objectKeys) => {
     );
   }
 
-  return true
+  return true;
 };
 
 // rename an object with copy+delete ops and invalidate cache
@@ -123,39 +123,60 @@ export const renameObject = async (objectKey, newName) => {
 };
 
 // presigned url to get object
+// export const getObjectPresignedUrl = async (
+//   objectKey,
+//   fileName,
+//   download = false,
+//   renderAsText = false,
+// ) => {
+//   const encodedKey = encodeObjectKeyForUrl(objectKey);
+//   const safeFilename = path.basename(fileName || objectKey);
+
+//   const headers = [
+//     {
+//       key: "response-content-disposition",
+//       value: `${download ? "attachment" : "inline"}; filename="${safeFilename}"`,
+//     },
+//   ];
+//   if (renderAsText)
+//     headers.push({
+//       key: "response-content-type",
+//       value: "text/plain; charset=utf-8",
+//     });
+
+//   const url = `${cloudFrontUrl}/${encodedKey}?${headers
+//     .map((k) => `${k.key}=${encodeURIComponent(k.value)}`)
+//     .join("&")}`;
+
+//   const signedUrl = getCloudFrontSignedUrl({
+//     url: url.toString(),
+//     keyPairId: cloudFrontKeyPairId,
+//     privateKey: cloudFrontPrivateKey,
+//     dateLessThan: new Date(
+//       Date.now() + 1000 * presignedUrlExpiry,
+//     ).toISOString(),
+//   });
+
+//   return signedUrl;
+// };
 export const getObjectPresignedUrl = async (
   objectKey,
   fileName,
   download = false,
   renderAsText = false,
 ) => {
-  const encodedKey = encodeObjectKeyForUrl(objectKey);
-  const safeFilename = path.basename(fileName || objectKey);
+  const settings = {};
+  if (download)
+    settings.ResponseContentDisposition = `attachment; filename=${fileName}`;
+  if (renderAsText) settings.ResponseContentType = "text/plain; charset=utf-8";
 
-  const headers = [
-    {
-      key: "response-content-disposition",
-      value: `${download ? "attachment" : "inline"}; filename="${safeFilename}"`,
-    },
-  ];
-  if (renderAsText)
-    headers.push({
-      key: "response-content-type",
-      value: "text/plain; charset=utf-8",
-    });
-
-  const url = `${cloudFrontUrl}/${encodedKey}?${headers
-    .map((k) => `${k.key}=${encodeURIComponent(k.value)}`)
-    .join("&")}`;
-
-  const signedUrl = getCloudFrontSignedUrl({
-    url: url.toString(),
-    keyPairId: cloudFrontKeyPairId,
-    privateKey: cloudFrontPrivateKey,
-    dateLessThan: new Date(
-      Date.now() + 1000 * presignedUrlExpiry,
-    ).toISOString(),
+  const command = new GetObjectCommand({
+    Bucket: bucketName,
+    Key: objectKey,
+    ...settings,
   });
 
-  return signedUrl;
+  return await getS3SignedUrl(s3Client, command, {
+    expiresIn: presignedUrlExpiry,
+  });
 };
