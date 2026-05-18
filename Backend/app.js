@@ -11,6 +11,7 @@ import itemRoutes from "./src/routes/item.route.js";
 import subscriptionRoutes from "./src/routes/subscription.route.js";
 import planRoutes from "./src/routes/plan.route.js";
 import appSettingRoutes from "./src/routes/appSetting.route.js";
+import deployRoutes from "./src/routes/deploy.route.js";
 import checkAuthentication from "./src/middlewares/authenticate.middleware.js";
 import { globalErrorHandler } from "./src/middlewares/errorHandler.middleware.js";
 import { globalLimiter } from "./src/middlewares/rateLimiter.middleware.js";
@@ -47,11 +48,13 @@ app.use(
 app.use(preventCsrf); //preventing CSRF, helpful when cors by-passed
 app.use(cookieParser(process.env.COOKIE_PARSER_KEY));
 
+/** Webhooks */
+// body should be passed as raw to webhook
+app.use("/deploy", deployRoutes);
+app.use("/subscriptions", subscriptionRoutes);
+
 // attach the whole app settings to each route
 app.use(attachAppSettings);
-
-// body should be passed as raw to webhook
-app.use("/subscriptions", subscriptionRoutes);
 
 app.use(express.json());
 app.use("/directory", checkAuthentication, directoryRoutes);
