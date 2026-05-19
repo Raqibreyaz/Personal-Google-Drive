@@ -179,5 +179,8 @@ issues:
   - issue: each time pushing code then pulling and doing npm install sometimes then restarting the server increases manual work
   - fix: created a custom ci/cd pipeline where backend receives notifications of the code changes, it then checks if backend code changed + new packages got installed then redeploy the backend accordingly using the deployment script + sends email to developer if deployment fails
 
+  - issue: on deployment, the backend takes few seconds to full restart, which can cause downtime
+  - fix: use pm2's cluster mode which internally uses nodejs cluster module, keeps one app running on the old code until the second one restarts completely, so requests dont get interrupted, it uses round robin to assign requests to each process
+
 LOGS:  
   - i found a very interesting bug while uploading file to s3, actually i used mongodb id as s3 object key, so instead of id.toString() i did String(id) and behavior is different, String(id) even added double quotes in the objectKey, means s3 object with quoted name but when i did .toString then all things worked expectedly

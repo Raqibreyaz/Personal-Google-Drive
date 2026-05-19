@@ -20,7 +20,7 @@ const checkAuthentication = async (req, res, next) => {
   // revoke the token also when exist
   if (!sessionId || !user) {
     if (sessionId) res.clearCookie("authToken");
-    throw new ApiError(401, "Login to use the App!","AUTH_REQUIRED");
+    throw new ApiError(401, "Login to use the Application!","AUTH_REQUIRED");
   }
 
   next();
