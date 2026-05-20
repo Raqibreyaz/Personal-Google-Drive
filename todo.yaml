@@ -1,3 +1,18 @@
+0|storraBa | verifying signature...
+0|storraBa | signature verified!!
+0|storraBa | checking backend changes...
+0|storraBa | checking new packages installation requirement...
+0|storraBa | no new package installation required!!
+0|storraBa | TypeError: Cannot read properties of null (reading 'on')
+0|storraBa |     at githubWebhook (file:///home/ubuntu/Personal-Google-Drive/Backend/src/controllers/deploy.controller.js:81:23)
+0|storraBa |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+0|storraBa | Client Disconnected!
+0|storraBa | Redis: connection ready.
+0|storraBa | Memory Store Connected!
+0|storraBa | Database Connected!
+0|storraBa | server is running at port 8080
+
+
 TODO:
   ISSUES:
     - replace sending email of deployment with telegram chat message
