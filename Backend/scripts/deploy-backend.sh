@@ -19,11 +19,11 @@ if [ "${SHOULD_INSTALL:-false}" = "true" ]; then
     pnpm install --frozen-lockfile
     cd "$REPO_DIR"
 else
-    echo "no dependency installation required!!"
+    echo "no dependency installation required."
 fi
 
 # restart the server with the new changes
 echo "reloading server with the latest changes..."
 pm2 reload storraBackend --update-env
 
-echo "Server deployed successfully!"
+echo "Server deployed successfully."
