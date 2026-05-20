@@ -73,7 +73,10 @@ export const githubWebhook = async (req, res) => {
 
   const childProcess = spawn("bash", [scriptPath], {
     env: { ...process.env, SHOULD_INSTALL: String(shouldInstall) },
+    detached: true, // run the child independently
+    stdio: "ignore",// remove stdio connection with parent
   });
+  childProcess.unref(); //parent will not wait for child to finish
 
   childProcess.stderr.on("data", (chunk) => {
     stdErrBuf += chunk.toString();

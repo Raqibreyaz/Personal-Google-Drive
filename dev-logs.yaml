@@ -182,5 +182,8 @@ issues:
   - issue: on deployment, the backend takes few seconds to full restart, which can cause downtime
   - fix: use pm2's cluster mode which internally uses nodejs cluster module, keeps one app running on the old code until the second one restarts completely, so requests dont get interrupted, it uses round robin to assign requests to each process
 
+  - issue: the bash child process is tied to the node's process so when parent get's reloaded, it's it's descendant tree gets cleaned and it can cause inconsistency as both the worker process of the backend will be in different state, old and new
+  - fix: run the bash child process in detached mode, remove stdio connection and stop parent to wait for child, so child can run independently
+
 LOGS:  
   - i found a very interesting bug while uploading file to s3, actually i used mongodb id as s3 object key, so instead of id.toString() i did String(id) and behavior is different, String(id) even added double quotes in the objectKey, means s3 object with quoted name but when i did .toString then all things worked expectedly

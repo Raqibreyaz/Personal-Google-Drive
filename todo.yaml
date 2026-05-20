@@ -1,6 +1,5 @@
 TODO:
   ISSUES:
-    - reloading the process causes the child's stdio pipe to our process brake as the listener on parent gets cleared as memory gets cleared on restart, so last logs remains unprinted -> instead of printing the logs to parent stdout print them in a file
     - replace sending email of deployment with telegram chat message
     - adding subscription pause functionality in frontend
     - centralizing subscription checks of file upload into a middleware
@@ -64,3 +63,5 @@ DONE:
       - soft deletion: pause subscription in DB + razorpay
       - hard deletion: cancel rzp subscription on every state except already cancelled + cancel_at_period_end=false, expired, completed then delete the subscription from DB
     - inform developer through email if deployment fails
+    - reloading using child process in cluster mode, reloads only 1 process and leaves other one
+    - reloading the process causes the child's stdio pipe to our process brake as the listener on parent gets cleared as memory gets cleared on restart, so last logs remains unprinted -> instead of printing the logs to parent stdout print them in a file
